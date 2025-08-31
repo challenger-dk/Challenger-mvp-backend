@@ -8,8 +8,11 @@ It consists of:
 
 #### Backend services
 Consists of an Api-Gateway and multiple other services:
+- API-Gateway: handles all incomming requests and directs them to appropriate service. Also handles auth.
 - UserService: Handles user actions, friends
 - ChallengeService: Handles challenges, private and public.
+- ChatService: Handles chats.
+- TeamService: Handles users in teams.
 
 #### Databases
 Currently the databases in use:
@@ -17,8 +20,7 @@ Currently the databases in use:
 - SQL: MYSQL
 
 ## Getting started
-Local development can be achived by either installing the nescessary components or by using Docker. 
-
+Local development can be achived by either installing the nescessary components or by using Docker.
 
 #### Requirements
 
@@ -31,4 +33,4 @@ Local development can be achived by either installing the nescessary components 
 
 #### Important scripts
 
-- `run-all.ps1` Starts all the backend microservices. Make sure to allow go.exe to access private networks in security settings, so you dont have to allow each time.
+- `run-all.ps1` Starts all the backend microservices. Make sure to allow go.exe to access private networks in security settings, so you dont have to allow each time. NOTE: ATM only works on windows
