@@ -25,3 +25,43 @@ services:
       - "7687:7687"
     volumes:
       - ./neo4j-init:/var/lib/neo4j/import
+
+  api-gateway:
+    build: ./Services/Api-Gateway
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./Services/Api-Gateway:/app
+    depends_on:
+      - mysql
+      - neo4j
+
+  challenge-service:
+    build: ./Services/Challenge-Service
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./Services/Challenge-Service:/app
+    depends_on:
+      - mysql
+      - neo4j
+
+  chat-service:
+    build: ./Services/Chat-Service
+    ports:
+      - "8082:8082"
+    volumes:
+      - ./Services/Chat-Service:/app
+    depends_on:
+      - mysql
+      - neo4j
+
+  user-service:
+    build: ./Services/User-Service
+    ports:
+      - "8083:8083"
+    volumes:
+      - ./Services/User-Service:/app
+    depends_on:
+      - mysql
+      - neo4j
