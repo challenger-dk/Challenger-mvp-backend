@@ -1,30 +1,18 @@
 version: "3.9"
 
 services:
-  mysql:
-    image: mysql:8
-    container_name: mysql-db
+  postgres:
+    image: postgres:16
+    container_name: postgres-db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: challenger
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: challenger
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
       - ./Database/sql/schema-init:/docker-entrypoint-initdb.d
-
-  neo4j:
-    image: neo4j:5
-    container_name: neo4j-db
-    environment:
-      NEO4J_AUTH: neo4j/password
-    ports:
-      - "7474:7474"
-      - "7687:7687"
-    volumes:
-      - ./neo4j-init:/var/lib/neo4j/import
 
   api-gateway:
     build: ./Services/Api-Gateway
@@ -33,8 +21,7 @@ services:
     volumes:
       - ./Services/Api-Gateway:/app
     depends_on:
-      - mysql
-      - neo4j
+      - postgres
 
   challenge-service:
     build: ./Services/Challenge-Service
@@ -43,8 +30,7 @@ services:
     volumes:
       - ./Services/Challenge-Service:/app
     depends_on:
-      - mysql
-      - neo4j
+      - postgres
 
   chat-service:
     build: ./Services/Chat-Service
@@ -53,8 +39,7 @@ services:
     volumes:
       - ./Services/Chat-Service:/app
     depends_on:
-      - mysql
-      - neo4j
+      - postgres
 
   user-service:
     build: ./Services/User-Service
@@ -63,5 +48,4 @@ services:
     volumes:
       - ./Services/User-Service:/app
     depends_on:
-      - mysql
-      - neo4j
+      - postgres
