@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: challenger-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: challenger
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./Database/sql/schema-init:/docker-entrypoint-initdb.d
+    networks:
+      - challenger-network
+
+  app:
+    image: challenger-app:latest
+    container_name: challenger-app
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - challenger-network
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=challenger
+
+volumes:
+  postgres-data:
+
+networks:
+  challenger-network:
+    driver: bridge
+

@@ -1,0 +1,66 @@
+name: Deploy to Raspberry Pi
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image for ARM64 (Raspberry Pi)
+        run: |
+          docker buildx build \
+            --platform linux/arm64 \
+            -t challenger-app:latest \
+            -f src/Dockerfile.prod ./src
+
+      - name: Save Docker image as .tar.gz
+        run: |
+          docker save challenger-app:latest | gzip > challenger-app.tar.gz
+
+      - name: Copy files to Raspberry Pi
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.PI_HOST }}
+          username: ${{ secrets.PI_USER }}
+          key: ${{ secrets.PI_SSH_KEY }}
+          port: ${{ secrets.PI_SSH_PORT || 22 }}
+          source: "challenger-app.tar.gz,docker-compose.prod.yml"
+          target: "/home/${{ secrets.PI_USER }}/challenger-app"
+
+      - name: Deploy and run on Raspberry Pi
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PI_HOST }}
+          username: ${{ secrets.PI_USER }}
+          key: ${{ secrets.PI_SSH_KEY }}
+          port: ${{ secrets.PI_SSH_PORT || 22 }}
+          script: |
+            cd ~/challenger-app
+
+            echo "📦 Loading Docker image..."
+            docker load < challenger-app.tar.gz
+
+            echo "🧹 Cleaning up old containers..."
+            docker compose -f docker-compose.prod.yml down || true
+
+            echo "🐘 Pulling latest Postgres..."
+            docker pull postgres:16
+
+            echo "🚀 Starting containers..."
+            docker compose -f docker-compose.prod.yml up -d --build
+
+            echo "🔗 Restarting Tailscale Funnel..."
+            sudo tailscale funnel reset || true
+            sudo tailscale funnel --bg 8080
+
+            echo "✅ Deployment complete."
