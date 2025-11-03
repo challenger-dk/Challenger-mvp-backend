@@ -1,0 +1,9 @@
+.exe
+.env
+.out
+/vendor/
+/dist/
+/Godeps/
+/pkg/mod/
+/tmp/
+/src/tmp/
