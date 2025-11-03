@@ -23,9 +23,10 @@ jobs:
             -t challenger-app:latest \
             -f src/Dockerfile.prod ./src
 
-      - name: Save Docker image as .tar.gz
+      - name: Save Docker image as .tar.gz (safe archive method)
         run: |
-          docker save challenger-app:latest | gzip > challenger-app.tar.gz
+          docker save challenger-app:latest -o challenger-app.tar
+          gzip -f challenger-app.tar
 
       - name: Connect GitHub Actions runner to Tailscale
         uses: tailscale/github-action@v2
@@ -55,7 +56,10 @@ jobs:
             cd ~/challenger-app
 
             echo "📦 Loading Docker image..."
-            docker load < challenger-app.tar.gz
+            docker load -i challenger-app.tar.gz
+
+            echo "🧩 Verifying image load..."
+            docker images | grep challenger-app || echo "⚠️ challenger-app image not found!"
 
             echo "🧹 Cleaning up old containers..."
             docker compose -f docker-compose.prod.yml down || true
