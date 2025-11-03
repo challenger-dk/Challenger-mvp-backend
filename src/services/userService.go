@@ -2,19 +2,13 @@ package services
 
 import (
 	"server/models"
-	"server/repositories"
+	"server/config"
 )
 
-type UserService interface {
-	CreateUser(user *models.User) error
-	GetUserByID(db *gorm.DB, id uint) (*models.User, error)
-	GetUserByEmail(db *gorm.DB, email string) (*models.User, error)
-}
-
-type userService struct {
-	userRepository repositories.UserRepository
-}
-
-func NewUserService(userRepository repositories.UserRepository) UserService {
-	return &userService{userRepository: userRepository}
+func GetUsers() ([]models.User, error) {
+	var users []models.User
+	if err := config.DB.Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
 }
