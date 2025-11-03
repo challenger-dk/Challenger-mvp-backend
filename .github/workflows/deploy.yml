@@ -27,6 +27,13 @@ jobs:
         run: |
           docker save challenger-app:latest | gzip > challenger-app.tar.gz
 
+      - name: Connect GitHub Actions runner to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
+          tags: ci
+
       - name: Copy files to Raspberry Pi
         uses: appleboy/scp-action@v0.1.7
         with:
