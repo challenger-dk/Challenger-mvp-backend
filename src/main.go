@@ -12,10 +12,7 @@ import (
 func main() {
 
 	config.ConnectDatabase()
-    if err := config.DB.AutoMigrate(&models.User{}); err != nil {
-        // Fail fast if migration cannot run
-        panic(err)
-    }
+	config.DB.AutoMigrate(&models.User{}, &models.Team{}, &models.Challenge{})
 	r := chi.NewRouter()
 
 	http.ListenAndServe(":8080", r)

@@ -5,9 +5,12 @@ import (
 )
 
 type User struct {
-	ID        uint `gorm:"primaryKey"`
-	Email     string `gorm:"not null;unique"`
-	Password  string `gorm:"not null"`
-	CreatedAt time.Time `gorm:"autoCreateTime"`
-	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	ID                uint `gorm:"primaryKey"`
+	Email             string `gorm:"not null;unique"`
+	Password          string `gorm:"not null"`
+	Teams             []Team `gorm:"many2many:user_teams;"`
+	CreatedChallenges []Challenge `gorm:"foreignKey:CreatorID"`
+	JoinedChallenges  []Challenge `gorm:"many2many:user_challenges;"`
+	CreatedAt         time.Time `gorm:"autoCreateTime"`
+	UpdatedAt         time.Time `gorm:"autoUpdateTime"`
 }
