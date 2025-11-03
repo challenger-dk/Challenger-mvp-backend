@@ -14,38 +14,13 @@ services:
     volumes:
       - ./Database/sql/schema-init:/docker-entrypoint-initdb.d
 
-  api-gateway:
-    build: ./Services/Api-Gateway
+  app:
+    build: ./src
     ports:
       - "8080:8080"
     volumes:
-      - ./Services/Api-Gateway:/app
+      - ./src:/app
     depends_on:
       - postgres
 
-  challenge-service:
-    build: ./Services/Challenge-Service
-    ports:
-      - "8081:8081"
-    volumes:
-      - ./Services/Challenge-Service:/app
-    depends_on:
-      - postgres
-
-  chat-service:
-    build: ./Services/Chat-Service
-    ports:
-      - "8082:8082"
-    volumes:
-      - ./Services/Chat-Service:/app
-    depends_on:
-      - postgres
-
-  user-service:
-    build: ./Services/User-Service
-    ports:
-      - "8083:8083"
-    volumes:
-      - ./Services/User-Service:/app
-    depends_on:
-      - postgres
+  
