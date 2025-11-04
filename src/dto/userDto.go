@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type CreateUserDto struct {
+type UserCreateDto struct {
 	Email     string `json:"email"`
 	Password  string `json:"password"`
 	FirstName string `json:"first_name"`
@@ -22,7 +22,7 @@ type UserResponseDto struct {
 	UpdatedAt      time.Time `json:"updated_at"`
 }
 
-func ToUserResponseDto(user *models.User) UserResponseDto {
+func ToUserResponseDto(user models.User) UserResponseDto {
 	return UserResponseDto{
 		ID:             user.ID,
 		Email:          user.Email,
@@ -33,4 +33,3 @@ func ToUserResponseDto(user *models.User) UserResponseDto {
 		UpdatedAt:      user.UpdatedAt,
 	}
 }
-

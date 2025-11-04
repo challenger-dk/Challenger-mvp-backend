@@ -11,7 +11,7 @@ import (
 )
 
 func Register(w http.ResponseWriter, r *http.Request) {
-	var req dto.CreateUserDto
+	var req dto.UserCreateDto
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -47,7 +47,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"user":  dto.ToUserResponseDto(user),
+		"user":  dto.ToUserResponseDto(*user),
 		"token": token,
 	})
 }
@@ -80,7 +80,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"user":  dto.ToUserResponseDto(user),
+		"user":  dto.ToUserResponseDto(*user),
 		"token": token,
 	})
 }
@@ -93,5 +93,5 @@ func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(dto.ToUserResponseDto(user))
+	json.NewEncoder(w).Encode(dto.ToUserResponseDto(*user))
 }

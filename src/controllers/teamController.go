@@ -27,7 +27,7 @@ func GetTeams(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateTeam(w http.ResponseWriter, r *http.Request) {
-	req := dto.RequestTeam{}
+	req := dto.TeamCreateDto{}
 
 	// Decode request
 	err := json.NewDecoder(r.Body).Decode(&req)
@@ -60,7 +60,7 @@ func UpdateTeam(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	req := dto.RequestTeam{}
+	req := dto.TeamCreateDto{}
 
 	// Decode request
 	err = json.NewDecoder(r.Body).Decode(&req)

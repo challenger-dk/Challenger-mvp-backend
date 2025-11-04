@@ -17,7 +17,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 	// Convert to response DTOs
 	response := make([]dto.UserResponseDto, len(users))
 	for i, user := range users {
-		response[i] = dto.ToUserResponseDto(&user)
+		response[i] = dto.ToUserResponseDto(user)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -6,15 +6,15 @@ import (
 	"server/models"
 )
 
-func GetTeamByID(id uint) (dto.ResponseTeam, error) {
+func GetTeamByID(id uint) (dto.TeamResponseDto, error) {
 	var t models.Team
 
 	err := config.DB.Preload("Users").First(&t, id).Error
 	if err != nil {
-		return dto.ResponseTeam{}, err
+		return dto.TeamResponseDto{}, err
 	}
 
-	return dto.ToResponseTeam(t), nil
+	return dto.ToTeamResponseDto(t), nil
 }
 
 func GetTeams() ([]models.User, error) {
@@ -27,20 +27,20 @@ func GetTeams() ([]models.User, error) {
 	return users, nil
 }
 
-func CreateTeam(user dto.RequestTeam) (dto.ResponseTeam, error) {
-	t := dto.RequestTeamToModel(user)
+func CreateTeam(user dto.TeamCreateDto) (dto.TeamResponseDto, error) {
+	t := dto.TeamCreateDtoToModel(user)
 
 	err := config.DB.Create(&t).Error
 	if err != nil {
-		return dto.ResponseTeam{}, err
+		return dto.TeamResponseDto{}, err
 	}
 
-	resp := dto.ToResponseTeam(t)
+	resp := dto.ToTeamResponseDto(t)
 
 	return resp, nil
 }
 
-func UpdateTeam(id uint, team dto.RequestTeam) error {
+func UpdateTeam(id uint, team dto.TeamCreateDto) error {
 	var t models.Team
 
 	err := config.DB.First(&t, id).Error
