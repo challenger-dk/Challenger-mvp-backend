@@ -5,13 +5,14 @@ import (
 	"net/http"
 
 	"server/dto"
+	"server/middleware"
 	"server/models"
 	"server/services"
 )
 
 func Register(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateUserDto
-	
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
@@ -37,7 +38,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := services.GenerateJWT(user)
+	token, err := services.GenerateJWTToken(user)
 	if err != nil {
 		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
 		return
@@ -56,7 +57,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
-	
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
@@ -85,7 +86,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
-	user, ok := r.Context().Value("user").(*models.User)
+	user, ok := r.Context().Value(middleware.UserContextKey).(*models.User)
 	if !ok {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
@@ -94,4 +95,3 @@ func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(dto.ToUserResponseDto(user))
 }
-
