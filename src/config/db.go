@@ -1,19 +1,17 @@
 package config
 
 import (
-    "fmt"
-    "log"
+	"fmt"
+	"log"
 
-    "gorm.io/driver/postgres"
-    "gorm.io/gorm"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 var DB *gorm.DB
 
 func ConnectDatabase() {
-	dsn := fmt.Sprintf(
-		"host=postgres user=user password=password dbname=challenger port=5432 sslmode=disable",
-	)
+	dsn := "host=postgres user=user password=password dbname=challenger port=5432 sslmode=disable"
 
 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
