@@ -8,40 +8,40 @@ import (
 	"server/services"
 )
 
-func GetTeam(w http.ResponseWriter, r *http.Request) {
+func GetChallenge(w http.ResponseWriter, r *http.Request) {
 	id := helpers.GetParamId(w, r)
 	if id == 0 {
 		return
 	}
 
-	team, err := services.GetTeamByID(id)
+	chal, err := services.GetChallengeByID(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(team)
+	err = json.NewEncoder(w).Encode(chal)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func GetTeams(w http.ResponseWriter, r *http.Request) {
-	teams, err := services.GetTeams()
+func GetChallenges(w http.ResponseWriter, r *http.Request) {
+	challenges, err := services.GetChallenges()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(teams)
+	err = json.NewEncoder(w).Encode(challenges)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func CreateTeam(w http.ResponseWriter, r *http.Request) {
-	req := dto.TeamCreateDto{}
+func CreateChallenge(w http.ResponseWriter, r *http.Request) {
+	req := dto.ChallengeCreateDto{}
 
 	// Decode request
 	err := json.NewDecoder(r.Body).Decode(&req)
@@ -50,25 +50,25 @@ func CreateTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	created_team, err := services.CreateTeam(req)
+	created_chal, err := services.CreateChallenge(req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(created_team)
+	err = json.NewEncoder(w).Encode(created_chal)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
-func UpdateTeam(w http.ResponseWriter, r *http.Request) {
+func UpdateChallenge(w http.ResponseWriter, r *http.Request) {
 	id := helpers.GetParamId(w, r)
 	if id == 0 {
 		return
 	}
 
-	req := dto.TeamCreateDto{}
+	req := dto.ChallengeCreateDto{}
 
 	// Decode request
 	err := json.NewDecoder(r.Body).Decode(&req)
@@ -77,7 +77,7 @@ func UpdateTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = services.UpdateTeam(id, req)
+	err = services.UpdateChallenge(id, req)
 
 	// Maybe this should be changed to something else
 	if err != nil {
@@ -89,13 +89,13 @@ func UpdateTeam(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func DeleteTeam(w http.ResponseWriter, r *http.Request) {
+func DeleteChallenge(w http.ResponseWriter, r *http.Request) {
 	id := helpers.GetParamId(w, r)
 	if id == 0 {
 		return
 	}
 
-	err := services.DeleteTeam(id)
+	err := services.DeleteChallenge(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

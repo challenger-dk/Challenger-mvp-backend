@@ -26,6 +26,17 @@ func RegisterRoutes(r chi.Router) {
 		r.Delete("/{id}", controllers.DeleteUser)
 	})
 
+	r.Route("/challenges", func(r chi.Router) {
+		r.Get("/", controllers.GetChallenges)
+		r.Get("/{id}", controllers.GetChallenge)
+
+		r.Post("/", controllers.CreateChallenge)
+
+		r.Put("/{id}", controllers.UpdateChallenge)
+
+		r.Delete("/{id}", controllers.DeleteChallenge)
+	})
+
 	r.Route("/teams", func(r chi.Router) {
 		r.Get("/{id}", controllers.GetTeam)
 		r.Get("/", controllers.GetTeams)
