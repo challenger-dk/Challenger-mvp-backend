@@ -5,13 +5,13 @@ import (
 )
 
 type TeamCreateDto struct {
-	Name string
+	Name string `json:"name"`
 }
 
 type TeamResponseDto struct {
-	ID    uint
-	Name  string
-	Users []UserResponseDto
+	ID    uint              `json:"id"`
+	Name  string            `json:"name"`
+	Users []UserResponseDto `json:"users"`
 }
 
 func TeamCreateDtoToModel(t TeamCreateDto) models.Team {

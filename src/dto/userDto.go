@@ -47,6 +47,11 @@ func ToSportResponseDto(sport models.Sport) SportResponseDto {
 	}
 }
 
+type Login struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 func ToUserResponseDto(user models.User) UserResponseDto {
 	favoriteSports := make([]SportResponseDto, len(user.FavoriteSports))
 	for i, sport := range user.FavoriteSports {

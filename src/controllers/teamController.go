@@ -3,13 +3,27 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"server/controllers/helpers"
 	"server/dto"
 	"server/services"
-	"strconv"
 )
 
 func GetTeam(w http.ResponseWriter, r *http.Request) {
+	id := helpers.GetParamId(w, r)
+	if id == 0 {
+		return
+	}
 
+	team, err := services.GetTeamByID(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(team)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func GetTeams(w http.ResponseWriter, r *http.Request) {
@@ -36,40 +50,34 @@ func CreateTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	created_user, err := services.CreateTeam(req)
+	created_team, err := services.CreateTeam(req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(created_user)
+	err = json.NewEncoder(w).Encode(created_team)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func UpdateTeam(w http.ResponseWriter, r *http.Request) {
-	idStr := r.PathValue("id")
-	if idStr == "" {
-		http.Error(w, "Missing id for update", http.StatusBadRequest)
+	id := helpers.GetParamId(w, r)
+	if id == 0 {
 		return
-	}
-
-	id, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	req := dto.TeamCreateDto{}
 
 	// Decode request
-	err = json.NewDecoder(r.Body).Decode(&req)
+	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err = services.UpdateTeam(uint(id), req)
+	err = services.UpdateTeam(id, req)
 
 	// Maybe this should be changed to something else
 	if err != nil {
@@ -82,5 +90,13 @@ func UpdateTeam(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteTeam(w http.ResponseWriter, r *http.Request) {
+	id := helpers.GetParamId(w, r)
+	if id == 0 {
+		return
+	}
 
+	err := services.DeleteTeam(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
