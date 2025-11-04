@@ -16,7 +16,7 @@ func main() {
 
 	config.ConnectDatabase()
 	config.DB.AutoMigrate(&models.User{}, &models.Team{}, &models.Challenge{})
-	
+
 	r := chi.NewRouter()
 
 	// CORS configuration

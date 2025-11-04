@@ -22,6 +22,11 @@ type UserResponseDto struct {
 	UpdatedAt      time.Time `json:"updated_at"`
 }
 
+type Login struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 func ToUserResponseDto(user models.User) UserResponseDto {
 	return UserResponseDto{
 		ID:             user.ID,
