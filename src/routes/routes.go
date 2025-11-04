@@ -14,11 +14,16 @@ func RegisterRoutes(r chi.Router) {
 		r.Post("/login", controllers.Login)
 	})
 
+	r.Get("/sports", controllers.GetSports)
+
 	// Protected routes
 	r.Route("/users", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware)
 		r.Get("/", controllers.GetUsers)
 		r.Get("/me", controllers.GetCurrentUser)
+		r.Get("/{id}", controllers.GetUserByID)
+		r.Put("/{id}", controllers.UpdateUser)
+		r.Delete("/{id}", controllers.DeleteUser)
 	})
 
 	r.Route("/teams", func(r chi.Router) {

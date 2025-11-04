@@ -5,8 +5,6 @@ import (
 	"net/http"
 
 	"server/dto"
-	"server/middleware"
-	"server/models"
 	"server/services"
 )
 
@@ -28,7 +26,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := services.CreateUser(req.Email, req.Password, req.FirstName, req.LastName)
+	user, err := services.CreateUser(req.Email, req.Password, req.FirstName, req.LastName, req.FavoriteSports)
 	if err != nil {
 		if err == services.ErrUserExists {
 			http.Error(w, "User with this email already exists", http.StatusConflict)
@@ -83,15 +81,4 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		"user":  dto.ToUserResponseDto(*user),
 		"token": token,
 	})
-}
-
-func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
-	user, ok := r.Context().Value(middleware.UserContextKey).(*models.User)
-	if !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(dto.ToUserResponseDto(*user))
 }

@@ -1,10 +1,12 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
 	"server/config"
 	"server/models"
+	"server/services"
 
 	"server/routes"
 
@@ -15,8 +17,13 @@ import (
 func main() {
 
 	config.ConnectDatabase()
-	config.DB.AutoMigrate(&models.User{}, &models.Team{}, &models.Challenge{})
-	
+	config.DB.AutoMigrate(&models.User{}, &models.Team{}, &models.Challenge{}, &models.Sport{})
+
+	// Seed allowed sports
+	if err := services.SeedSports(); err != nil {
+		log.Fatal("Failed to seed sports:", err)
+	}
+
 	r := chi.NewRouter()
 
 	// CORS configuration
