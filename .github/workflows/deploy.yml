@@ -1,0 +1,58 @@
+name: Deploy to Raspberry Pi (native build)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Connect GitHub Actions runner to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TAILSCALE_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
+          tags: tag:ci
+
+      - name: Copy project files to Raspberry Pi
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.PI_HOST }}
+          username: ${{ secrets.PI_USER }}
+          key: ${{ secrets.PI_SSH_KEY }}
+          port: ${{ secrets.PI_SSH_PORT || 22 }}
+          source: "src/**,docker-compose.prod.yml"
+          target: "/home/${{ secrets.PI_USER }}/challenger-app"
+
+      - name: Build and run Docker containers on Raspberry Pi
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PI_HOST }}
+          username: ${{ secrets.PI_USER }}
+          key: ${{ secrets.PI_SSH_KEY }}
+          port: ${{ secrets.PI_SSH_PORT || 22 }}
+          script: |
+            cd ~/challenger-app
+
+            echo "🧹 Cleaning up old containers..."
+            docker compose -f docker-compose.prod.yml down || true
+
+            echo "🏗️ Building Go app image natively..."
+            cd src
+            docker build -t challenger-app:latest -f Dockerfile.prod .
+
+            echo "🚀 Starting containers..."
+            cd ..
+            docker compose -f docker-compose.prod.yml up -d --build
+
+            echo "🔗 Restarting Tailscale Funnel..."
+            sudo tailscale funnel reset || true
+            sudo tailscale funnel --bg 8080
+
+            echo "✅ Deployment complete."
