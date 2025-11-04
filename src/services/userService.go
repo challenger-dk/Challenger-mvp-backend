@@ -1,8 +1,8 @@
 package services
 
 import (
-	"server/models"
 	"server/config"
+	"server/models"
 )
 
 func GetUsers() ([]models.User, error) {
