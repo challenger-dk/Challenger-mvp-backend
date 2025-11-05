@@ -2,45 +2,71 @@ package services
 
 import (
 	"server/config"
-	"server/dto"
 	"server/models"
 )
 
-func GetTeamByID(id uint) (dto.TeamResponseDto, error) {
+// --- GET ---
+func GetTeamByID(id uint) (models.Team, error) {
 	var t models.Team
 
-	err := config.DB.Preload("Users").First(&t, id).Error
+	err := config.DB.Preload("Users").Preload("Creator").First(&t, id).Error
 	if err != nil {
-		return dto.TeamResponseDto{}, err
+		return models.Team{}, err
 	}
 
-	return dto.ToTeamResponseDto(t), nil
+	return t, nil
 }
 
 func GetTeams() ([]models.Team, error) {
 	var teams []models.Team
 
-	err := config.DB.Find(&teams).Error
+	err := config.DB.Preload("Users").Preload("Creator").Find(&teams).Error
 	if err != nil {
 		return nil, err
 	}
 	return teams, nil
 }
 
-func CreateTeam(team dto.TeamCreateDto) (dto.TeamResponseDto, error) {
-	t := dto.TeamCreateDtoToModel(team)
+func GetTeamsByUserId(id uint) ([]models.Team, error) {
+	var teams []models.Team
 
-	err := config.DB.Create(&t).Error
+	// Find teams where CreatorID == id
+	err := config.DB.Preload("Users").Preload("Creator").
+		Where("creator_id = ?", id).
+		Find(&teams).Error
+
 	if err != nil {
-		return dto.TeamResponseDto{}, err
+		return nil, err
 	}
 
-	resp := dto.ToTeamResponseDto(t)
-
-	return resp, nil
+	return teams, nil
 }
 
-func UpdateTeam(id uint, team dto.TeamCreateDto) error {
+// --- POST ---
+func CreateTeam(t models.Team) (models.Team, error) {
+	// Ensure creator exists
+	creator := models.User{}
+	if err := config.DB.First(&creator, t.CreatorID).Error; err != nil {
+		return models.Team{}, err
+	}
+
+	// Set foreign key explicitly and avoid nested create/update
+	t.CreatorID = creator.ID
+	t.Creator = models.User{}
+
+	if err := config.DB.Create(&t).Error; err != nil {
+		return models.Team{}, err
+	}
+
+	if err := config.DB.Preload("Users").Preload("Creator").First(&t, t.ID).Error; err != nil {
+		return models.Team{}, err
+	}
+
+	return t, nil
+}
+
+// --- PUT ---
+func UpdateTeam(id uint, team models.Team) error {
 	var t models.Team
 
 	err := config.DB.First(&t, id).Error
@@ -60,6 +86,7 @@ func UpdateTeam(id uint, team dto.TeamCreateDto) error {
 	return nil
 }
 
+// --- DELETE ---
 func DeleteTeam(id uint) error {
 	var t models.Team
 

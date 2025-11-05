@@ -40,6 +40,11 @@ func RegisterRoutes(r chi.Router) {
 	r.Route("/teams", func(r chi.Router) {
 		r.Get("/{id}", controllers.GetTeam)
 		r.Get("/", controllers.GetTeams)
+
+		r.Route("/user/{id}", func(r chi.Router) {
+			r.Get("/", controllers.GetTeamsByUserId)
+		})
+
 		r.Post("/", controllers.CreateTeam)
 		r.Put("/{id}", controllers.UpdateTeam)
 		r.Delete("/{id}", controllers.DeleteTeam)
