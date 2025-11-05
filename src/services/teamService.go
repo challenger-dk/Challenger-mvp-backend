@@ -65,6 +65,27 @@ func CreateTeam(t models.Team) (models.Team, error) {
 	return t, nil
 }
 
+func AddUserToTeam(teamId uint, userId uint) error {
+	var t models.Team
+	var u models.User
+
+	err := config.DB.First(&t, teamId).Error
+	if err != nil {
+		return err
+	}
+
+	err = config.DB.First(&u, userId).Error
+	if err != nil {
+		return err
+	}
+
+	err = config.DB.Model(&t).Association("Users").Append(&u)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // --- PUT ---
 func UpdateTeam(id uint, team models.Team) error {
 	var t models.Team

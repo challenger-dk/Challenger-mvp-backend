@@ -105,6 +105,30 @@ func CreateTeam(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func AddUserToTeam(w http.ResponseWriter, r *http.Request) {
+	teamId := helpers.GetParamId(w, r)
+	if teamId == 0 {
+		return
+	}
+
+	req := struct {
+		UserId uint `json:"user_id"`
+	}{}
+
+	// Decode request
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	err = services.AddUserToTeam(req.UserId, teamId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // --- PUT ---
 func UpdateTeam(w http.ResponseWriter, r *http.Request) {
 	id := helpers.GetParamId(w, r)
