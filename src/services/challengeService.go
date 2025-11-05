@@ -2,19 +2,18 @@ package services
 
 import (
 	"server/config"
-	"server/dto"
 	"server/models"
 )
 
-func GetChallengeByID(id uint) (dto.ChallengeResponseDto, error) {
+func GetChallengeByID(id uint) (models.Challenge, error) {
 	var c models.Challenge
 
 	err := config.DB.Preload("Users").Preload("Teams").Preload("Creator").First(&c, id).Error
 	if err != nil {
-		return dto.ChallengeResponseDto{}, err
+		return models.Challenge{}, err
 	}
 
-	return dto.ToChallengeResponseDto(c), nil
+	return c, nil
 }
 
 // TODO: Some kind of pagination so we dont fetch all challenges
@@ -25,40 +24,57 @@ func GetChallenges() ([]models.Challenge, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return challenges, nil
 }
 
-func CreateChallenge(ch dto.ChallengeCreateDto) (dto.ChallengeResponseDto, error) {
-	c := dto.ChallengeCreateDtoToModel(ch)
-
-	creator, err := GetUserByID(ch.CreatorId)
-	if err != nil {
-		return dto.ChallengeResponseDto{}, err
+func CreateChallenge(c models.Challenge) (models.Challenge, error) {
+	// ensure creator exists
+	creator := models.User{}
+	if err := config.DB.First(&creator, c.CreatorID).Error; err != nil {
+		return models.Challenge{}, err
 	}
 
-	c.Creator = *creator
+	c.CreatorID = creator.ID
+	c.Creator = models.User{}
 
-	err = config.DB.Create(&c).Error
-	if err != nil {
-		return dto.ChallengeResponseDto{}, err
+	if err := config.DB.Create(&c).Error; err != nil {
+		return models.Challenge{}, err
 	}
 
-	return dto.ToChallengeResponseDto(c), nil
+	if err := config.DB.Preload("Users").Preload("Teams").Preload("Creator").First(&c, c.ID).Error; err != nil {
+		return models.Challenge{}, err
+	}
+
+	return c, nil
 }
 
-func UpdateChallenge(id uint, ch dto.ChallengeCreateDto) error {
+func UpdateChallenge(id uint, ch models.Challenge) error {
 	var c models.Challenge
 
-	if err := config.DB.First(&c, id).Error; err != nil {
+	err := config.DB.First(&c, id).Error
+	if err != nil {
 		return err
 	}
 
 	if ch.Name != "" {
 		c.Name = ch.Name
 	}
-	// extend here if ChallengeCreateDto grows (description, sport, etc.)
 
-	if err := config.DB.Save(&c).Error; err != nil {
+	if ch.Description != "" {
+		c.Description = ch.Description
+	}
+
+	if ch.Sport != "" {
+		c.Sport = ch.Sport
+	}
+
+	if ch.Location != "" {
+		c.Location = ch.Location
+	}
+
+	err = config.DB.Save(&c).Error
+	if err != nil {
 		return err
 	}
 	return nil
@@ -67,19 +83,24 @@ func UpdateChallenge(id uint, ch dto.ChallengeCreateDto) error {
 func DeleteChallenge(id uint) error {
 	var c models.Challenge
 
-	if err := config.DB.First(&c, id).Error; err != nil {
+	err := config.DB.First(&c, id).Error
+	if err != nil {
 		return err
 	}
 
 	// clear many2many associations to avoid orphan join rows
-	if err := config.DB.Model(&c).Association("Teams").Clear(); err != nil {
-		return err
-	}
-	if err := config.DB.Model(&c).Association("Users").Clear(); err != nil {
+	err = config.DB.Model(&c).Association("Teams").Clear()
+	if err != nil {
 		return err
 	}
 
-	if err := config.DB.Delete(&c).Error; err != nil {
+	err = config.DB.Model(&c).Association("Users").Clear()
+	if err != nil {
+		return err
+	}
+
+	err = config.DB.Delete(&c).Error
+	if err != nil {
 		return err
 	}
 	return nil

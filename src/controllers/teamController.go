@@ -8,38 +8,73 @@ import (
 	"server/services"
 )
 
+// --- GET ---
 func GetTeam(w http.ResponseWriter, r *http.Request) {
 	id := helpers.GetParamId(w, r)
 	if id == 0 {
 		return
 	}
 
-	team, err := services.GetTeamByID(id)
+	teamModel, err := services.GetTeamByID(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(team)
+	resp := dto.ToTeamResponseDto(teamModel)
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func GetTeams(w http.ResponseWriter, r *http.Request) {
-	teams, err := services.GetTeams()
+	teamsModel, err := services.GetTeams()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	// Convert to response DTOs
+	response := make([]dto.TeamResponseDto, len(teamsModel))
+	for i, t := range teamsModel {
+		response[i] = dto.ToTeamResponseDto(t)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(teams)
+	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
+func GetTeamsByUserId(w http.ResponseWriter, r *http.Request) {
+	id := helpers.GetParamId(w, r)
+	if id == 0 {
+		return
+	}
+
+	teamsModel, err := services.GetTeamsByUserId(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := make([]dto.TeamResponseDto, len(teamsModel))
+	for i, t := range teamsModel {
+		response[i] = dto.ToTeamResponseDto(t)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// --- POST ---
 func CreateTeam(w http.ResponseWriter, r *http.Request) {
 	req := dto.TeamCreateDto{}
 
@@ -50,18 +85,27 @@ func CreateTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	created_team, err := services.CreateTeam(req)
+	// Convert DTO -> model
+	modelTeam := dto.TeamCreateDtoToModel(req)
+
+	createdModel, err := services.CreateTeam(modelTeam)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(created_team)
+	// Convert model -> DTO for response
+	createdDto := dto.ToTeamResponseDto(createdModel)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	err = json.NewEncoder(w).Encode(createdDto)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
+// --- PUT ---
 func UpdateTeam(w http.ResponseWriter, r *http.Request) {
 	id := helpers.GetParamId(w, r)
 	if id == 0 {
@@ -77,7 +121,9 @@ func UpdateTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = services.UpdateTeam(id, req)
+	modelTeam := dto.TeamCreateDtoToModel(req)
+
+	err = services.UpdateTeam(id, modelTeam)
 
 	// Maybe this should be changed to something else
 	if err != nil {
@@ -89,6 +135,7 @@ func UpdateTeam(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// --- DELETE ---
 func DeleteTeam(w http.ResponseWriter, r *http.Request) {
 	id := helpers.GetParamId(w, r)
 	if id == 0 {

@@ -14,27 +14,36 @@ func GetChallenge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	chal, err := services.GetChallengeByID(id)
+	chalModel, err := services.GetChallengeByID(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(chal)
+	resp := dto.ToChallengeResponseDto(chalModel)
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func GetChallenges(w http.ResponseWriter, r *http.Request) {
-	challenges, err := services.GetChallenges()
+	challengesModel, err := services.GetChallenges()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	// Convert to response DTOs
+	response := make([]dto.ChallengeResponseDto, len(challengesModel))
+	for i, c := range challengesModel {
+		response[i] = dto.ToChallengeResponseDto(c)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(challenges)
+	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -50,13 +59,20 @@ func CreateChallenge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	created_chal, err := services.CreateChallenge(req)
+	// Convert DTO -> model
+	modelChal := dto.ChallengeCreateDtoToModel(req)
+
+	createdModel, err := services.CreateChallenge(modelChal)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(created_chal)
+	createdDto := dto.ToChallengeResponseDto(createdModel)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	err = json.NewEncoder(w).Encode(createdDto)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -77,7 +93,9 @@ func UpdateChallenge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = services.UpdateChallenge(id, req)
+	modelCh := dto.ChallengeCreateDtoToModel(req)
+
+	err = services.UpdateChallenge(id, modelCh)
 
 	// Maybe this should be changed to something else
 	if err != nil {
