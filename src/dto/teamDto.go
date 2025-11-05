@@ -4,19 +4,34 @@ import (
 	"server/models"
 )
 
+/*
+type Team struct {
+	ID        uint      `gorm:"primaryKey"`
+	Name      string    `gorm:"not null"`
+	Users     []User    `gorm:"many2many:user_teams;"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	Creator   User      `gorm:"foreignKey:CreatorID"`
+	CreatorID uint      `gorm:"not null"`
+}
+*/
+
 type TeamCreateDto struct {
-	Name string `json:"name"`
+	Name      string `json:"name"`
+	CreatorId uint   `json:"creator_id"`
 }
 
 type TeamResponseDto struct {
-	ID    uint              `json:"id"`
-	Name  string            `json:"name"`
-	Users []UserResponseDto `json:"users"`
+	ID      uint              `json:"id"`
+	Name    string            `json:"name"`
+	Creator UserResponseDto   `json:"creator"`
+	Users   []UserResponseDto `json:"users"`
 }
 
 func TeamCreateDtoToModel(t TeamCreateDto) models.Team {
 	return models.Team{
-		Name: t.Name,
+		Name:      t.Name,
+		CreatorID: t.CreatorId,
 	}
 }
 
@@ -27,9 +42,12 @@ func ToTeamResponseDto(t models.Team) TeamResponseDto {
 		users = append(users, ToUserResponseDto(u))
 	}
 
+	var creator UserResponseDto = ToUserResponseDto(t.Creator)
+
 	return TeamResponseDto{
-		ID:    t.ID,
-		Name:  t.Name,
-		Users: users,
+		ID:      t.ID,
+		Name:    t.Name,
+		Creator: creator,
+		Users:   users,
 	}
 }

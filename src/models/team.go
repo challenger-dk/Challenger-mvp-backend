@@ -10,4 +10,6 @@ type Team struct {
 	Users     []User    `gorm:"many2many:user_teams;"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	Creator   User      `gorm:"foreignKey:CreatorID"`
+	CreatorID uint      `gorm:"not null"`
 }

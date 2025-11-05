@@ -49,12 +49,6 @@ func ChallengeCreateDtoToModel(t ChallengeCreateDto) models.Challenge {
 }
 
 func ToChallengeResponseDto(t models.Challenge) ChallengeResponseDto {
-	//var users []UserResponseDto
-
-	//for _, u := range t.Users {
-	//		users = append(users, ToUserResponseDto(u))
-	//}
-
 	creator := ToUserResponseDto(t.Creator)
 
 	return ChallengeResponseDto{
