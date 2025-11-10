@@ -37,17 +37,14 @@ func TeamCreateDtoToModel(t TeamCreateDto) models.Team {
 
 func ToTeamResponseDto(t models.Team) TeamResponseDto {
 	var users []UserResponseDto
-
 	for _, u := range t.Users {
 		users = append(users, ToUserResponseDto(u))
 	}
 
-	var creator UserResponseDto = ToUserResponseDto(t.Creator)
-
 	return TeamResponseDto{
 		ID:      t.ID,
 		Name:    t.Name,
-		Creator: creator,
+		Creator: ToUserResponseDto(t.Creator),
 		Users:   users,
 	}
 }

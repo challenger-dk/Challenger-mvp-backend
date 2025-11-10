@@ -54,6 +54,9 @@ func CreateTeam(t models.Team) (models.Team, error) {
 	t.CreatorID = creator.ID
 	t.Creator = models.User{}
 
+	// Add creator to team users
+	t.Users = append(t.Users, creator)
+
 	if err := config.DB.Create(&t).Error; err != nil {
 		return models.Team{}, err
 	}
