@@ -53,7 +53,7 @@ func RegisterRoutes(r chi.Router) {
 	r.Route("/invitations", func(r chi.Router) {
 		r.Get("/user/{id}", controllers.GetInvitationsByUserId)
 		r.Post("/", controllers.SendInvitation)
-		r.Post("/{id}/accept", controllers.AcceptTeamInvitation)
-		r.Post("/{id}/decline", controllers.DeclineTeamInvitation)
+		r.Post("/{id}/accept", controllers.AcceptInvitation)
+		r.Post("/{id}/decline", controllers.DeclineInvitation)
 	})
 }
