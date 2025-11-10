@@ -86,6 +86,10 @@ func UpdateUser(userID uint, user dto.UserUpdateDto) error {
 		existingUser.ProfilePicture = user.ProfilePicture
 	}
 
+	if user.Bio != "" {
+		existingUser.Bio = user.Bio
+	}
+
 	if err := config.DB.Save(&existingUser).Error; err != nil {
 		return err
 	}
