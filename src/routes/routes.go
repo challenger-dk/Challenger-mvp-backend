@@ -49,4 +49,11 @@ func RegisterRoutes(r chi.Router) {
 
 		r.Delete("/{id}", controllers.DeleteTeam)
 	})
+
+	r.Route("/invitations", func(r chi.Router) {
+		r.Get("/user/{id}", controllers.GetInvitationsByUserId)
+		r.Post("/", controllers.SendInvitation)
+		r.Post("/{id}/accept", controllers.AcceptTeamInvitation)
+		r.Post("/{id}/decline", controllers.DeclineTeamInvitation)
+	})
 }
