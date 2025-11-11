@@ -105,6 +105,8 @@ func CreateTeam(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Depricated: Use Invitation system instead
+/*
 func AddUserToTeam(w http.ResponseWriter, r *http.Request) {
 	teamId := helpers.GetParamId(w, r)
 	if teamId == 0 {
@@ -128,6 +130,7 @@ func AddUserToTeam(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+*/
 
 // --- PUT ---
 func UpdateTeam(w http.ResponseWriter, r *http.Request) {

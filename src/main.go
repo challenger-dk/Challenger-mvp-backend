@@ -17,7 +17,7 @@ import (
 func main() {
 
 	config.ConnectDatabase()
-	config.DB.AutoMigrate(&models.User{}, &models.Team{}, &models.Challenge{}, &models.Sport{})
+	config.DB.AutoMigrate(&models.User{}, &models.Team{}, &models.Challenge{}, &models.Sport{}, &models.Invitation{})
 
 	// Seed allowed sports
 	if err := services.SeedSports(); err != nil {

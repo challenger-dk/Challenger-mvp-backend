@@ -4,18 +4,6 @@ import (
 	"time"
 )
 
-type Invitation struct {
-	ID           uint `gorm:"primaryKey"`
-	InviterId    uint `gorm:"not null"`
-	InviteeId    uint `gorm:"not null"`
-	Note         string
-	ResourceType InvitationType   `gorm:"type:VARCHAR(20);not null;check:resource_type IN ('team')"`
-	ResourceID   uint             `gorm:"not null"`
-	Status       InvitationStatus `gorm:"type:VARCHAR(20);not null;check:status IN ('pending','accepted','declined')"`
-	CreatedAt    time.Time        `gorm:"autoCreateTime"`
-	UpdatedAt    time.Time        `gorm:"autoUpdateTime"`
-}
-
 type InvitationType string
 type InvitationStatus string
 
@@ -29,3 +17,16 @@ const (
 	StatusAccepted InvitationStatus = "accepted"
 	StatusDeclined InvitationStatus = "declined"
 )
+
+type Invitation struct {
+	ID           uint `gorm:"primaryKey"`
+	InviterId    uint `gorm:"not null;uniqueIndex:idx_unique_invitation"`
+	Inviter      User `gorm:"foreignKey:InviterId"`
+	InviteeId    uint `gorm:"not null;uniqueIndex:idx_unique_invitation"`
+	Note         string
+	ResourceType InvitationType   `gorm:"type:VARCHAR(20);not null;check:resource_type IN ('team');uniqueIndex:idx_unique_invitation"`
+	ResourceID   uint             `gorm:"not null;uniqueIndex:idx_unique_invitation"`
+	Status       InvitationStatus `gorm:"type:VARCHAR(20);not null;default:pending;check:status IN ('pending','accepted','declined')"` // Defualt 'pending'
+	CreatedAt    time.Time        `gorm:"autoCreateTime"`
+	UpdatedAt    time.Time        `gorm:"autoUpdateTime"`
+}

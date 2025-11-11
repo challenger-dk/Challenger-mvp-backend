@@ -43,7 +43,7 @@ func RegisterRoutes(r chi.Router) {
 		r.Get("/user/{id}", controllers.GetTeamsByUserId)
 
 		r.Post("/", controllers.CreateTeam)
-		r.Post("/{id}/user", controllers.AddUserToTeam)
+		//r.Post("/{id}/user", controllers.AddUserToTeam)
 
 		r.Put("/{id}", controllers.UpdateTeam)
 

@@ -3,6 +3,8 @@ package services
 import (
 	"server/config"
 	"server/models"
+
+	"gorm.io/gorm"
 )
 
 // --- GET ---
@@ -20,7 +22,7 @@ func GetTeamByID(id uint) (models.Team, error) {
 func GetTeams() ([]models.Team, error) {
 	var teams []models.Team
 
-	err := config.DB.Preload("Users").Preload("Creator").Find(&teams).Error
+	err := config.DB.Preload("Users").Find(&teams).Error
 	if err != nil {
 		return nil, err
 	}
@@ -28,18 +30,15 @@ func GetTeams() ([]models.Team, error) {
 }
 
 func GetTeamsByUserId(id uint) ([]models.Team, error) {
-	var teams []models.Team
+	var user models.User
 
-	// Find teams where CreatorID == id
-	err := config.DB.Preload("Users").Preload("Creator").
-		Where("creator_id = ?", id).
-		Find(&teams).Error
+	err := config.DB.Preload("Teams.Users").Preload("Teams.Creator").First(&user, id).Error
 
 	if err != nil {
 		return nil, err
 	}
 
-	return teams, nil
+	return user.Teams, nil
 }
 
 // --- POST ---
@@ -66,27 +65,6 @@ func CreateTeam(t models.Team) (models.Team, error) {
 	}
 
 	return t, nil
-}
-
-func AddUserToTeam(teamId uint, userId uint) error {
-	var t models.Team
-	var u models.User
-
-	err := config.DB.First(&t, teamId).Error
-	if err != nil {
-		return err
-	}
-
-	err = config.DB.First(&u, userId).Error
-	if err != nil {
-		return err
-	}
-
-	err = config.DB.Model(&t).Association("Users").Append(&u)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // --- PUT ---
@@ -130,5 +108,27 @@ func DeleteTeam(id uint) error {
 		return err
 	}
 
+	return nil
+}
+
+// Package private methods
+func addUserToTeam(teamId uint, userId uint, db *gorm.DB) error {
+	var t models.Team
+	var u models.User
+
+	err := db.First(&t, teamId).Error
+	if err != nil {
+		return err
+	}
+
+	err = db.First(&u, userId).Error
+	if err != nil {
+		return err
+	}
+
+	err = db.Model(&t).Association("Users").Append(&u)
+	if err != nil {
+		return err
+	}
 	return nil
 }
