@@ -8,6 +8,9 @@ import (
 )
 
 func RegisterRoutes(r chi.Router) {
+	// Add logging
+	r.Use(middleware.LoggingMiddleware)
+
 	// Public auth routes
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/register", controllers.Register)
