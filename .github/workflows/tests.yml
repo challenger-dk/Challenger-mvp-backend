@@ -27,7 +27,7 @@ jobs:
         working-directory: ./src
         run: |
           mkdir -p coverage
-          go test -v -coverprofile=coverage/unit.out ./tests...
+          go test -v -coverprofile=coverage/unit.out ./tests..
 
       - name: Display coverage summary
         working-directory: ./src
