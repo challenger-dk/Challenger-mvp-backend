@@ -85,6 +85,12 @@ func CreateTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate
+	if err := validate.Struct(req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	// Convert DTO -> model
 	modelTeam := dto.TeamCreateDtoToModel(req)
 
@@ -139,7 +145,7 @@ func UpdateTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req := dto.TeamCreateDto{}
+	req := dto.TeamUpdateDto{}
 
 	// Decode request
 	err := json.NewDecoder(r.Body).Decode(&req)
@@ -148,7 +154,13 @@ func UpdateTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	modelTeam := dto.TeamCreateDtoToModel(req)
+	// Validate
+	if err := validate.Struct(req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	modelTeam := dto.TeamUpdateDtoToModel(req)
 
 	err = services.UpdateTeam(id, modelTeam)
 

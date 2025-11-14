@@ -28,11 +28,11 @@ type InvitationResponseDto struct {
 }
 
 type InvitationCreateDto struct {
-	InviterId    uint                  `json:"inviter_id"`
-	InviteeId    uint                  `json:"invitee_id"`
+	InviterId    uint                  `json:"inviter_id"    validate:"required"`
+	InviteeId    uint                  `json:"invitee_id"    validate:"required"`
 	Note         string                `json:"note"`
-	ResourceType models.InvitationType `json:"resource_type"`
-	ResourceID   uint                  `json:"resource_id"`
+	ResourceType models.InvitationType `json:"resource_type" validate:"required,oneof=team"`
+	ResourceID   uint                  `json:"resource_id"   validate:"required"`
 }
 
 func ToInvitationModel(dto InvitationCreateDto) models.Invitation {

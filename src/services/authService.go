@@ -23,11 +23,17 @@ type Claims struct {
 
 func Login(email, password string) (*models.User, string, error) {
 	var user models.User
-	if err := config.DB.Where("email = ?", email).First(&user).Error; err != nil {
+
+	err := config.DB.Where("email = ?", email).
+		First(&user).
+		Error
+
+	if err != nil {
 		return nil, "", ErrInvalidCredentials
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
 		return nil, "", ErrInvalidCredentials
 	}
 
@@ -56,7 +62,7 @@ func GenerateJWTToken(user *models.User) (string, error) {
 
 func ValidateJWTToken(tokenString string) (*Claims, error) {
 	claims := &Claims{}
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
 		return []byte(config.AppConfig.JWTSecret), nil
 	})
 

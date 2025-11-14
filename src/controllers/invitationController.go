@@ -41,6 +41,12 @@ func SendInvitation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate
+	if err := validate.Struct(invitationDto); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	invitationModel := dto.ToInvitationModel(invitationDto)
 	err = services.SendInvitation(&invitationModel)
 	if err != nil {
@@ -49,6 +55,8 @@ func SendInvitation(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// TODO: Implement a way to tell which user is accepting/declining the invitation
+// to avoid unauthorized actions.
 func AcceptInvitation(w http.ResponseWriter, r *http.Request) {
 	id := helpers.GetParamId(w, r)
 	if id == 0 {

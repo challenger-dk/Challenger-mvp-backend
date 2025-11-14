@@ -8,7 +8,12 @@ import (
 func GetChallengeByID(id uint) (models.Challenge, error) {
 	var c models.Challenge
 
-	err := config.DB.Preload("Users").Preload("Teams").Preload("Creator").First(&c, id).Error
+	err := config.DB.Preload("Users").
+		Preload("Teams").
+		Preload("Creator").
+		First(&c, id).
+		Error
+
 	if err != nil {
 		return models.Challenge{}, err
 	}
@@ -20,7 +25,12 @@ func GetChallengeByID(id uint) (models.Challenge, error) {
 func GetChallenges() ([]models.Challenge, error) {
 	var challenges []models.Challenge
 
-	err := config.DB.Preload("Users").Preload("Teams").Preload("Creator").Find(&challenges).Error
+	err := config.DB.Preload("Users").
+		Preload("Teams").
+		Preload("Creator").
+		Find(&challenges).
+		Error
+
 	if err != nil {
 		return nil, err
 	}
@@ -29,20 +39,29 @@ func GetChallenges() ([]models.Challenge, error) {
 }
 
 func CreateChallenge(c models.Challenge) (models.Challenge, error) {
-	// ensure creator exists
 	creator := models.User{}
-	if err := config.DB.First(&creator, c.CreatorID).Error; err != nil {
+
+	// ensure creator exists
+	err := config.DB.First(&creator, c.CreatorID).Error
+	if err != nil {
 		return models.Challenge{}, err
 	}
 
 	c.CreatorID = creator.ID
 	c.Creator = models.User{}
 
-	if err := config.DB.Create(&c).Error; err != nil {
+	err = config.DB.Create(&c).Error
+	if err != nil {
 		return models.Challenge{}, err
 	}
 
-	if err := config.DB.Preload("Users").Preload("Teams").Preload("Creator").First(&c, c.ID).Error; err != nil {
+	err = config.DB.Preload("Users").
+		Preload("Teams").
+		Preload("Creator").
+		First(&c, c.ID).
+		Error
+
+	if err != nil {
 		return models.Challenge{}, err
 	}
 
@@ -77,6 +96,7 @@ func UpdateChallenge(id uint, ch models.Challenge) error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -89,12 +109,18 @@ func DeleteChallenge(id uint) error {
 	}
 
 	// clear many2many associations to avoid orphan join rows
-	err = config.DB.Model(&c).Association("Teams").Clear()
+	err = config.DB.Model(&c).
+		Association("Teams").
+		Clear()
+
 	if err != nil {
 		return err
 	}
 
-	err = config.DB.Model(&c).Association("Users").Clear()
+	err = config.DB.Model(&c).
+		Association("Users").
+		Clear()
+
 	if err != nil {
 		return err
 	}
@@ -103,5 +129,6 @@ func DeleteChallenge(id uint) error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }

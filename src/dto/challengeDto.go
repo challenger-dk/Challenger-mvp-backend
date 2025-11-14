@@ -21,11 +21,12 @@ type Challenge struct {
 */
 
 type ChallengeCreateDto struct {
-	Name        string `json:"name"`
+	Name        string `json:"name"        validate:"required,min=3"`
 	Description string `json:"description"`
-	Sport       string `json:"sport"`
-	Location    string `json:"location"`
-	CreatorId   uint   `json:"creator_id"`
+	Sport       string `json:"sport"       validate:"required,is-valid-sport"`
+
+	Location  string `json:"location"`
+	CreatorId uint   `json:"creator_id" validate:"required"`
 }
 
 type ChallengeResponseDto struct {

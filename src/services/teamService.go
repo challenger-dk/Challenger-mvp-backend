@@ -11,7 +11,11 @@ import (
 func GetTeamByID(id uint) (models.Team, error) {
 	var t models.Team
 
-	err := config.DB.Preload("Users").Preload("Creator").First(&t, id).Error
+	err := config.DB.Preload("Users").
+		Preload("Creator").
+		First(&t, id).
+		Error
+
 	if err != nil {
 		return models.Team{}, err
 	}
@@ -22,7 +26,10 @@ func GetTeamByID(id uint) (models.Team, error) {
 func GetTeams() ([]models.Team, error) {
 	var teams []models.Team
 
-	err := config.DB.Preload("Users").Find(&teams).Error
+	err := config.DB.Preload("Users").
+		Find(&teams).
+		Error
+
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +39,10 @@ func GetTeams() ([]models.Team, error) {
 func GetTeamsByUserId(id uint) ([]models.Team, error) {
 	var user models.User
 
-	err := config.DB.Preload("Teams.Users").Preload("Teams.Creator").First(&user, id).Error
+	err := config.DB.Preload("Teams.Users").
+		Preload("Teams.Creator").
+		First(&user, id).
+		Error
 
 	if err != nil {
 		return nil, err
@@ -45,7 +55,9 @@ func GetTeamsByUserId(id uint) ([]models.Team, error) {
 func CreateTeam(t models.Team) (models.Team, error) {
 	// Ensure creator exists
 	creator := models.User{}
-	if err := config.DB.First(&creator, t.CreatorID).Error; err != nil {
+
+	err := config.DB.First(&creator, t.CreatorID).Error
+	if err != nil {
 		return models.Team{}, err
 	}
 
@@ -56,11 +68,17 @@ func CreateTeam(t models.Team) (models.Team, error) {
 	// Add creator to team users
 	t.Users = append(t.Users, creator)
 
-	if err := config.DB.Create(&t).Error; err != nil {
+	err = config.DB.Create(&t).Error
+	if err != nil {
 		return models.Team{}, err
 	}
 
-	if err := config.DB.Preload("Users").Preload("Creator").First(&t, t.ID).Error; err != nil {
+	err = config.DB.Preload("Users").
+		Preload("Creator").
+		First(&t, t.ID).
+		Error
+
+	if err != nil {
 		return models.Team{}, err
 	}
 
@@ -98,7 +116,10 @@ func DeleteTeam(id uint) error {
 	}
 
 	// Remove user associations
-	err = config.DB.Model(&t).Association("Users").Clear()
+	err = config.DB.Model(&t).
+		Association("Users").
+		Clear()
+
 	if err != nil {
 		return err
 	}
@@ -126,9 +147,13 @@ func addUserToTeam(teamId uint, userId uint, db *gorm.DB) error {
 		return err
 	}
 
-	err = db.Model(&t).Association("Users").Append(&u)
+	err = db.Model(&t).
+		Association("Users").
+		Append(&u)
+
 	if err != nil {
 		return err
 	}
+
 	return nil
 }

@@ -3,11 +3,11 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"server/controllers/helpers"
 	"server/dto"
 	"server/middleware"
 	"server/models"
 	"server/services"
-	"strconv"
 )
 
 func GetUsers(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +28,9 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
-	user, ok := r.Context().Value(middleware.UserContextKey).(*models.User)
+	user, ok := r.Context().
+		Value(middleware.UserContextKey).(*models.User)
+
 	if !ok {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
@@ -46,18 +48,12 @@ func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetUserByID(w http.ResponseWriter, r *http.Request) {
-	idStr := r.PathValue("id")
-	if idStr == "" {
-		http.Error(w, "Missing id", http.StatusBadRequest)
+	id := helpers.GetParamId(w, r)
+	if id == 0 {
 		return
 	}
 
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-
-	user, err := services.GetUserByID(uint(id))
+	user, err := services.GetUserByID(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -68,24 +64,20 @@ func GetUserByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
-	idStr := r.PathValue("id")
-	if idStr == "" {
-		http.Error(w, "Missing id", http.StatusBadRequest)
+	id := helpers.GetParamId(w, r)
+	if id == 0 {
 		return
 	}
 
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-
 	req := dto.UserUpdateDto{}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	err = services.UpdateUser(uint(id), req)
+	err = services.UpdateUser(id, req)
 	if err != nil {
 		if err == services.ErrInvalidSport {
 			http.Error(w, "One or more invalid sport names provided", http.StatusBadRequest)
@@ -99,18 +91,12 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
-	idStr := r.PathValue("id")
-	if idStr == "" {
-		http.Error(w, "Missing id", http.StatusBadRequest)
+	id := helpers.GetParamId(w, r)
+	if id == 0 {
 		return
 	}
 
-	id, err := strconv.ParseUint(idStr, 10, 64)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-
-	err = services.DeleteUser(uint(id))
+	err := services.DeleteUser(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

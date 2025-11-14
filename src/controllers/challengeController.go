@@ -59,10 +59,13 @@ func CreateChallenge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Convert DTO -> model
-	modelChal := dto.ChallengeCreateDtoToModel(req)
+	// Validate
+	if err := validate.Struct(req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-	createdModel, err := services.CreateChallenge(modelChal)
+	createdModel, err := services.CreateChallenge(dto.ChallengeCreateDtoToModel(req))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -93,9 +96,13 @@ func UpdateChallenge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	modelCh := dto.ChallengeCreateDtoToModel(req)
+	// Validate
+	if err := validate.Struct(req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-	err = services.UpdateChallenge(id, modelCh)
+	err = services.UpdateChallenge(id, dto.ChallengeCreateDtoToModel(req))
 
 	// Maybe this should be changed to something else
 	if err != nil {

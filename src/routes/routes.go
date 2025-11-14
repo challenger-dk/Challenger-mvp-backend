@@ -5,11 +5,11 @@ import (
 	"server/middleware"
 
 	"github.com/go-chi/chi/v5"
+	ext_middleware "github.com/go-chi/chi/v5/middleware"
 )
 
 func RegisterRoutes(r chi.Router) {
-	// Add logging
-	r.Use(middleware.LoggingMiddleware)
+	registerGenericMiddleware(r)
 
 	// Public auth routes
 	r.Route("/auth", func(r chi.Router) {
@@ -59,4 +59,18 @@ func RegisterRoutes(r chi.Router) {
 		r.Post("/{id}/accept", controllers.AcceptInvitation)
 		r.Post("/{id}/decline", controllers.DeclineInvitation)
 	})
+}
+
+func registerGenericMiddleware(r chi.Router) {
+	// Add logging
+	r.Use(ext_middleware.Logger)
+	r.Use(ext_middleware.RequestID) // Usefull for logging and tracing
+
+	// Recover from panics
+	r.Use(ext_middleware.Recoverer)
+
+	r.Use(ext_middleware.Heartbeat("/health"))
+
+	// Sets Content-Type to application/json
+	r.Use(middleware.JsonContentType)
 }

@@ -6,7 +6,6 @@ import (
 
 	"server/config"
 	"server/models"
-	"server/services"
 
 	"server/routes"
 
@@ -23,9 +22,11 @@ func main() {
 	config.DB.AutoMigrate(&models.User{}, &models.Team{}, &models.Challenge{}, &models.Sport{}, &models.Invitation{})
 
 	// Seed allowed sports
-	if err := services.SeedSports(); err != nil {
+	if err := config.SeedSports(); err != nil {
 		log.Fatal("Failed to seed sports:", err)
 	}
+	// Load sports into cache
+	config.LoadSportsCache()
 
 	r := chi.NewRouter()
 

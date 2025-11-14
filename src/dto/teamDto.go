@@ -17,8 +17,12 @@ type Team struct {
 */
 
 type TeamCreateDto struct {
-	Name      string `json:"name"`
-	CreatorId uint   `json:"creator_id"`
+	Name      string `json:"name"        validate:"required,min=3"`
+	CreatorId uint   `json:"creator_id"  validate:"required"`
+}
+
+type TeamUpdateDto struct {
+	Name string `json:"name"        validate:"min=3"`
 }
 
 type TeamResponseDto struct {
@@ -32,6 +36,12 @@ func TeamCreateDtoToModel(t TeamCreateDto) models.Team {
 	return models.Team{
 		Name:      t.Name,
 		CreatorID: t.CreatorId,
+	}
+}
+
+func TeamUpdateDtoToModel(t TeamUpdateDto) models.Team {
+	return models.Team{
+		Name: t.Name,
 	}
 }
 

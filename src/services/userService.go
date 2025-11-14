@@ -18,7 +18,12 @@ var (
 
 func GetUsers() ([]models.User, error) {
 	var users []models.User
-	if err := config.DB.Preload("FavoriteSports").Find(&users).Error; err != nil {
+
+	err := config.DB.Preload("FavoriteSports").
+		Find(&users).
+		Error
+
+	if err != nil {
 		return nil, err
 	}
 	return users, nil
@@ -26,15 +31,26 @@ func GetUsers() ([]models.User, error) {
 
 func GetUserByID(userID uint) (*models.User, error) {
 	var user models.User
-	if err := config.DB.Preload("FavoriteSports").First(&user, userID).Error; err != nil {
+
+	err := config.DB.Preload("FavoriteSports").
+		First(&user, userID).
+		Error
+
+	if err != nil {
 		return nil, err
 	}
+
 	return &user, nil
 }
 
 func CreateUser(email, password, firstName, lastName string, favoriteSports []string) (*models.User, error) {
 	var existingUser models.User
-	if err := config.DB.Where("email = ?", email).First(&existingUser).Error; err == nil {
+
+	err := config.DB.Where("email = ?", email).
+		First(&existingUser).
+		Error
+
+	if err == nil {
 		return nil, ErrUserExists
 	}
 
@@ -50,7 +66,8 @@ func CreateUser(email, password, firstName, lastName string, favoriteSports []st
 		LastName:  lastName,
 	}
 
-	if err := config.DB.Create(user).Error; err != nil {
+	err = config.DB.Create(user).Error
+	if err != nil {
 		return nil, err
 	}
 
@@ -102,41 +119,6 @@ func UpdateUser(userID uint, user dto.UserUpdateDto) error {
 	}
 
 	return nil
-}
-
-// associateFavoriteSports validates and associates sports with a user
-func associateFavoriteSports(userID uint, sportNames []string) error {
-	// Get allowed sports
-	allowedSports := models.GetAllowedSports()
-	allowedSportsMap := make(map[string]bool)
-	for _, sport := range allowedSports {
-		allowedSportsMap[sport] = true
-	}
-
-	// Validate all sport names are allowed
-	for _, sportName := range sportNames {
-		if !allowedSportsMap[sportName] {
-			return ErrInvalidSport
-		}
-	}
-
-	// Find or create sports in database
-	var sports []models.Sport
-	for _, sportName := range sportNames {
-		var sport models.Sport
-		if err := config.DB.Where("name = ?", sportName).FirstOrCreate(&sport, models.Sport{Name: sportName}).Error; err != nil {
-			return err
-		}
-		sports = append(sports, sport)
-	}
-
-	// Replace user's favorite sports
-	var user models.User
-	if err := config.DB.First(&user, userID).Error; err != nil {
-		return err
-	}
-
-	return config.DB.Model(&user).Association("FavoriteSports").Replace(sports)
 }
 
 func DeleteUser(userID uint) error {

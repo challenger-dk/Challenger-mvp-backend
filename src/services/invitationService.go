@@ -12,10 +12,15 @@ import (
 // --- GET ---
 func GetInvitationsByUserId(id uint) ([]models.Invitation, error) {
 	var invitations []models.Invitation
-	err := config.DB.Preload("Inviter").Where("invitee_id = ?", id).Find(&invitations).Error
+	err := config.DB.Preload("Inviter").
+		Where("invitee_id = ?", id).
+		Find(&invitations).
+		Error
+
 	if err != nil {
 		return nil, err
 	}
+
 	return invitations, nil
 }
 
@@ -37,9 +42,12 @@ func SendInvitation(invitation *models.Invitation) error {
 
 		// Create new invitation if none exists
 		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-			if createErr := tx.Create(invitation).Error; createErr != nil {
+
+			createErr := tx.Create(invitation).Error
+			if createErr != nil {
 				return createErr
 			}
+
 			return nil
 		}
 
@@ -51,11 +59,15 @@ func SendInvitation(invitation *models.Invitation) error {
 		switch existing.Status {
 		case models.StatusPending:
 			return errors.New("invitation is already pending")
+
 		case models.StatusAccepted:
 			return errors.New("user has already accepted this invitation")
+
 		case models.StatusDeclined:
 			// Resend by setting status back to pending
-			return tx.Model(&existing).Update("status", models.StatusPending).Error
+			return tx.Model(&existing).
+				Update("status", models.StatusPending).
+				Error
 		}
 
 		return errors.New("unhandled invitation status")
@@ -66,7 +78,10 @@ func AcceptInvitation(invitationId uint) error {
 	err := config.DB.Transaction(func(tx *gorm.DB) error {
 		var invitation models.Invitation
 
-		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&invitation, invitationId).Error
+		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			First(&invitation, invitationId).
+			Error
+
 		if err != nil {
 			return err
 		}
@@ -108,7 +123,10 @@ func DeclineInvitation(invitationId uint) error {
 	err := config.DB.Transaction(func(tx *gorm.DB) error {
 		var invitation models.Invitation
 
-		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&invitation, invitationId).Error
+		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			First(&invitation, invitationId).
+			Error
+
 		if err != nil {
 			return err
 		}
@@ -130,15 +148,21 @@ func DeclineInvitation(invitationId uint) error {
 }
 
 // Private
+
+// getResource fetches the resource associated with an invitation
 func getResource(invitation models.Invitation, db *gorm.DB) (any, error) {
 	switch invitation.ResourceType {
 	case models.ResourceTypeTeam:
 		var team models.Team
-		err := db.Preload("Users").First(&team, invitation.ResourceID).Error
+		err := db.Preload("Users").
+			First(&team, invitation.ResourceID).
+			Error
+
 		if err != nil {
 			return nil, err
 		}
 		return team, nil
+
 	default:
 		return nil, errors.New("unknown resource type")
 	}

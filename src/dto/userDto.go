@@ -6,9 +6,9 @@ import (
 )
 
 type UserCreateDto struct {
-	Email          string   `json:"email"`
-	Password       string   `json:"password"`
-	FirstName      string   `json:"first_name"`
+	Email          string   `json:"email"           validate:"required,email"`
+	Password       string   `json:"password"        validate:"required,min=8"`
+	FirstName      string   `json:"first_name"      validate:"required,min=3"`
 	LastName       string   `json:"last_name"`
 	ProfilePicture string   `json:"profile_picture,omitempty"`
 	Bio            string   `json:"bio,omitempty"`
@@ -16,7 +16,7 @@ type UserCreateDto struct {
 }
 
 type UserUpdateDto struct {
-	FirstName      string   `json:"first_name"`
+	FirstName      string   `json:"first_name"      validate:"min=3"`
 	LastName       string   `json:"last_name"`
 	ProfilePicture string   `json:"profile_picture"`
 	Bio            string   `json:"bio,omitempty"`
@@ -48,8 +48,8 @@ func ToSportResponseDto(sport models.Sport) SportResponseDto {
 }
 
 type Login struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string `json:"email"    validate:"required,email"`
+	Password string `json:"password" validate:"required"`
 }
 
 func ToUserResponseDto(user models.User) UserResponseDto {
