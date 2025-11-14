@@ -22,7 +22,6 @@ func GetChallenge(w http.ResponseWriter, r *http.Request) {
 
 	resp := dto.ToChallengeResponseDto(chalModel)
 
-	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -42,7 +41,6 @@ func GetChallenges(w http.ResponseWriter, r *http.Request) {
 		response[i] = dto.ToChallengeResponseDto(c)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -73,7 +71,6 @@ func CreateChallenge(w http.ResponseWriter, r *http.Request) {
 
 	createdDto := dto.ToChallengeResponseDto(createdModel)
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	err = json.NewEncoder(w).Encode(createdDto)
 	if err != nil {

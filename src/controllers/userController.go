@@ -23,7 +23,6 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 		response[i] = dto.ToUserResponseDto(user)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -43,7 +42,6 @@ func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(dto.ToUserResponseDto(*userWithSports))
 }
 
@@ -59,7 +57,6 @@ func GetUserByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(dto.ToUserResponseDto(*user))
 }
 

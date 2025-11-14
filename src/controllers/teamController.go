@@ -23,7 +23,6 @@ func GetTeam(w http.ResponseWriter, r *http.Request) {
 
 	resp := dto.ToTeamResponseDto(teamModel)
 
-	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -43,7 +42,6 @@ func GetTeams(w http.ResponseWriter, r *http.Request) {
 		response[i] = dto.ToTeamResponseDto(t)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -67,7 +65,6 @@ func GetTeamsByUserId(w http.ResponseWriter, r *http.Request) {
 		response[i] = dto.ToTeamResponseDto(t)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -103,7 +100,6 @@ func CreateTeam(w http.ResponseWriter, r *http.Request) {
 	// Convert model -> DTO for response
 	createdDto := dto.ToTeamResponseDto(createdModel)
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	err = json.NewEncoder(w).Encode(createdDto)
 	if err != nil {

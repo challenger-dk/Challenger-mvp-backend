@@ -39,7 +39,6 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"user":  dto.ToUserResponseDto(*user),
@@ -72,7 +71,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
 		"user":  dto.ToUserResponseDto(*user),
 		"token": token,

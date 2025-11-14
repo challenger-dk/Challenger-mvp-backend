@@ -20,6 +20,5 @@ func GetSports(w http.ResponseWriter, r *http.Request) {
 		response[i] = dto.ToSportResponseDto(sport)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
