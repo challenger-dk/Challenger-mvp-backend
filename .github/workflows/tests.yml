@@ -51,7 +51,7 @@ jobs:
       - name: Build Go server
         run: |
           cd src
-          go build -o ../server ./cmd/server/
+          go build -o ../server ./server/
 
       - name: Run server in background
         env:
