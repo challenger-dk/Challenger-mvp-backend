@@ -11,8 +11,11 @@ import (
 var DB *gorm.DB
 
 func ConnectDatabase() {
-	dsn := "host=postgres user=user password=password dbname=challenger port=5432 sslmode=disable"
+	// Build the DSN from the loaded AppConfig struct
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
+		AppConfig.DBHost, AppConfig.DBUser, AppConfig.DBPassword, AppConfig.DBName, AppConfig.DBPort)
 
+	// Open database connection
 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)

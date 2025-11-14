@@ -16,6 +16,9 @@ import (
 
 func main() {
 
+	// Loads config from .env and environment variables
+	config.LoadConfig()
+
 	config.ConnectDatabase()
 	config.DB.AutoMigrate(&models.User{}, &models.Team{}, &models.Challenge{}, &models.Sport{}, &models.Invitation{})
 

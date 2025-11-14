@@ -51,13 +51,13 @@ func GenerateJWTToken(user *models.User) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(config.JWTSecret))
+	return token.SignedString([]byte(config.AppConfig.JWTSecret))
 }
 
 func ValidateJWTToken(tokenString string) (*Claims, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(config.JWTSecret), nil
+		return []byte(config.AppConfig.JWTSecret), nil
 	})
 
 	if err != nil {
