@@ -5,6 +5,7 @@ on:
   pull_request:
 
 jobs:
+  # --- JOB 1: RUN UNIT TESTS ---
   test:
     runs-on: ubuntu-latest
     defaults:
@@ -15,7 +16,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: 1.24.4
+          go-version: '1.24.4'
           cache: true
           cache-dependency-path: |
             server/go.sum
@@ -28,3 +29,64 @@ jobs:
 
       - name: Coverage summary
         run: go tool cover -func=coverage.out
+
+  # --- JOB 2: RUN POSTMAN API TESTS ---
+  api-test:
+    # This job only runs if the 'test' job succeeds
+    needs: test 
+    runs-on: ubuntu-latest
+    
+    # --- This block starts a PostgreSQL database container ---
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: gouser
+          POSTGRES_PASSWORD: gopassword
+          POSTGRES_DB: godb
+        ports:
+          - 5432:5432 # Map container port 5432 to host port 5432
+        # Healthcheck to wait until Postgres is ready for connections
+        options: >-
+          --health-cmd "pg_isready"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- 1. Build the Go server ---
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.4'
+
+      - name: Build Go server
+        # Adjust this path if your 'main.go' is elsewhere
+        run: go build -o my-server ./src/cmd/server/
+
+      # --- 2. Run the server in the background ---
+      - name: Run server in background
+        env:
+          # Pass database connection details to your Go app
+          DB_HOST: localhost # <-- Use localhost
+          DB_PORT: 5432
+          DB_USER: gouser
+          DB_PASSWORD: gopassword
+          DB_NAME: godb
+        run: ./my-server > server.log 2>&1 & # Run in background
+
+      - name: Wait for server to start
+        # Gives the server time to boot up before testing
+        run: sleep 10
+
+      # --- 3. Install and Run Postman CLI ---
+      - name: Install Postman CLI
+        run: curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
+
+      - name: Run Postman API tests
+        # This uses the API key from your GitHub Secrets
+        # !! IMPORTANT: Replace with your actual UIDs !!
+        run: |
+          postman collection run 27701941-7be60cdb-e791-4db6-940f-3c5d1e21a9f1 \
+            --api-key ${{ secrets.POSTMAN_API_KEY }}
