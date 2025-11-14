@@ -49,7 +49,9 @@ jobs:
         working-directory: ./src
 
       - name: Build Go server
-        run: go build -o my-server ./src/cmd/server/
+        run: |
+          cd src
+          go build -o ../server ./cmd/server/
 
       - name: Run server in background
         env:
