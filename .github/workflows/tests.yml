@@ -5,26 +5,67 @@ on:
   pull_request:
 
 jobs:
-  test:
+  build-and-test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./src
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: gouser
+          POSTGRES_PASSWORD: gopassword
+          POSTGRES_DB: godb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
-          go-version: 1.24.4
+          go-version: '1.24.4'
           cache: true
           cache-dependency-path: |
-            server/go.sum
+            src/go.sum 
 
       - name: Install dependencies
         run: go mod download
+        working-directory: ./src
 
       - name: Run unit tests
         run: go test -v -coverprofile=coverage.out ./tests...
+        working-directory: ./src
 
       - name: Coverage summary
         run: go tool cover -func=coverage.out
+        working-directory: ./src
+
+      - name: Build Go server
+        run: |
+          cd src
+          go build -o ../my-server .
+
+      - name: Run server in background
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: gouser
+          DB_PASSWORD: gopassword
+          DB_NAME: godb
+        run: ./my-server > server.log 2>&1 & 
+
+      - name: Wait for server to start
+        run: sleep 10
+
+      - name: Install Postman CLI
+        run: curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
+
+      - name: Run Postman API tests
+        run: |
+          postman collection run 27701941-7be60cdb-e791-4db6-940f-3c5d1e21a9f1 \
+            --api-key ${{ secrets.POSTMAN_API_KEY }}
