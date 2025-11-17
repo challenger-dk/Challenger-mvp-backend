@@ -41,9 +41,11 @@ func RegisterRoutes(r chi.Router) {
 	})
 
 	r.Route("/teams", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware)
 		r.Get("/{id}", controllers.GetTeam)
 		r.Get("/", controllers.GetTeams)
 		r.Get("/user/{id}", controllers.GetTeamsByUserId)
+		r.Get("/me", controllers.GetCurrentUserTeams)
 
 		r.Post("/", controllers.CreateTeam)
 		//r.Post("/{id}/user", controllers.AddUserToTeam)
@@ -54,6 +56,7 @@ func RegisterRoutes(r chi.Router) {
 	})
 
 	r.Route("/invitations", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware)
 		r.Get("/user/{id}", controllers.GetInvitationsByUserId)
 		r.Post("/", controllers.SendInvitation)
 		r.Post("/{id}/accept", controllers.AcceptInvitation)
@@ -62,15 +65,10 @@ func RegisterRoutes(r chi.Router) {
 }
 
 func registerGenericMiddleware(r chi.Router) {
-	// Add logging
+	r.Use(middleware.CorsMiddleware())
 	r.Use(ext_middleware.Logger)
 	r.Use(ext_middleware.RequestID) // Usefull for logging and tracing
-
-	// Recover from panics
 	r.Use(ext_middleware.Recoverer)
-
 	r.Use(ext_middleware.Heartbeat("/health"))
-
-	// Sets Content-Type to application/json
 	r.Use(middleware.JsonContentType)
 }

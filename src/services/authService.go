@@ -1,18 +1,14 @@
 package services
 
 import (
-	"errors"
 	"time"
 
+	"server/appError"
 	"server/config"
 	"server/models"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
-)
-
-var (
-	ErrInvalidCredentials = errors.New("invalid email or password")
 )
 
 type Claims struct {
@@ -29,12 +25,12 @@ func Login(email, password string) (*models.User, string, error) {
 		Error
 
 	if err != nil {
-		return nil, "", ErrInvalidCredentials
+		return nil, "", appError.ErrInvalidCredentials
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
-		return nil, "", ErrInvalidCredentials
+		return nil, "", appError.ErrInvalidCredentials
 	}
 
 	token, err := GenerateJWTToken(&user)
@@ -71,7 +67,7 @@ func ValidateJWTToken(tokenString string) (*Claims, error) {
 	}
 
 	if !token.Valid {
-		return nil, errors.New("invalid token")
+		return nil, appError.ErrInvalidToken
 	}
 
 	return claims, nil

@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"server/appError"
 	"server/controllers/helpers"
 	"server/dto"
 	"server/middleware"
@@ -13,7 +14,7 @@ import (
 func GetUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := services.GetUsers()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
 		return
 	}
 
@@ -23,7 +24,11 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 		response[i] = dto.ToUserResponseDto(user)
 	}
 
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
 }
 
 func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
@@ -38,49 +43,55 @@ func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	// Reload user with favorite sports preloaded
 	userWithSports, err := services.GetUserByID(user.ID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
 		return
 	}
 
-	json.NewEncoder(w).Encode(dto.ToUserResponseDto(*userWithSports))
+	err = json.NewEncoder(w).Encode(dto.ToUserResponseDto(*userWithSports))
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
 }
 
 func GetUserByID(w http.ResponseWriter, r *http.Request) {
-	id := helpers.GetParamId(w, r)
-	if id == 0 {
+	id, err := helpers.GetParamId(r)
+	if err != nil {
+		appError.HandleError(w, err)
 		return
 	}
 
 	user, err := services.GetUserByID(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
 		return
 	}
 
-	json.NewEncoder(w).Encode(dto.ToUserResponseDto(*user))
+	err = json.NewEncoder(w).Encode(dto.ToUserResponseDto(*user))
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
 }
 
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
-	id := helpers.GetParamId(w, r)
-	if id == 0 {
+	id, err := helpers.GetParamId(r)
+	if err != nil {
+		appError.HandleError(w, err)
 		return
 	}
 
 	req := dto.UserUpdateDto{}
 
-	err := json.NewDecoder(r.Body).Decode(&req)
+	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		appError.HandleError(w, err)
 		return
 	}
 
 	err = services.UpdateUser(id, req)
 	if err != nil {
-		if err == services.ErrInvalidSport {
-			http.Error(w, "One or more invalid sport names provided", http.StatusBadRequest)
-			return
-		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
 		return
 	}
 
@@ -88,14 +99,15 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
-	id := helpers.GetParamId(w, r)
-	if id == 0 {
+	id, err := helpers.GetParamId(r)
+	if err != nil {
+		appError.HandleError(w, err)
 		return
 	}
 
-	err := services.DeleteUser(id)
+	err = services.DeleteUser(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
 		return
 	}
 

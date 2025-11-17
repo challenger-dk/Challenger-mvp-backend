@@ -1,0 +1,29 @@
+run:
+  timeout: 5m
+  skip-dirs:
+    - tests # Often good to skip tests if they have different rules
+
+linters-settings:
+  errcheck:
+    # Find all unchecked errors
+    check-blank: true
+  gosec:
+    # Exclude simple "G101: Potential hardcoded credentials"
+    excludes:
+      - G101
+  revive:
+    # Use the default set of rules
+    confidence: 0.8
+    severity: "warning"
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - gosec
+    - staticcheck
+    - unused
+    - revive
+    - unconvert
+    - unparam
+    - typecheck

@@ -3,45 +3,47 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"server/config"
-	"server/models"
 
 	"server/routes"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/cors"
 )
 
 func main() {
 
 	// Loads config from .env and environment variables
 	config.LoadConfig()
-
 	config.ConnectDatabase()
-	config.DB.AutoMigrate(&models.User{}, &models.Team{}, &models.Challenge{}, &models.Sport{}, &models.Invitation{})
+
+	// Ensure PostGIS extension is created
+	err := config.DB.Exec("CREATE EXTENSION IF NOT EXISTS postgis").Error
+	if err != nil {
+		log.Fatal("Failed to create PostGIS extension:", err)
+	}
+
+	config.MigrateDB()
 
 	// Seed allowed sports
 	if err := config.SeedSports(); err != nil {
 		log.Fatal("Failed to seed sports:", err)
 	}
-	// Load sports into cache
-	config.LoadSportsCache()
 
 	r := chi.NewRouter()
-
-	// CORS configuration
-	r.Use(cors.Handler(cors.Options{
-		// AllowedOrigins:   []string{"https://example.com", "http://localhost:3000"}, // Specify your frontend URLs
-		AllowedOrigins:   []string{"*"}, // Allow all origins (use specific origins in production)
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: false, // Set to true if you need credentials, but can't use "*" with credentials
-		MaxAge:           300,
-	}))
-
 	routes.RegisterRoutes(r)
 
-	http.ListenAndServe(":8080", r)
+	server := &http.Server{
+		Addr:         ":8080",
+		Handler:      r,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  15 * time.Second,
+	}
+
+	log.Println("Starting server on :8080")
+	if err := server.ListenAndServe(); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
 }

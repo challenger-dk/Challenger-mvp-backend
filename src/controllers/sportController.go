@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"server/appError"
 	"server/dto"
 	"server/services"
 )
@@ -10,7 +11,7 @@ import (
 func GetSports(w http.ResponseWriter, r *http.Request) {
 	sports, err := services.GetAllSports()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
 		return
 	}
 
@@ -20,5 +21,9 @@ func GetSports(w http.ResponseWriter, r *http.Request) {
 		response[i] = dto.ToSportResponseDto(sport)
 	}
 
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
 }

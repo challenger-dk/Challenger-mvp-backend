@@ -8,13 +8,40 @@ import (
 // SportsCache holds the allowed sports for quick validation
 var SportsCache = make(map[string]bool)
 
-// Call this ONCE from main.go
-func LoadSportsCache() {
+// Should be called before LoadSportsCache
+func SeedSports() error {
+	allowedSports := models.GetAllowedSports()
+
+	for _, sportName := range allowedSports {
+		var sport models.Sport
+
+		err := DB.Where("name = ?", sportName).
+			FirstOrCreate(&sport, models.Sport{Name: sportName}).
+			Error
+
+		if err != nil {
+			return err
+		}
+	}
+
+	loadSportsCache()
+
+	return nil
+}
+
+// LoadSportsCache loads the allowed sports from the database into the SportsCache map
+// Ensures the server autoamatically has the latest allowed sports in the database
+func loadSportsCache() {
 	var sports []models.Sport
 
 	// Use the DB connection we already have
 	// Assumes your sport model is models.Sport and table is "sports"
-	if err := DB.Model(&models.Sport{}).Select("name").Find(&sports).Error; err != nil {
+	err := DB.Model(&models.Sport{}).
+		Select("name").
+		Find(&sports).
+		Error
+
+	if err != nil {
 		log.Fatalf("Failed to load sports cache: %v", err)
 	}
 
@@ -25,18 +52,4 @@ func LoadSportsCache() {
 	}
 
 	log.Printf("✅ Loaded %d sports into cache", len(sports))
-}
-
-// Should be called before LoadSportsCache
-func SeedSports() error {
-	allowedSports := models.GetAllowedSports()
-
-	for _, sportName := range allowedSports {
-		var sport models.Sport
-		if err := DB.Where("name = ?", sportName).FirstOrCreate(&sport, models.Sport{Name: sportName}).Error; err != nil {
-			return err
-		}
-	}
-
-	return nil
 }

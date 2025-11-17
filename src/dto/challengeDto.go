@@ -26,7 +26,7 @@ type ChallengeCreateDto struct {
 	Sport       string `json:"sport"       validate:"required,is-valid-sport"`
 
 	Location  string `json:"location"`
-	CreatorId uint   `json:"creator_id" validate:"required"`
+	CreatorId uint   `json:"creator_id"    validate:"required"`
 }
 
 type ChallengeResponseDto struct {

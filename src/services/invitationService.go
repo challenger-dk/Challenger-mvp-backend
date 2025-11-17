@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"server/appError"
 	"server/config"
 	"server/models"
 
@@ -27,7 +28,7 @@ func GetInvitationsByUserId(id uint) ([]models.Invitation, error) {
 // --- POST ---
 func SendInvitation(invitation *models.Invitation) error {
 	if invitation.InviterId == invitation.InviteeId {
-		return errors.New("inviter and invitee cannot be the same user")
+		return appError.ErrInviteSameUser
 	}
 
 	return config.DB.Transaction(func(tx *gorm.DB) error {
@@ -42,7 +43,6 @@ func SendInvitation(invitation *models.Invitation) error {
 
 		// Create new invitation if none exists
 		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-
 			createErr := tx.Create(invitation).Error
 			if createErr != nil {
 				return createErr
@@ -58,10 +58,10 @@ func SendInvitation(invitation *models.Invitation) error {
 		// Invitation already exists, handle based on status
 		switch existing.Status {
 		case models.StatusPending:
-			return errors.New("invitation is already pending")
+			return appError.ErrInvitationPending
 
 		case models.StatusAccepted:
-			return errors.New("user has already accepted this invitation")
+			return appError.ErrInvitationAccepted
 
 		case models.StatusDeclined:
 			// Resend by setting status back to pending
@@ -70,7 +70,7 @@ func SendInvitation(invitation *models.Invitation) error {
 				Error
 		}
 
-		return errors.New("unhandled invitation status")
+		return appError.ErrUnhandledInvitationStatus
 	})
 }
 
@@ -87,7 +87,7 @@ func AcceptInvitation(invitationId uint) error {
 		}
 
 		if invitation.Status != models.StatusPending {
-			return errors.New("invitation already processed")
+			return appError.ErrInvitationProcessed
 		}
 
 		// Find resource
@@ -104,7 +104,7 @@ func AcceptInvitation(invitationId uint) error {
 				return err
 			}
 		default:
-			return errors.New("unknown resource type")
+			return appError.ErrUnknownResource
 		}
 
 		invitation.Status = models.StatusAccepted
@@ -132,7 +132,7 @@ func DeclineInvitation(invitationId uint) error {
 		}
 
 		if invitation.Status != models.StatusPending {
-			return errors.New("invitation already processed")
+			return appError.ErrInvitationProcessed
 		}
 
 		invitation.Status = models.StatusDeclined
@@ -164,6 +164,6 @@ func getResource(invitation models.Invitation, db *gorm.DB) (any, error) {
 		return team, nil
 
 	default:
-		return nil, errors.New("unknown resource type")
+		return nil, appError.ErrUnknownResource
 	}
 }

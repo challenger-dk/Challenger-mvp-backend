@@ -1,6 +1,7 @@
 package services
 
 import (
+	"server/appError"
 	"server/config"
 	"server/models"
 )
@@ -22,7 +23,7 @@ func associateFavoriteSports(userID uint, sportNames []string) error {
 	// Validate sport names against the global cache
 	for _, sportName := range sportNames {
 		if _, ok := config.SportsCache[sportName]; !ok {
-			return ErrInvalidSport
+			return appError.ErrInvalidSport
 		}
 	}
 

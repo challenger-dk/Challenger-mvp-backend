@@ -3,20 +3,22 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"server/appError"
 	"server/controllers/helpers"
 	"server/dto"
 	"server/services"
 )
 
 func GetChallenge(w http.ResponseWriter, r *http.Request) {
-	id := helpers.GetParamId(w, r)
-	if id == 0 {
+	id, err := helpers.GetParamId(r)
+	if err != nil {
+		appError.HandleError(w, err)
 		return
 	}
 
 	chalModel, err := services.GetChallengeByID(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		appError.HandleError(w, err)
 		return
 	}
 
@@ -24,14 +26,14 @@ func GetChallenge(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
 	}
 }
 
 func GetChallenges(w http.ResponseWriter, r *http.Request) {
 	challengesModel, err := services.GetChallenges()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
 		return
 	}
 
@@ -43,7 +45,7 @@ func GetChallenges(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
 	}
 }
 
@@ -53,19 +55,19 @@ func CreateChallenge(w http.ResponseWriter, r *http.Request) {
 	// Decode request
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		appError.HandleError(w, err)
 		return
 	}
 
 	// Validate
 	if err := validate.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		appError.HandleError(w, err)
 		return
 	}
 
 	createdModel, err := services.CreateChallenge(dto.ChallengeCreateDtoToModel(req))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
 		return
 	}
 
@@ -74,28 +76,30 @@ func CreateChallenge(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	err = json.NewEncoder(w).Encode(createdDto)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
+		return
 	}
 }
 
 func UpdateChallenge(w http.ResponseWriter, r *http.Request) {
-	id := helpers.GetParamId(w, r)
-	if id == 0 {
+	id, err := helpers.GetParamId(r)
+	if err != nil {
+		appError.HandleError(w, err)
 		return
 	}
 
 	req := dto.ChallengeCreateDto{}
 
 	// Decode request
-	err := json.NewDecoder(r.Body).Decode(&req)
+	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		appError.HandleError(w, err)
 		return
 	}
 
 	// Validate
 	if err := validate.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		appError.HandleError(w, err)
 		return
 	}
 
@@ -103,7 +107,7 @@ func UpdateChallenge(w http.ResponseWriter, r *http.Request) {
 
 	// Maybe this should be changed to something else
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
 		return
 	}
 
@@ -112,13 +116,15 @@ func UpdateChallenge(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteChallenge(w http.ResponseWriter, r *http.Request) {
-	id := helpers.GetParamId(w, r)
-	if id == 0 {
+	id, err := helpers.GetParamId(r)
+	if err != nil {
+		appError.HandleError(w, err)
 		return
 	}
 
-	err := services.DeleteChallenge(id)
+	err = services.DeleteChallenge(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
+		return
 	}
 }

@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"reflect"
 	"server/config"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -15,7 +17,19 @@ var validate = validator.New()
 // This function is called once when the package is initialized, so dont call this manually
 // Pretty cool
 func init() {
-	validate.RegisterValidation("is-valid-sport", validateSport)
+	// Add custom validators here
+	err := validate.RegisterValidation("is-valid-sport", validateSport)
+	if err != nil {
+		panic("Failed to register custom validation: " + err.Error())
+	}
+
+	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
+		name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+		if name == "-" {
+			return ""
+		}
+		return name
+	})
 }
 
 func validateSport(fl validator.FieldLevel) bool {

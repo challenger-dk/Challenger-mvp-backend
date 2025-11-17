@@ -7,10 +7,8 @@ import (
 	"testing"
 )
 
-// Helper function to create a new request with a dynamic parameter
 func newRequestWithDynamicID(paramName string, paramValue string) *http.Request {
 	req := httptest.NewRequest(http.MethodGet, "/test/"+paramValue, nil)
-	// Set the path value using the dynamic name
 	req.SetPathValue(paramName, paramValue)
 	return req
 }
@@ -18,15 +16,13 @@ func newRequestWithDynamicID(paramName string, paramValue string) *http.Request 
 // ------------------ TESTS FOR GetParamIdDynamic ------------------
 
 func TestGetParamIdDynamic_MissingID(t *testing.T) {
-	w := httptest.NewRecorder()
-	paramName := "userId" // Use a dynamic name
+	paramName := "userId"
 	r := newRequestWithDynamicID(paramName, "")
 
-	id := helpers.GetParamIdDynamic(w, r, paramName)
+	id, err := helpers.GetParamIdDynamic(r, paramName)
 
-	resp := w.Result()
-	if resp.StatusCode != http.StatusBadRequest {
-		t.Fatalf("expected 400 Bad Request, got %d", resp.StatusCode)
+	if err == nil {
+		t.Fatalf("expected an error, got nil")
 	}
 	if id != 0 {
 		t.Fatalf("expected ID 0, got %d", id)
@@ -34,15 +30,13 @@ func TestGetParamIdDynamic_MissingID(t *testing.T) {
 }
 
 func TestGetParamIdDynamic_ZeroID(t *testing.T) {
-	w := httptest.NewRecorder()
-	paramName := "teamId" // Use a different dynamic name
+	paramName := "teamId"
 	r := newRequestWithDynamicID(paramName, "0")
 
-	id := helpers.GetParamIdDynamic(w, r, paramName)
+	id, err := helpers.GetParamIdDynamic(r, paramName)
 
-	resp := w.Result()
-	if resp.StatusCode != http.StatusBadRequest {
-		t.Fatalf("expected 400 Bad Request, got %d", resp.StatusCode)
+	if err == nil {
+		t.Fatalf("expected an error, got nil")
 	}
 	if id != 0 {
 		t.Fatalf("expected ID 0, got %d", id)
@@ -50,15 +44,13 @@ func TestGetParamIdDynamic_ZeroID(t *testing.T) {
 }
 
 func TestGetParamIdDynamic_InvalidID(t *testing.T) {
-	w := httptest.NewRecorder()
-	paramName := "challengeId" // Use a different dynamic name
+	paramName := "challengeId"
 	r := newRequestWithDynamicID(paramName, "abc")
 
-	id := helpers.GetParamIdDynamic(w, r, paramName)
+	id, err := helpers.GetParamIdDynamic(r, paramName)
 
-	resp := w.Result()
-	if resp.StatusCode != http.StatusInternalServerError {
-		t.Fatalf("expected 500 Internal Server Error, got %d", resp.StatusCode)
+	if err == nil {
+		t.Fatalf("expected an error, got nil")
 	}
 	if id != 0 {
 		t.Fatalf("expected ID 0, got %d", id)
@@ -66,15 +58,13 @@ func TestGetParamIdDynamic_InvalidID(t *testing.T) {
 }
 
 func TestGetParamIdDynamic_ValidID(t *testing.T) {
-	w := httptest.NewRecorder()
-	paramName := "id" // Also test with the name "id"
+	paramName := "id"
 	r := newRequestWithDynamicID(paramName, "123")
 
-	id := helpers.GetParamIdDynamic(w, r, paramName)
+	id, err := helpers.GetParamIdDynamic(r, paramName)
 
-	resp := w.Result()
-	if resp.StatusCode != 200 && resp.StatusCode != 0 {
-		t.Fatalf("expected no error, got HTTP %d", resp.StatusCode)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
 	}
 	if id != 123 {
 		t.Fatalf("expected ID 123, got %d", id)

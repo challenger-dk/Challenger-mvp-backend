@@ -1,19 +1,12 @@
 package services
 
 import (
-	"errors"
-
+	"server/appError"
 	"server/config"
 	"server/dto"
 	"server/models"
 
 	"golang.org/x/crypto/bcrypt"
-)
-
-var (
-	ErrUserExists    = errors.New("user with this email already exists")
-	ErrInvalidSport  = errors.New("invalid sport name")
-	ErrSportNotFound = errors.New("sport not found")
 )
 
 func GetUsers() ([]models.User, error) {
@@ -51,7 +44,7 @@ func CreateUser(email, password, firstName, lastName string, favoriteSports []st
 		Error
 
 	if err == nil {
-		return nil, ErrUserExists
+		return nil, appError.ErrUserExists
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)

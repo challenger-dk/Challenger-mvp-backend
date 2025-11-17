@@ -15,14 +15,12 @@ func newRequestWithID(id string) *http.Request {
 
 // ------------------ TESTS ------------------
 func TestGetParamId_MissingID(t *testing.T) {
-	w := httptest.NewRecorder()
 	r := newRequestWithID("")
 
-	id := helpers.GetParamId(w, r)
+	id, err := helpers.GetParamId(r)
 
-	resp := w.Result()
-	if resp.StatusCode != http.StatusBadRequest {
-		t.Fatalf("expected 400 Bad Request, got %d", resp.StatusCode)
+	if err == nil {
+		t.Fatalf("expected an error, got nil")
 	}
 	if id != 0 {
 		t.Fatalf("expected ID 0, got %d", id)
@@ -30,14 +28,12 @@ func TestGetParamId_MissingID(t *testing.T) {
 }
 
 func TestGetParamId_ZeroID(t *testing.T) {
-	w := httptest.NewRecorder()
 	r := newRequestWithID("0")
 
-	id := helpers.GetParamId(w, r)
+	id, err := helpers.GetParamId(r)
 
-	resp := w.Result()
-	if resp.StatusCode != http.StatusBadRequest {
-		t.Fatalf("expected 400 Bad Request, got %d", resp.StatusCode)
+	if err == nil {
+		t.Fatalf("expected an error, got nil")
 	}
 	if id != 0 {
 		t.Fatalf("expected ID 0, got %d", id)
@@ -45,14 +41,12 @@ func TestGetParamId_ZeroID(t *testing.T) {
 }
 
 func TestGetParamId_InvalidID(t *testing.T) {
-	w := httptest.NewRecorder()
 	r := newRequestWithID("abc")
 
-	id := helpers.GetParamId(w, r)
+	id, err := helpers.GetParamId(r)
 
-	resp := w.Result()
-	if resp.StatusCode != http.StatusInternalServerError {
-		t.Fatalf("expected 500 Internal Server Error, got %d", resp.StatusCode)
+	if err == nil {
+		t.Fatalf("expected an error, got nil")
 	}
 	if id != 0 {
 		t.Fatalf("expected ID 0, got %d", id)
@@ -60,14 +54,12 @@ func TestGetParamId_InvalidID(t *testing.T) {
 }
 
 func TestGetParamId_ValidID(t *testing.T) {
-	w := httptest.NewRecorder()
 	r := newRequestWithID("123")
 
-	id := helpers.GetParamId(w, r)
+	id, err := helpers.GetParamId(r)
 
-	resp := w.Result()
-	if resp.StatusCode != 200 && resp.StatusCode != 0 {
-		t.Fatalf("expected no error, got HTTP %d", resp.StatusCode)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
 	}
 	if id != 123 {
 		t.Fatalf("expected ID 123, got %d", id)

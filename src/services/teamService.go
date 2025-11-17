@@ -13,6 +13,7 @@ func GetTeamByID(id uint) (models.Team, error) {
 
 	err := config.DB.Preload("Users").
 		Preload("Creator").
+		Preload("Location").
 		First(&t, id).
 		Error
 
@@ -27,6 +28,8 @@ func GetTeams() ([]models.Team, error) {
 	var teams []models.Team
 
 	err := config.DB.Preload("Users").
+		Preload("Creator").
+		Preload("Location").
 		Find(&teams).
 		Error
 
@@ -41,6 +44,7 @@ func GetTeamsByUserId(id uint) ([]models.Team, error) {
 
 	err := config.DB.Preload("Teams.Users").
 		Preload("Teams.Creator").
+		Preload("Teams.Location").
 		First(&user, id).
 		Error
 
@@ -53,30 +57,42 @@ func GetTeamsByUserId(id uint) ([]models.Team, error) {
 
 // --- POST ---
 func CreateTeam(t models.Team) (models.Team, error) {
-	// Ensure creator exists
-	creator := models.User{}
+	err := config.DB.Transaction(func(tx *gorm.DB) error {
+		if t.Location != nil {
+			location, err := FindOrCreateLocation(tx, *t.Location)
+			if err != nil {
+				return err
+			}
 
-	err := config.DB.First(&creator, t.CreatorID).Error
-	if err != nil {
-		return models.Team{}, err
-	}
+			t.LocationID = &location.ID
+		}
 
-	// Set foreign key explicitly and avoid nested create/update
-	t.CreatorID = creator.ID
-	t.Creator = models.User{}
+		// Set Location to nil to avoid duplicate create
+		t.Location = nil
 
-	// Add creator to team users
-	t.Users = append(t.Users, creator)
+		creator := models.User{}
+		err := tx.First(&creator, t.CreatorID).Error
+		if err != nil {
+			return err
+		}
 
-	err = config.DB.Create(&t).Error
-	if err != nil {
-		return models.Team{}, err
-	}
+		t.CreatorID = creator.ID
+		t.Creator = models.User{}
+		t.Users = append(t.Users, creator)
 
-	err = config.DB.Preload("Users").
-		Preload("Creator").
-		First(&t, t.ID).
-		Error
+		err = tx.Create(&t).Error
+		if err != nil {
+			return err
+		}
+
+		err = tx.Preload("Users").
+			Preload("Creator").
+			Preload("Location").
+			First(&t, t.ID).
+			Error
+
+		return err
+	})
 
 	if err != nil {
 		return models.Team{}, err

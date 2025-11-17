@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"server/appError"
 	"server/dto"
 	"server/services"
 )
@@ -13,37 +14,38 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		appError.HandleError(w, err)
 		return
 	}
 
 	// Validate
 	if err := validate.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		appError.HandleError(w, err)
 		return
 	}
 
 	user, err := services.CreateUser(req.Email, req.Password, req.FirstName, req.LastName, req.FavoriteSports)
 	if err != nil {
-		if err == services.ErrUserExists {
-			http.Error(w, "User with this email already exists", http.StatusConflict)
-			return
-		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
 		return
 	}
 
 	token, err := services.GenerateJWTToken(user)
 	if err != nil {
-		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		appError.HandleError(w, err)
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	err = json.NewEncoder(w).Encode(map[string]any{
 		"user":  dto.ToUserResponseDto(*user),
 		"token": token,
 	})
+
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
@@ -51,28 +53,29 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		appError.HandleError(w, err)
 		return
 	}
 
 	// Validate
 	if err := validate.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		appError.HandleError(w, err)
 		return
 	}
 
 	user, token, err := services.Login(req.Email, req.Password)
 	if err != nil {
-		if err == services.ErrInvalidCredentials {
-			http.Error(w, "Invalid email or password", http.StatusUnauthorized)
-			return
-		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]any{
+	err = json.NewEncoder(w).Encode(map[string]any{
 		"user":  dto.ToUserResponseDto(*user),
 		"token": token,
 	})
+
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
 }

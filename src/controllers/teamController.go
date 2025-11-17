@@ -3,21 +3,25 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"server/appError"
 	"server/controllers/helpers"
 	"server/dto"
+	"server/middleware"
+	"server/models"
 	"server/services"
 )
 
 // --- GET ---
 func GetTeam(w http.ResponseWriter, r *http.Request) {
-	id := helpers.GetParamId(w, r)
-	if id == 0 {
+	id, err := helpers.GetParamId(r)
+	if err != nil {
+		appError.HandleError(w, err)
 		return
 	}
 
 	teamModel, err := services.GetTeamByID(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		appError.HandleError(w, err)
 		return
 	}
 
@@ -25,14 +29,15 @@ func GetTeam(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
+		return
 	}
 }
 
 func GetTeams(w http.ResponseWriter, r *http.Request) {
 	teamsModel, err := services.GetTeams()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
 		return
 	}
 
@@ -44,19 +49,20 @@ func GetTeams(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
 	}
 }
 
 func GetTeamsByUserId(w http.ResponseWriter, r *http.Request) {
-	id := helpers.GetParamId(w, r)
-	if id == 0 {
+	id, err := helpers.GetParamId(r)
+	if err != nil {
+		appError.HandleError(w, err)
 		return
 	}
 
 	teamsModel, err := services.GetTeamsByUserId(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
 		return
 	}
 
@@ -67,43 +73,79 @@ func GetTeamsByUserId(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
+		return
+	}
+}
+
+func GetCurrentUserTeams(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().
+		Value(middleware.UserContextKey).(*models.User)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	teamsModel, err := services.GetTeamsByUserId(user.ID)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	response := make([]dto.TeamResponseDto, len(teamsModel))
+	for i, t := range teamsModel {
+		response[i] = dto.ToTeamResponseDto(t)
+	}
+
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
 	}
 }
 
 // --- POST ---
 func CreateTeam(w http.ResponseWriter, r *http.Request) {
+	// Get authenticated user from context
+	user, ok := r.Context().
+		Value(middleware.UserContextKey).(*models.User)
+
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	req := dto.TeamCreateDto{}
 
-	// Decode request
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		appError.HandleError(w, err)
 		return
 	}
 
-	// Validate
 	if err := validate.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		appError.HandleError(w, err)
 		return
 	}
 
-	// Convert DTO -> model
 	modelTeam := dto.TeamCreateDtoToModel(req)
+
+	// Set the creator ID to the authenticated user
+	modelTeam.CreatorID = user.ID
 
 	createdModel, err := services.CreateTeam(modelTeam)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
 		return
 	}
 
-	// Convert model -> DTO for response
 	createdDto := dto.ToTeamResponseDto(createdModel)
 
 	w.WriteHeader(http.StatusCreated)
 	err = json.NewEncoder(w).Encode(createdDto)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
+		return
 	}
 }
 
@@ -136,23 +178,24 @@ func AddUserToTeam(w http.ResponseWriter, r *http.Request) {
 
 // --- PUT ---
 func UpdateTeam(w http.ResponseWriter, r *http.Request) {
-	id := helpers.GetParamId(w, r)
-	if id == 0 {
+	id, err := helpers.GetParamId(r)
+	if err != nil {
+		appError.HandleError(w, err)
 		return
 	}
 
 	req := dto.TeamUpdateDto{}
 
 	// Decode request
-	err := json.NewDecoder(r.Body).Decode(&req)
+	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		appError.HandleError(w, err)
 		return
 	}
 
 	// Validate
 	if err := validate.Struct(req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		appError.HandleError(w, err)
 		return
 	}
 
@@ -162,7 +205,7 @@ func UpdateTeam(w http.ResponseWriter, r *http.Request) {
 
 	// Maybe this should be changed to something else
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
 		return
 	}
 
@@ -172,13 +215,15 @@ func UpdateTeam(w http.ResponseWriter, r *http.Request) {
 
 // --- DELETE ---
 func DeleteTeam(w http.ResponseWriter, r *http.Request) {
-	id := helpers.GetParamId(w, r)
-	if id == 0 {
+	id, err := helpers.GetParamId(r)
+	if err != nil {
+		appError.HandleError(w, err)
 		return
 	}
 
-	err := services.DeleteTeam(id)
+	err = services.DeleteTeam(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		appError.HandleError(w, err)
+		return
 	}
 }
