@@ -12,6 +12,7 @@ type UserCreateDto struct {
 	LastName       string   `json:"last_name"`
 	ProfilePicture string   `json:"profile_picture,omitempty"`
 	Bio            string   `json:"bio,omitempty"`
+	Age            uint     `json:"age"             validate:"min=1"`
 	FavoriteSports []string `json:"favorite_sports,omitempty"`
 }
 
@@ -23,11 +24,6 @@ type UserUpdateDto struct {
 	FavoriteSports []string `json:"favorite_sports,omitempty"`
 }
 
-type SportResponseDto struct {
-	ID   uint   `json:"id"`
-	Name string `json:"name"`
-}
-
 type UserResponseDto struct {
 	ID             uint                `json:"id"`
 	Email          string              `json:"email"`
@@ -35,6 +31,7 @@ type UserResponseDto struct {
 	LastName       string              `json:"last_name"`
 	ProfilePicture string              `json:"profile_picture,omitempty"`
 	Bio            string              `json:"bio,omitempty"`
+	Age            uint                `json:"age"`
 	FavoriteSports []SportResponseDto  `json:"favorite_sports,omitempty"`
 	Friends        []FriendDtoResponse `json:"friends,omitempty"`
 	CreatedAt      time.Time           `json:"created_at"`
@@ -47,14 +44,8 @@ type FriendDtoResponse struct {
 	LastName       string             `json:"last_name"`
 	ProfilePicture string             `json:"profile_picture,omitempty"`
 	Bio            string             `json:"bio,omitempty"`
+	Age            uint               `json:"age"`
 	FavoriteSports []SportResponseDto `json:"favorite_sports,omitempty"`
-}
-
-func ToSportResponseDto(sport models.Sport) SportResponseDto {
-	return SportResponseDto{
-		ID:   sport.ID,
-		Name: sport.Name,
-	}
 }
 
 type Login struct {
@@ -75,6 +66,7 @@ func ToFriendDtoResponse(user models.User) FriendDtoResponse {
 		ProfilePicture: user.ProfilePicture,
 		Bio:            user.Bio,
 		FavoriteSports: favoriteSports,
+		Age:            user.Age,
 	}
 }
 
@@ -96,6 +88,7 @@ func ToUserResponseDto(user models.User) UserResponseDto {
 		LastName:       user.LastName,
 		ProfilePicture: user.ProfilePicture,
 		Bio:            user.Bio,
+		Age:            user.Age,
 		FavoriteSports: favoriteSports,
 		Friends:        friends,
 		CreatedAt:      user.CreatedAt,

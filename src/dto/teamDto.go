@@ -17,8 +17,8 @@ type Team struct {
 */
 
 type TeamCreateDto struct {
-	Name     string            `json:"name"        validate:"required,min=3"`
-	Location LocationCreateDto `json:"location"`
+	Name     string             `json:"name"               validate:"required,min=3"`
+	Location *LocationCreateDto `json:"location,omitempty"`
 }
 
 type TeamUpdateDto struct {
@@ -34,12 +34,16 @@ type TeamResponseDto struct {
 }
 
 func TeamCreateDtoToModel(t TeamCreateDto) models.Team {
-	locationModel := LocationCreateDtoToModel(t.Location)
-
-	return models.Team{
-		Name:     t.Name,
-		Location: &locationModel,
+	team := models.Team{
+		Name: t.Name,
 	}
+
+	if t.Location != nil {
+		locationModel := LocationCreateDtoToModel(*t.Location)
+		team.Location = &locationModel
+	}
+
+	return team
 }
 
 func TeamUpdateDtoToModel(t TeamUpdateDto) models.Team {
@@ -54,11 +58,17 @@ func ToTeamResponseDto(t models.Team) TeamResponseDto {
 		users = append(users, ToUserResponseDto(u))
 	}
 
+	var locationDto LocationResponseDto
+
+	if t.Location != nil {
+		locationDto = ToLocationResponseDto(*t.Location)
+	}
+
 	return TeamResponseDto{
 		ID:       t.ID,
 		Name:     t.Name,
 		Creator:  ToUserResponseDto(t.Creator),
 		Users:    users,
-		Location: ToLocationResponseDto(*t.Location),
+		Location: locationDto,
 	}
 }
