@@ -41,7 +41,7 @@ type ChallengeResponseDto struct {
 	Comment     string              `json:"comment"`
 	TeamSize    *int                `json:"team_size"`
 	Date        time.Time           `json:"date"`
-	StartTime   time.Time           `json:"time"`
+	StartTime   time.Time           `json:"start_time"`
 	EndTime     time.Time           `json:"end_time"`
 }
 
