@@ -7,6 +7,7 @@ import (
 	"server/models"
 
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 func GetUsers() ([]models.User, error) {
@@ -26,6 +27,7 @@ func GetUserByID(userID uint) (*models.User, error) {
 	var user models.User
 
 	err := config.DB.Preload("FavoriteSports").
+		Preload("Friends").
 		First(&user, userID).
 		Error
 
@@ -115,5 +117,114 @@ func UpdateUser(userID uint, user dto.UserUpdateDto) error {
 }
 
 func DeleteUser(userID uint) error {
-	return config.DB.Delete(&models.User{}, userID).Error
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+		var user models.User
+		if err := tx.First(&user, userID).Error; err != nil {
+			return err
+		}
+
+		// Clear all many-to-many associations
+		if err := tx.Model(&user).Association("FavoriteSports").Clear(); err != nil {
+			return err
+		}
+		if err := tx.Model(&user).Association("Friends").Clear(); err != nil {
+			return err
+		}
+		if err := tx.Model(&user).Association("Teams").Clear(); err != nil {
+			return err
+		}
+		if err := tx.Model(&user).Association("JoinedChallenges").Clear(); err != nil {
+			return err
+		}
+
+		// Handle one-to-many relationships (delete or set to null)
+		if err := tx.Where("creator_id = ?", userID).Delete(&models.Challenge{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("creator_id = ?", userID).Delete(&models.Team{}).Error; err != nil {
+			return err
+		}
+
+		// Clean up invitations
+		if err := tx.Where("inviter_id = ? OR invitee_id = ?", userID, userID).Delete(&models.Invitation{}).Error; err != nil {
+			return err
+		}
+
+		// Delete the user
+		if err := tx.Delete(&user).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+// DeleteFriendship removes both users from each other's friends list
+func RemoveFriend(userIdA uint, userIdB uint) error {
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+
+		// Ids must be different
+		if userIdA == userIdB {
+			return appError.ErrInvalidFriendship
+		}
+
+		var userA, userB models.User
+
+		if err := tx.First(&userA, userIdA).Error; err != nil {
+			return err
+		}
+
+		if err := tx.First(&userB, userIdB).Error; err != nil {
+			return err
+		}
+
+		err := tx.Model(&userA).
+			Association("Friends").
+			Delete(&userB)
+
+		if err != nil {
+			return err
+		}
+
+		err = tx.Model(&userB).
+			Association("Friends").
+			Delete(&userA)
+
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+// Package private
+// createFriendship adds both users to each other's friends list
+func createFriendship(userIdA uint, userIdB uint, db *gorm.DB) error {
+	var userA, userB models.User
+
+	if err := db.First(&userA, userIdA).Error; err != nil {
+		return err
+	}
+	if err := db.First(&userB, userIdB).Error; err != nil {
+		return err
+	}
+
+	err := db.Model(&userA).
+		Association("Friends").
+		Append(&userB)
+
+	if err != nil {
+		return err
+	}
+
+	err = db.Model(&userB).
+		Association("Friends").
+		Append(&userA)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

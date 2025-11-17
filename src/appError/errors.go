@@ -10,6 +10,7 @@ import (
 // Generic Errors
 var (
 	ErrUnknownResource = errors.New("unknown resource")
+	ErrServerError     = errors.New("internal server error")
 )
 
 // Authentication and Authorization Errors
@@ -20,6 +21,7 @@ var (
 	ErrAuthHeaderMissing  = errors.New("authorization header missing")
 	ErrInvalidAuthHeader  = errors.New("invalid authorization header format")
 	ErrUserNotFound       = errors.New("user not found")
+	ErrInvalidFriendship  = errors.New("invalid friendship")
 )
 
 var (
@@ -70,9 +72,11 @@ var errorMap = map[int][]error{
 		ErrInvalidAuthHeader,
 		ErrMissingIdParam,
 		ErrIdBelowOne,
+		ErrInvalidFriendship,
 	},
 	http.StatusInternalServerError: {
 		ErrUnhandledInvitationStatus,
 		ErrUnknownResource,
+		ErrServerError,
 	},
 }

@@ -9,7 +9,8 @@ type InvitationStatus string
 
 // Only allowed resource types and statuses
 const (
-	ResourceTypeTeam InvitationType = "team"
+	ResourceTypeTeam   InvitationType = "team"
+	ResourceTypeFriend InvitationType = "friend"
 )
 
 const (
@@ -24,7 +25,7 @@ type Invitation struct {
 	Inviter      User `gorm:"foreignKey:InviterId"`
 	InviteeId    uint `gorm:"not null;uniqueIndex:idx_unique_invitation"`
 	Note         string
-	ResourceType InvitationType   `gorm:"type:VARCHAR(20);not null;check:resource_type IN ('team');uniqueIndex:idx_unique_invitation"`
+	ResourceType InvitationType   `gorm:"type:VARCHAR(20);not null;check:resource_type IN ('team','friend');uniqueIndex:idx_unique_invitation"`
 	ResourceID   uint             `gorm:"not null;uniqueIndex:idx_unique_invitation"`
 	Status       InvitationStatus `gorm:"type:VARCHAR(20);not null;default:pending;check:status IN ('pending','accepted','declined')"` // Defualt 'pending'
 	CreatedAt    time.Time        `gorm:"autoCreateTime"`

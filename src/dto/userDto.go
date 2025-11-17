@@ -29,15 +29,25 @@ type SportResponseDto struct {
 }
 
 type UserResponseDto struct {
+	ID             uint                `json:"id"`
+	Email          string              `json:"email"`
+	FirstName      string              `json:"first_name"`
+	LastName       string              `json:"last_name"`
+	ProfilePicture string              `json:"profile_picture,omitempty"`
+	Bio            string              `json:"bio,omitempty"`
+	FavoriteSports []SportResponseDto  `json:"favorite_sports,omitempty"`
+	Friends        []FriendDtoResponse `json:"friends,omitempty"`
+	CreatedAt      time.Time           `json:"created_at"`
+	UpdatedAt      time.Time           `json:"updated_at"`
+}
+
+type FriendDtoResponse struct {
 	ID             uint               `json:"id"`
-	Email          string             `json:"email"`
 	FirstName      string             `json:"first_name"`
 	LastName       string             `json:"last_name"`
 	ProfilePicture string             `json:"profile_picture,omitempty"`
 	Bio            string             `json:"bio,omitempty"`
 	FavoriteSports []SportResponseDto `json:"favorite_sports,omitempty"`
-	CreatedAt      time.Time          `json:"created_at"`
-	UpdatedAt      time.Time          `json:"updated_at"`
 }
 
 func ToSportResponseDto(sport models.Sport) SportResponseDto {
@@ -52,10 +62,31 @@ type Login struct {
 	Password string `json:"password" validate:"required"`
 }
 
+func ToFriendDtoResponse(user models.User) FriendDtoResponse {
+	favoriteSports := make([]SportResponseDto, len(user.FavoriteSports))
+	for i, sport := range user.FavoriteSports {
+		favoriteSports[i] = ToSportResponseDto(sport)
+	}
+
+	return FriendDtoResponse{
+		ID:             user.ID,
+		FirstName:      user.FirstName,
+		LastName:       user.LastName,
+		ProfilePicture: user.ProfilePicture,
+		Bio:            user.Bio,
+		FavoriteSports: favoriteSports,
+	}
+}
+
 func ToUserResponseDto(user models.User) UserResponseDto {
 	favoriteSports := make([]SportResponseDto, len(user.FavoriteSports))
 	for i, sport := range user.FavoriteSports {
 		favoriteSports[i] = ToSportResponseDto(sport)
+	}
+
+	friends := make([]FriendDtoResponse, len(user.Friends))
+	for i, friend := range user.Friends {
+		friends[i] = ToFriendDtoResponse(friend)
 	}
 
 	return UserResponseDto{
@@ -66,6 +97,7 @@ func ToUserResponseDto(user models.User) UserResponseDto {
 		ProfilePicture: user.ProfilePicture,
 		Bio:            user.Bio,
 		FavoriteSports: favoriteSports,
+		Friends:        friends, // Now populates the friends list
 		CreatedAt:      user.CreatedAt,
 		UpdatedAt:      user.UpdatedAt,
 	}

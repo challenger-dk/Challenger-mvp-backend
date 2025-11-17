@@ -19,7 +19,6 @@ func RegisterRoutes(r chi.Router) {
 
 	r.Get("/sports", controllers.GetSports)
 
-	// Protected routes
 	r.Route("/users", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware)
 		r.Get("/", controllers.GetUsers)

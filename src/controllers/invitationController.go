@@ -6,6 +6,8 @@ import (
 	"server/appError"
 	"server/controllers/helpers"
 	"server/dto"
+	"server/middleware"
+	"server/models"
 	"server/services"
 )
 
@@ -51,6 +53,16 @@ func SendInvitation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	invitationModel := dto.ToInvitationModel(invitationDto)
+
+	// Set inviter ID from context
+	user, ok := r.Context().
+		Value(middleware.UserContextKey).(*models.User)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	invitationModel.InviterId = user.ID
+
 	err = services.SendInvitation(&invitationModel)
 	if err != nil {
 		appError.HandleError(w, err)
@@ -58,8 +70,6 @@ func SendInvitation(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// TODO: Implement a way to tell which user is accepting/declining the invitation
-// to avoid unauthorized actions.
 func AcceptInvitation(w http.ResponseWriter, r *http.Request) {
 	id, err := helpers.GetParamId(r)
 	if err != nil {
@@ -67,7 +77,14 @@ func AcceptInvitation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = services.AcceptInvitation(id)
+	user, ok := r.Context().
+		Value(middleware.UserContextKey).(*models.User)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	err = services.AcceptInvitation(id, user.ID)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
@@ -81,7 +98,14 @@ func DeclineInvitation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = services.DeclineInvitation(id)
+	user, ok := r.Context().
+		Value(middleware.UserContextKey).(*models.User)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	err = services.DeclineInvitation(id, user.ID)
 	if err != nil {
 		appError.HandleError(w, err)
 		return

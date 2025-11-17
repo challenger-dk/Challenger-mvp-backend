@@ -74,7 +74,7 @@ func SendInvitation(invitation *models.Invitation) error {
 	})
 }
 
-func AcceptInvitation(invitationId uint) error {
+func AcceptInvitation(invitationId uint, currentUserId uint) error {
 	err := config.DB.Transaction(func(tx *gorm.DB) error {
 		var invitation models.Invitation
 
@@ -86,23 +86,38 @@ func AcceptInvitation(invitationId uint) error {
 			return err
 		}
 
+		if invitation.InviteeId != currentUserId {
+			return appError.ErrUnauthorized
+		}
+
 		if invitation.Status != models.StatusPending {
 			return appError.ErrInvitationProcessed
 		}
 
-		// Find resource
-		resource, err := getResource(invitation, tx)
-		if err != nil {
-			return err
-		}
-
-		// Add user to resource
-		switch res := resource.(type) {
-		case models.Team:
-			err = addUserToTeam(res.ID, invitation.InviteeId, tx)
+		switch invitation.ResourceType {
+		case models.ResourceTypeTeam:
+			// Find resource
+			resource, err := getResource(invitation, tx)
 			if err != nil {
 				return err
 			}
+
+			team, ok := resource.(models.Team)
+			if !ok {
+				return appError.ErrServerError
+			}
+
+			err = addUserToTeam(team.ID, invitation.InviteeId, tx)
+			if err != nil {
+				return err
+			}
+
+		case models.ResourceTypeFriend:
+			err = createFriendship(invitation.InviterId, invitation.InviteeId, tx)
+			if err != nil {
+				return err
+			}
+
 		default:
 			return appError.ErrUnknownResource
 		}
@@ -119,7 +134,7 @@ func AcceptInvitation(invitationId uint) error {
 	return err
 }
 
-func DeclineInvitation(invitationId uint) error {
+func DeclineInvitation(invitationId uint, currentUserId uint) error {
 	err := config.DB.Transaction(func(tx *gorm.DB) error {
 		var invitation models.Invitation
 
@@ -129,6 +144,10 @@ func DeclineInvitation(invitationId uint) error {
 
 		if err != nil {
 			return err
+		}
+
+		if invitation.InviteeId != currentUserId {
+			return appError.ErrUnauthorized
 		}
 
 		if invitation.Status != models.StatusPending {
