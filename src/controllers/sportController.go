@@ -16,9 +16,9 @@ func GetSports(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Convert to response DTOs
-	response := make([]dto.SportResponseDto, len(sports))
+	response := make([]dto.SportDto, len(sports))
 	for i, sport := range sports {
-		response[i] = dto.ToSportResponseDto(sport)
+		response[i] = dto.ToSportDto(sport)
 	}
 
 	err = json.NewEncoder(w).Encode(response)

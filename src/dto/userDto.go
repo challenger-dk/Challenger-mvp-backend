@@ -23,28 +23,16 @@ type UserUpdateDto struct {
 	FavoriteSports []string `json:"favorite_sports,omitempty"`
 }
 
-type SportResponseDto struct {
-	ID   uint   `json:"id"`
-	Name string `json:"name"`
-}
-
 type UserResponseDto struct {
-	ID             uint               `json:"id"`
-	Email          string             `json:"email"`
-	FirstName      string             `json:"first_name"`
-	LastName       string             `json:"last_name"`
-	ProfilePicture string             `json:"profile_picture,omitempty"`
-	Bio            string             `json:"bio,omitempty"`
-	FavoriteSports []SportResponseDto `json:"favorite_sports,omitempty"`
-	CreatedAt      time.Time          `json:"created_at"`
-	UpdatedAt      time.Time          `json:"updated_at"`
-}
-
-func ToSportResponseDto(sport models.Sport) SportResponseDto {
-	return SportResponseDto{
-		ID:   sport.ID,
-		Name: sport.Name,
-	}
+	ID             uint       `json:"id"`
+	Email          string     `json:"email"`
+	FirstName      string     `json:"first_name"`
+	LastName       string     `json:"last_name"`
+	ProfilePicture string     `json:"profile_picture,omitempty"`
+	Bio            string     `json:"bio,omitempty"`
+	FavoriteSports []SportDto `json:"favorite_sports,omitempty"`
+	CreatedAt      time.Time  `json:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at"`
 }
 
 type Login struct {
@@ -53,9 +41,9 @@ type Login struct {
 }
 
 func ToUserResponseDto(user models.User) UserResponseDto {
-	favoriteSports := make([]SportResponseDto, len(user.FavoriteSports))
+	favoriteSports := make([]SportDto, len(user.FavoriteSports))
 	for i, sport := range user.FavoriteSports {
-		favoriteSports[i] = ToSportResponseDto(sport)
+		favoriteSports[i] = ToSportDto(sport)
 	}
 
 	return UserResponseDto{

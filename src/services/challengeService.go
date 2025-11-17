@@ -11,6 +11,7 @@ func GetChallengeByID(id uint) (models.Challenge, error) {
 	err := config.DB.Preload("Users").
 		Preload("Teams").
 		Preload("Creator").
+		Preload("Location").
 		First(&c, id).
 		Error
 
@@ -28,6 +29,7 @@ func GetChallenges() ([]models.Challenge, error) {
 	err := config.DB.Preload("Users").
 		Preload("Teams").
 		Preload("Creator").
+		Preload("Location").
 		Find(&challenges).
 		Error
 
@@ -58,6 +60,7 @@ func CreateChallenge(c models.Challenge) (models.Challenge, error) {
 	err = config.DB.Preload("Users").
 		Preload("Teams").
 		Preload("Creator").
+		Preload("Location").
 		First(&c, c.ID).
 		Error
 
@@ -88,8 +91,12 @@ func UpdateChallenge(id uint, ch models.Challenge) error {
 		c.Sport = ch.Sport
 	}
 
-	if ch.Location != "" {
-		c.Location = ch.Location
+	if ch.Location.ID != 0 {
+		c.LocationID = ch.Location.ID
+	}
+
+	if ch.TeamSize != nil {
+		c.TeamSize = ch.TeamSize
 	}
 
 	err = config.DB.Save(&c).Error
