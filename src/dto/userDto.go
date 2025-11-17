@@ -97,7 +97,7 @@ func ToUserResponseDto(user models.User) UserResponseDto {
 		ProfilePicture: user.ProfilePicture,
 		Bio:            user.Bio,
 		FavoriteSports: favoriteSports,
-		Friends:        friends, // Now populates the friends list
+		Friends:        friends,
 		CreatedAt:      user.CreatedAt,
 		UpdatedAt:      user.UpdatedAt,
 	}
