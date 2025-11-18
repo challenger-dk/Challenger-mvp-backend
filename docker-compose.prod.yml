@@ -16,15 +16,19 @@ services:
       - ./Database/sql/schema-init:/docker-entrypoint-initdb.d
     networks:
       - challenger-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
 
   app:
     image: challenger-app:latest
     container_name: challenger-app
     restart: always
     depends_on:
-      - postgres
-    networks:
-      - challenger-network
+      postgres:
+        condition: service_healthy
     ports:
       - "8080:8080"
     env_file:
@@ -36,6 +40,8 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
       JWT_SECRET: ${JWT_SECRET}
+    networks:
+      - challenger-network
 
 volumes:
   postgres-data:
