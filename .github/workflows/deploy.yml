@@ -79,6 +79,16 @@ jobs:
               echo "❌ .env file not found!"
               exit 1
             fi
+            # Debug: Show that .env file exists and has content (without showing values)
+            echo "📋 Verifying .env file..."
+            if [ -f .env ]; then
+              echo "✅ .env file exists"
+              echo "📊 .env file has $(wc -l < .env) lines"
+              # Show variable names only (not values)
+              grep -o '^[^=]*' .env | while read var; do
+                echo "  - $var is set"
+              done
+            fi
             docker compose -f docker-compose.prod.yml up -d --build
 
             echo "🔗 Restarting Tailscale Funnel..."
