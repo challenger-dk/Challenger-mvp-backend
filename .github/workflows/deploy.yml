@@ -39,16 +39,21 @@ jobs:
           port: ${{ secrets.PI_SSH_PORT || 22 }}
           script: |
             cd ~/challenger-app
-            cat > .env << EOF
-            DB_HOST=postgres
-            DB_PORT=5432
-            DB_USER=${{ secrets.DB_USER }}
-            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            DB_NAME=${{ secrets.DB_NAME }}
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            EOF
+            echo "DB_HOST=postgres" > .env
+            echo "DB_PORT=5432" >> .env
+            echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+            echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
             chmod 600 .env
             echo "✅ .env file created"
+            # Verify file exists and has content (without showing values)
+            if [ -f .env ] && [ -s .env ]; then
+              echo "✅ .env file verified (contains $(wc -l < .env) lines)"
+            else
+              echo "❌ .env file is missing or empty!"
+              exit 1
+            fi
 
       - name: Build and run Docker containers on Raspberry Pi
         uses: appleboy/ssh-action@v1.0.3
@@ -69,6 +74,11 @@ jobs:
 
             echo "🚀 Starting containers..."
             cd ..
+            # Verify .env file exists before starting containers
+            if [ ! -f .env ]; then
+              echo "❌ .env file not found!"
+              exit 1
+            fi
             docker compose -f docker-compose.prod.yml up -d --build
 
             echo "🔗 Restarting Tailscale Funnel..."
