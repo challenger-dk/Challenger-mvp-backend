@@ -30,6 +30,26 @@ jobs:
           source: "src/**,docker-compose.prod.yml"
           target: "/home/${{ secrets.PI_USER }}/challenger-app"
 
+      - name: Create .env file on Raspberry Pi
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PI_HOST }}
+          username: ${{ secrets.PI_USER }}
+          key: ${{ secrets.PI_SSH_KEY }}
+          port: ${{ secrets.PI_SSH_PORT || 22 }}
+          script: |
+            cd ~/challenger-app
+            cat > .env << EOF
+            DB_HOST=postgres
+            DB_PORT=5432
+            DB_USER=${{ secrets.DB_USER }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_NAME=${{ secrets.DB_NAME }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            EOF
+            chmod 600 .env
+            echo "✅ .env file created"
+
       - name: Build and run Docker containers on Raspberry Pi
         uses: appleboy/ssh-action@v1.0.3
         with:
