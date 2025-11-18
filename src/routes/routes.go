@@ -57,6 +57,7 @@ func RegisterRoutes(r chi.Router) {
 	r.Route("/invitations", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware)
 		r.Get("/user/{id}", controllers.GetInvitationsByUserId)
+		r.Get("/me", controllers.GetCurrentUserInvitations)
 		r.Post("/", controllers.SendInvitation)
 		r.Post("/{id}/accept", controllers.AcceptInvitation)
 		r.Post("/{id}/decline", controllers.DeclineInvitation)

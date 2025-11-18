@@ -37,6 +37,33 @@ func GetInvitationsByUserId(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func GetCurrentUserInvitations(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().
+		Value(middleware.UserContextKey).(*models.User)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	invitations, err := services.GetInvitationsByUserId(user.ID)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	// Convert to response DTOs
+	response := make([]dto.InvitationResponseDto, len(invitations))
+	for i, inv := range invitations {
+		response[i] = dto.ToInvitationResponse(inv)
+	}
+
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+}
+
 func SendInvitation(w http.ResponseWriter, r *http.Request) {
 	var invitationDto dto.InvitationCreateDto
 
