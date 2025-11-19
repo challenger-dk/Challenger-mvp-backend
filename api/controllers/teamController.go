@@ -226,4 +226,7 @@ func DeleteTeam(w http.ResponseWriter, r *http.Request) {
 		appError.HandleError(w, err)
 		return
 	}
+
+	// Write 204
+	w.WriteHeader(http.StatusNoContent)
 }
