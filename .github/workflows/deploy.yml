@@ -27,7 +27,7 @@ jobs:
           username: ${{ secrets.PI_USER }}
           key: ${{ secrets.PI_SSH_KEY }}
           port: ${{ secrets.PI_SSH_PORT || 22 }}
-          source: "src/**,docker-compose.prod.yml"
+          source: "api/**,chat/**,common/**,Database/**,go.mod,go.sum,docker-compose.prod.yml"
           target: "/home/${{ secrets.PI_USER }}/challenger-app"
 
       - name: Create .env file on Raspberry Pi
@@ -68,12 +68,7 @@ jobs:
             echo "🧹 Cleaning up old containers..."
             docker compose -f docker-compose.prod.yml down || true
 
-            echo "🏗️ Building Go app image natively..."
-            cd src
-            docker build -t challenger-app:latest -f Dockerfile.prod .
-
-            echo "🚀 Starting containers..."
-            cd ..
+            echo "🚀 Building and starting containers..."
             # Verify .env file exists before starting containers
             if [ ! -f .env ]; then
               echo "❌ .env file not found!"

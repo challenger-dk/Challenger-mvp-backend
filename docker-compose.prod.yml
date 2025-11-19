@@ -41,7 +41,7 @@ services:
   chat:
     build: 
       context: .
-      dockerfile: services/chat/Dockerfile.prod
+      dockerfile: chat/Dockerfile.prod
     container_name: challenger-chat
     restart: always
     depends_on:
