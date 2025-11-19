@@ -67,7 +67,7 @@ jobs:
         run: curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
 
       - name: Run Postman API tests
-        # FIXED: Login first, then run collection
         run: |
           postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }}
-          postman collection run 27701941-7be60cdb-e791-4db6-940f-3c5d1e21a9f1
+          postman collection run 27701941-7be60cdb-e791-4db6-940f-3c5d1e21a9f1 \
+            --env-var "baseUrl=localhost:8080"
