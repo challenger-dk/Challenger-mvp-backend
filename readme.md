@@ -1,12 +1,12 @@
 # Challenger Backend
 
-This is the Go backend service for the Challenger application. It's a monolithic API server responsible for handling all business logic, including users, challenges, teams, and invitations.
+This is the Go backend service for the Challenger application. It is structured as a modular monolith, separating the HTTP API and the WebSocket Chat service while sharing common logic.
 
 ## Technology Stack
 
 * **Language:** Go (Golang)
 * **Web Framework:** Chi (v5)
-* **Database:** PostgreSQL
+* **Database:** PostgreSQL (with PostGIS)
 * **ORM:** GORM
 * **Authentication:** JWT (JSON Web Tokens)
 * **Validation:** `go-playground/validator` (with custom rules)
@@ -16,19 +16,25 @@ This is the Go backend service for the Challenger application. It's a monolithic
 
 ## Project Structure
 
-The project code is located entirely within the `src/` directory, following a layered architecture:
+The project code is organized into the following directories:
 
-* `/src`: The root of the Go module.
-    * `main.go`: The main application entry point.
-    * `go.mod`: Project dependencies.
-    * `/config`: Handles environment variables (`env.go`), database connections (`db.go`), and sport seeding/caching (`sport.go`).
-    * `/controllers`: HTTP handlers responsible for parsing requests, calling services, and writing HTTP responses.
-    * `/services`: Contains all business logic (e.g., creating a user, accepting an invitation).
-    * `/models`: Defines the GORM database models (structs) for tables like `User`, `Team`, `Challenge`, etc.
-    * `/dto`: Data Transfer Objects used for request validation (`ChallengeCreateDto`) and response formatting (`ChallengeResponseDto`).
-    * `/routes`: Defines all API endpoints using the Chi router and groups them by resource.
-    * `/middleware`: Contains custom HTTP middleware like `AuthMiddleware` and `JsonContentType`.
-    * `/tests`: Contains unit tests and integration tests.
+* `/api`: Contains the REST API application code.
+    * `main.go`: Entry point for the API server.
+    * `/controllers`: HTTP handlers for parsing requests and managing responses.
+    * `/services`: Business logic for the API.
+    * `/routes`: API route definitions.
+    * `/middleware`: HTTP middleware (Auth, CORS, etc.).
+    * `/tests`: Unit and integration tests.
+* `/chat`: Contains the WebSocket Chat service code.
+    * `main.go`: Entry point for the Chat server.
+    * `hub.go` & `client.go`: WebSocket logic for handling real-time connections.
+* `/common`: Shared code used by both the API and Chat services.
+    * `/config`: Configuration (`env.go`), database connections (`db.go`), and setup.
+    * `/models`: GORM database models (`User`, `Team`, `Challenge`, etc.).
+    * `/dto`: Shared Data Transfer Objects.
+    * `/appError`: Centralized error handling.
+* `go.mod`: Project dependencies.
+* `docker-compose.yml`: Local development environment setup.
 
 ---
 
@@ -38,8 +44,9 @@ The project code is located entirely within the `src/` directory, following a la
 * **User Management:** Get users, get current user, update user profile (including favorite sports).
 * **Teams:** Full CRUD operations for teams.
 * **Challenges:** Full CRUD operations for challenges.
-* **Invitations:** A complete system for sending, accepting, and declining invitations to resources (currently "team").
-* **Dynamic Validation:** Includes custom validation rules, such as `is-valid-sport`, which dynamically checks against a list of sports loaded from the database at startup.
+* **Invitations:** A complete system for sending, accepting, and declining invitations.
+* **Real-time Chat:** WebSocket-based chat for teams and direct messages.
+* **Dynamic Validation:** Includes custom validation rules, such as `is-valid-sport`.
 
 ---
 
@@ -51,6 +58,6 @@ You can run the project in two ways: with Docker (recommended) or locally.
 
 First, you must create a configuration file.
 
-1.  Navigate to the `src/` directory.
+1.  Navigate to the root directory.
 2.  Copy the `.env.sample` file to a new file named `.env`.
 3.  Fill in the values in `.env`. All fields are required.
