@@ -12,12 +12,43 @@ services:
       - "5432:5432"
     volumes:
       - ./Database/sql/schema-init:/docker-entrypoint-initdb.d
+      - postgres-data:/var/lib/postgresql/data  # persist DB
 
-  app:
-    build: ./src
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    container_name: challenger-api
     ports:
       - "8080:8080"
+    env_file:
+      - .env                               # inject variables
     volumes:
-      - ./src:/src
+      - ./.env:/app/.env                  # <- mount so godotenv can read it
+      - ./api:/app/api
+      - ./common:/app/common
+      - ./go.mod:/app/go.mod
+      - ./go.sum:/app/go.sum
     depends_on:
       - postgres
+
+  chat:
+    build:
+      context: .
+      dockerfile: chat/Dockerfile
+    container_name: challenger-chat
+    ports:
+      - "8082:8082"
+    env_file:
+      - .env
+    volumes:
+      - ./.env:/app/.env
+      - ./chat:/app/chat
+      - ./common:/app/common
+      - ./go.mod:/app/go.mod
+      - ./go.sum:/app/go.sum
+    depends_on:
+      - postgres
+
+volumes:
+  postgres-data:

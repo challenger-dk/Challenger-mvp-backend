@@ -22,9 +22,11 @@ services:
       timeout: 5s
       retries: 12
 
-  app:
-    image: challenger-app:latest
-    container_name: challenger-app
+  api:
+    build: 
+      context: .
+      dockerfile: api/Dockerfile.prod
+    container_name: challenger-api
     restart: always
     depends_on:
       postgres:
@@ -33,13 +35,22 @@ services:
       - "8080:8080"
     env_file:
       - .env
-    environment:
-      DB_HOST: postgres
-      DB_PORT: "5432"
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
-      JWT_SECRET: ${JWT_SECRET}
+    networks:
+      - challenger-network
+
+  chat:
+    build: 
+      context: .
+      dockerfile: services/chat/Dockerfile.prod
+    container_name: challenger-chat
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    env_file:
+      - .env
     networks:
       - challenger-network
 

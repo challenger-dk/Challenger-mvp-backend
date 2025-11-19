@@ -1,0 +1,33 @@
+# Build Stage
+FROM golang:1.24-alpine AS builder
+
+WORKDIR /app
+
+# 1. Download dependencies
+# We copy go.mod/sum from the ROOT context
+COPY go.mod go.sum ./
+RUN go mod download
+
+# 2. Copy source code
+# We copy the shared folder AND the specific service folder
+COPY common ./common
+COPY api ./api
+
+# 3. Build the binary
+# We target the main file inside api/
+RUN CGO_ENABLED=0 GOOS=linux go build -o challenger-api ./api
+
+# Final Stage
+FROM alpine:latest
+
+WORKDIR /app
+
+# Install certificates for HTTPS
+RUN apk --no-cache add ca-certificates
+
+# Copy the binary from the builder
+COPY --from=builder /app/challenger-api .
+
+EXPOSE 8080
+
+CMD ["./challenger-api"]

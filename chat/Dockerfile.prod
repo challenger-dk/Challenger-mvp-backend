@@ -1,0 +1,29 @@
+# Build Stage
+FROM golang:1.24-alpine AS builder
+
+WORKDIR /app
+
+# 1. Download dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# 2. Copy source code
+# We copy common + chat (we IGNORE api here to keep the image clean)
+COPY common ./common
+COPY chat ./chat
+
+# 3. Build the binary
+RUN CGO_ENABLED=0 GOOS=linux go build -o challenger-chat ./chat
+
+# Final Stage
+FROM alpine:latest
+
+WORKDIR /app
+
+RUN apk --no-cache add ca-certificates
+
+COPY --from=builder /app/challenger-chat .
+
+EXPOSE 8081
+
+CMD ["./challenger-chat"]
