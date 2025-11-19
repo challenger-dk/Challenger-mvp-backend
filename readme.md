@@ -14,6 +14,25 @@ This is the Go backend service for the Challenger application. It is structured 
 
 ---
 
+## Services Architecture
+
+The backend is architected as two distinct services that run concurrently. They share the same PostgreSQL database and common code modules (Models, DTOs, Config) located in the `/common` directory.
+
+### 1. Main API Service (`/api`)
+This is the primary service handling the core business logic of the application.
+* **Responsibilities:** Manages User Authentication (JWT), User Profiles, Teams, Challenges, Sports, and the Invitation system.
+* **Protocol:** RESTful HTTP (JSON).
+* **Port:** Exposed on port `8080`.
+* **Key Endpoints:** `/auth`, `/users`, `/teams`, `/challenges`, `/invitations`.
+
+### 2. Chat Service (`/chat`)
+A dedicated service designed to handle persistent connections and real-time messaging, keeping the main API lightweight.
+* **Responsibilities:** Manages WebSocket connections for real-time communication in Team channels and Direct Messages. It also provides an HTTP endpoint to fetch message history.
+* **Protocol:** WebSocket (for live events) & HTTP (for history).
+* **Port:** Exposed on port `8082` (Development) or `8081` (Production).
+
+---
+
 ## Project Structure
 
 The project code is organized into the following directories:
@@ -61,3 +80,14 @@ First, you must create a configuration file.
 1.  Navigate to the root directory.
 2.  Copy the `.env.sample` file to a new file named `.env`.
 3.  Fill in the values in `.env`. All fields are required.
+
+### 2. Running with Docker
+
+1.  Ensure Docker and Docker Compose are installed.
+2.  Run the application:
+    ```bash
+    docker compose up --build
+    ```
+3.  The services will be available at:
+    * **API:** `http://localhost:8080`
+    * **Chat:** `http://localhost:8082` (WebSocket endpoint at `ws://localhost:8082/ws`)
