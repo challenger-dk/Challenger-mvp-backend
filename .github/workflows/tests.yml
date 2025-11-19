@@ -10,6 +10,7 @@ jobs:
     
     services:
       postgres:
+        # Changed to PostGIS because main.go requires the extension
         image: postgis/postgis:16-3.4
         env:
           POSTGRES_USER: gouser
@@ -30,18 +31,21 @@ jobs:
         with:
           go-version: '1.24.4'
           cache: true
+          # Updated path (removed src/)
           cache-dependency-path: go.sum 
 
       - name: Install dependencies
         run: go mod download
 
       - name: Run unit tests
+        # Run tests recursively from root
         run: go test -v -coverprofile=coverage.out ./...
 
       - name: Coverage summary
         run: go tool cover -func=coverage.out
 
       - name: Build Go server
+        # Updated build target to ./api
         run: |
           go build -o my-server ./api
 
@@ -52,6 +56,7 @@ jobs:
           DB_USER: gouser
           DB_PASSWORD: gopassword
           DB_NAME: godb
+          # Required by config/env.go
           JWT_SECRET: testing_secret_key
         run: ./my-server > server.log 2>&1 & 
 
@@ -63,5 +68,6 @@ jobs:
 
       - name: Run Postman API tests
         run: |
+          postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }}
           postman collection run 27701941-7be60cdb-e791-4db6-940f-3c5d1e21a9f1 \
-            --api-key ${{ secrets.POSTMAN_API_KEY }}
+            --env-var "baseUrl=localhost:8080"
