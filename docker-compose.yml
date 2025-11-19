@@ -13,6 +13,12 @@ services:
     volumes:
       - ./Database/sql/schema-init:/docker-entrypoint-initdb.d
       - postgres-data:/var/lib/postgresql/data  # persist DB
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d challenger"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
 
   api:
     build:
@@ -30,7 +36,8 @@ services:
       - ./go.mod:/app/go.mod
       - ./go.sum:/app/go.sum
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   chat:
     build:
@@ -48,7 +55,8 @@ services:
       - ./go.mod:/app/go.mod
       - ./go.sum:/app/go.sum
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
 volumes:
   postgres-data:
