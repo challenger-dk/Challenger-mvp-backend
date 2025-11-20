@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"server/common/models"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
@@ -33,8 +35,20 @@ func HandleError(w http.ResponseWriter, err error) {
 		// Build the structured error details
 		details := make(map[string]string)
 		for _, fe := range validationErrors {
-			// fe.Field() will now be "email", "first_name", etc.
-			details[fe.Field()] = getValidationErrorMessage(fe)
+			// fe.Namespace() returns the full path, e.g., "ChallengeCreateDto.location.address"
+			fieldName := fe.Namespace()
+
+			// We want to remove the struct name ("ChallengeCreateDto.") to get just "location.address"
+			if dotIndex := strings.Index(fieldName, "."); dotIndex != -1 {
+				fieldName = fieldName[dotIndex+1:]
+			}
+
+			// If stripping failed or there was no dot, fallback to the simple field name
+			if fieldName == "" {
+				fieldName = fe.Field()
+			}
+
+			details[fieldName] = getValidationErrorMessage(fe)
 		}
 
 		resp := ValidationErrorResponse{
@@ -90,7 +104,7 @@ func getValidationErrorMessage(fe validator.FieldError) string {
 	case "longitude":
 		return "This must be a valid longitude (between -180 and 180)"
 	case "is-valid-sport":
-		return "This is not a valid sport"
+		return fmt.Sprintf("Not valid sport should be one of: [%s]", strings.Join(models.GetAllowedSports(), ", "))
 	case "oneof":
 		return fmt.Sprintf("This field must be one of: %s", fe.Param())
 	default:
