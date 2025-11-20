@@ -39,81 +39,94 @@ func GetUserByID(userID uint) (*models.User, error) {
 }
 
 func CreateUser(email, password, firstName, lastName string, favoriteSports []string) (*models.User, error) {
-	var existingUser models.User
+	var user *models.User
 
-	err := config.DB.Where("email = ?", email).
-		First(&existingUser).
-		Error
+	err := config.DB.Transaction(func(tx *gorm.DB) error {
+		var existingUser models.User
 
-	if err == nil {
-		return nil, appError.ErrUserExists
-	}
+		err := tx.Where("email = ?", email).
+			First(&existingUser).
+			Error
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err == nil {
+			return appError.ErrUserExists
+		}
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			return err
+		}
+
+		newUser := &models.User{
+			Email:     email,
+			Password:  string(hashedPassword),
+			FirstName: firstName,
+			LastName:  lastName,
+		}
+
+		err = tx.Create(newUser).Error
+		if err != nil {
+			return err
+		}
+
+		// Associate favorite sports if provided
+		if len(favoriteSports) > 0 {
+			if err := associateFavoriteSports(tx, newUser.ID, favoriteSports); err != nil {
+				return err
+			}
+			// Reload user with favorite sports
+			if err := tx.Preload("FavoriteSports").First(newUser, newUser.ID).Error; err != nil {
+				return err
+			}
+		}
+
+		user = newUser
+		return nil
+	})
+
 	if err != nil {
 		return nil, err
-	}
-
-	user := &models.User{
-		Email:     email,
-		Password:  string(hashedPassword),
-		FirstName: firstName,
-		LastName:  lastName,
-	}
-
-	err = config.DB.Create(user).Error
-	if err != nil {
-		return nil, err
-	}
-
-	// Associate favorite sports if provided
-	if len(favoriteSports) > 0 {
-		if err := associateFavoriteSports(user.ID, favoriteSports); err != nil {
-			return nil, err
-		}
-		// Reload user with favorite sports
-		if err := config.DB.Preload("FavoriteSports").First(user, user.ID).Error; err != nil {
-			return nil, err
-		}
 	}
 
 	return user, nil
 }
 
 func UpdateUser(userID uint, user dto.UserUpdateDto) error {
-	var existingUser models.User
-	if err := config.DB.Preload("FavoriteSports").First(&existingUser, userID).Error; err != nil {
-		return err
-	}
-
-	if user.FirstName != "" {
-		existingUser.FirstName = user.FirstName
-	}
-
-	if user.LastName != "" {
-		existingUser.LastName = user.LastName
-	}
-
-	if user.ProfilePicture != "" {
-		existingUser.ProfilePicture = user.ProfilePicture
-	}
-
-	if user.Bio != "" {
-		existingUser.Bio = user.Bio
-	}
-
-	if err := config.DB.Save(&existingUser).Error; err != nil {
-		return err
-	}
-
-	// Update favorite sports if provided
-	if user.FavoriteSports != nil {
-		if err := associateFavoriteSports(userID, user.FavoriteSports); err != nil {
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+		var existingUser models.User
+		if err := tx.Preload("FavoriteSports").First(&existingUser, userID).Error; err != nil {
 			return err
 		}
-	}
 
-	return nil
+		if user.FirstName != "" {
+			existingUser.FirstName = user.FirstName
+		}
+
+		if user.LastName != "" {
+			existingUser.LastName = user.LastName
+		}
+
+		if user.ProfilePicture != "" {
+			existingUser.ProfilePicture = user.ProfilePicture
+		}
+
+		if user.Bio != "" {
+			existingUser.Bio = user.Bio
+		}
+
+		if err := tx.Save(&existingUser).Error; err != nil {
+			return err
+		}
+
+		// Update favorite sports if provided
+		if user.FavoriteSports != nil {
+			if err := associateFavoriteSports(tx, userID, user.FavoriteSports); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }
 
 func DeleteUser(userID uint) error {

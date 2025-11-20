@@ -103,49 +103,43 @@ func CreateTeam(t models.Team) (models.Team, error) {
 
 // --- PUT ---
 func UpdateTeam(id uint, team models.Team) error {
-	var t models.Team
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+		var t models.Team
 
-	err := config.DB.First(&t, id).Error
-	if err != nil {
-		return err
-	}
+		err := tx.First(&t, id).Error
+		if err != nil {
+			return err
+		}
 
-	if team.Name != "" {
-		t.Name = team.Name
-	}
+		if team.Name != "" {
+			t.Name = team.Name
+		}
 
-	err = config.DB.Save(&t).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+		return tx.Save(&t).Error
+	})
 }
 
 // --- DELETE ---
 func DeleteTeam(id uint) error {
-	var t models.Team
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+		var t models.Team
 
-	err := config.DB.First(&t, id).Error
-	if err != nil {
-		return err
-	}
+		err := tx.First(&t, id).Error
+		if err != nil {
+			return err
+		}
 
-	// Remove user associations
-	err = config.DB.Model(&t).
-		Association("Users").
-		Clear()
+		// Remove user associations
+		err = tx.Model(&t).
+			Association("Users").
+			Clear()
 
-	if err != nil {
-		return err
-	}
+		if err != nil {
+			return err
+		}
 
-	err = config.DB.Delete(&t).Error
-	if err != nil {
-		return err
-	}
-
-	return nil
+		return tx.Delete(&t).Error
+	})
 }
 
 // Package private methods

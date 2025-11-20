@@ -4,6 +4,8 @@ import (
 	"server/common/appError"
 	"server/common/config"
 	"server/common/models"
+
+	"gorm.io/gorm"
 )
 
 func GetAllSports() ([]models.Sport, error) {
@@ -19,7 +21,8 @@ func GetAllSports() ([]models.Sport, error) {
 
 // Package-level
 // associateFavoriteSports validates and associates sports with a user
-func associateFavoriteSports(userID uint, sportNames []string) error {
+// Now accepts a transaction object to support atomicity
+func associateFavoriteSports(tx *gorm.DB, userID uint, sportNames []string) error {
 	// Validate sport names against the global cache
 	for _, sportName := range sportNames {
 		if _, ok := config.SportsCache[sportName]; !ok {
@@ -32,7 +35,7 @@ func associateFavoriteSports(userID uint, sportNames []string) error {
 	for _, sportName := range sportNames {
 		var sport models.Sport
 
-		err := config.DB.Where("name = ?", sportName).
+		err := tx.Where("name = ?", sportName).
 			FirstOrCreate(&sport, models.Sport{Name: sportName}).
 			Error
 
@@ -46,12 +49,12 @@ func associateFavoriteSports(userID uint, sportNames []string) error {
 	// Replace user's favorite sports
 	var user models.User
 
-	err := config.DB.First(&user, userID).Error
+	err := tx.First(&user, userID).Error
 	if err != nil {
 		return err
 	}
 
-	return config.DB.Model(&user).
+	return tx.Model(&user).
 		Association("FavoriteSports").
 		Replace(sports)
 }
