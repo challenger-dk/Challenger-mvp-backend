@@ -82,7 +82,7 @@ func GetCurrentUserTeams(w http.ResponseWriter, r *http.Request) {
 	user, ok := r.Context().
 		Value(middleware.UserContextKey).(*models.User)
 	if !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		appError.HandleError(w, appError.ErrUnauthorized)
 		return
 	}
 
@@ -111,7 +111,7 @@ func CreateTeam(w http.ResponseWriter, r *http.Request) {
 		Value(middleware.UserContextKey).(*models.User)
 
 	if !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		appError.HandleError(w, appError.ErrUnauthorized)
 		return
 	}
 

@@ -24,6 +24,7 @@ type Invitation struct {
 	InviterId    uint `gorm:"not null;uniqueIndex:idx_unique_invitation"`
 	Inviter      User `gorm:"foreignKey:InviterId"`
 	InviteeId    uint `gorm:"not null;uniqueIndex:idx_unique_invitation"`
+	Invitee      User `gorm:"foreignKey:InviteeId"`
 	Note         string
 	ResourceType InvitationType   `gorm:"type:VARCHAR(20);not null;check:resource_type IN ('team','friend');uniqueIndex:idx_unique_invitation"`
 	ResourceID   uint             `gorm:"not null;uniqueIndex:idx_unique_invitation"`

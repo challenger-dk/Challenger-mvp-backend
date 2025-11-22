@@ -62,6 +62,13 @@ func RegisterRoutes(r chi.Router) {
 		r.Post("/{id}/accept", controllers.AcceptInvitation)
 		r.Post("/{id}/decline", controllers.DeclineInvitation)
 	})
+
+	r.Route("/notifications", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware)
+		r.Get("/", controllers.GetMyNotifications)
+		r.Put("/read-all", controllers.MarkAllRead)
+		r.Put("/{id}/read", controllers.MarkRead)
+	})
 }
 
 func registerGenericMiddleware(r chi.Router) {

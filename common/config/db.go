@@ -52,7 +52,8 @@ func MigrateDB() {
 		&models.Challenge{},
 		&models.Sport{},
 		&models.Invitation{},
-		&models.Location{})
+		&models.Location{},
+		&models.Notification{})
 
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)

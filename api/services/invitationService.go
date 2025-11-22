@@ -5,6 +5,7 @@ import (
 	"server/common/appError"
 	"server/common/config"
 	"server/common/models"
+	commonServices "server/common/services"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -48,6 +49,10 @@ func SendInvitation(invitation *models.Invitation) error {
 				return createErr
 			}
 
+			// Successfully send invitation.
+			// Create notification
+			commonServices.CreateInvitationNotification(tx, *invitation)
+
 			return nil
 		}
 
@@ -80,6 +85,8 @@ func AcceptInvitation(invitationId uint, currentUserId uint) error {
 
 		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 			First(&invitation, invitationId).
+			Preload("Inviter").
+			Preload("Invitee").
 			Error
 
 		if err != nil {
@@ -112,11 +119,17 @@ func AcceptInvitation(invitationId uint, currentUserId uint) error {
 				return err
 			}
 
+			// Send notification
+			commonServices.CreateAcceptedInvitationNotification(tx, invitation)
+
 		case models.ResourceTypeFriend:
 			err = createFriendship(invitation.InviterId, invitation.InviteeId, tx)
 			if err != nil {
 				return err
 			}
+
+			// Send notification
+			commonServices.CreateAcceptedInvitationNotification(tx, invitation)
 
 		default:
 			return appError.ErrUnknownResource
@@ -140,6 +153,8 @@ func DeclineInvitation(invitationId uint, currentUserId uint) error {
 
 		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 			First(&invitation, invitationId).
+			Preload("Inviter").
+			Preload("Invitee").
 			Error
 
 		if err != nil {
@@ -159,6 +174,8 @@ func DeclineInvitation(invitationId uint, currentUserId uint) error {
 		if err != nil {
 			return err
 		}
+
+		commonServices.CreateDeclinedInvitationNotification(tx, invitation)
 
 		return nil
 	})

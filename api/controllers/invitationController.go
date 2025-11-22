@@ -41,7 +41,7 @@ func GetCurrentUserInvitations(w http.ResponseWriter, r *http.Request) {
 	user, ok := r.Context().
 		Value(middleware.UserContextKey).(*models.User)
 	if !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		appError.HandleError(w, appError.ErrUnauthorized)
 		return
 	}
 
@@ -85,7 +85,7 @@ func SendInvitation(w http.ResponseWriter, r *http.Request) {
 	user, ok := r.Context().
 		Value(middleware.UserContextKey).(*models.User)
 	if !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		appError.HandleError(w, appError.ErrUnauthorized)
 		return
 	}
 	invitationModel.InviterId = user.ID
@@ -107,7 +107,7 @@ func AcceptInvitation(w http.ResponseWriter, r *http.Request) {
 	user, ok := r.Context().
 		Value(middleware.UserContextKey).(*models.User)
 	if !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		appError.HandleError(w, appError.ErrUnauthorized)
 		return
 	}
 
@@ -128,7 +128,7 @@ func DeclineInvitation(w http.ResponseWriter, r *http.Request) {
 	user, ok := r.Context().
 		Value(middleware.UserContextKey).(*models.User)
 	if !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		appError.HandleError(w, appError.ErrUnauthorized)
 		return
 	}
 
