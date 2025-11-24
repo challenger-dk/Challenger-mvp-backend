@@ -25,31 +25,14 @@ type NotificationParams struct {
 	ResourceType *string
 }
 
-// CreateNotification creates a new notification using a parameter struct.
-// Does not return err, so it does not break main transaction.
+// Wrapper checking if the notification should be sent before creation.
 func CreateNotification(db *gorm.DB, params NotificationParams) {
-	if db == nil {
-		db = config.DB
+	if !shouldNotify(db, params.RecipientID, params.Type) {
+		return
 	}
 
-	n := models.Notification{
-		UserID:       params.RecipientID,
-		Type:         params.Type,
-		Title:        params.Title,
-		Content:      params.Content,
-		ActorID:      params.ActorID,
-		ResourceID:   params.ResourceID,
-		ResourceType: params.ResourceType,
-	}
-
-	// Savepoint for transaction (If this fails, it does not rollback the main transaction)
-	err := db.Transaction(func(tx *gorm.DB) error {
-		return tx.Create(&n).Error
-	})
-
-	if err != nil {
-		fmt.Printf("⚠️ Failed to create notification (ignoring): %v\n", err)
-	}
+	// Create the actual notification
+	persistNotification(db, params)
 }
 
 // GetMyNotifications fetches notifications.
@@ -81,7 +64,9 @@ func MarkAllNotificationsAsRead(userID uint) error {
 		Error
 }
 
-// CreateInvitationNotification creates a notification for a received invitation
+// ------------- Creators ------------- \\
+
+// Sends notification to the invitee
 func CreateInvitationNotification(db *gorm.DB, inv models.Invitation) {
 	var title, content string
 	var notifType models.NotificationType
@@ -120,6 +105,7 @@ func CreateInvitationNotification(db *gorm.DB, inv models.Invitation) {
 	})
 }
 
+// Sends notification to the one who sent the invitation
 func CreateAcceptedInvitationNotification(db *gorm.DB, inv models.Invitation) {
 	var title, content string
 	var notifType models.NotificationType
@@ -158,6 +144,7 @@ func CreateAcceptedInvitationNotification(db *gorm.DB, inv models.Invitation) {
 	})
 }
 
+// Sends notification to the one who sent the invitation
 func CreateDeclinedInvitationNotification(db *gorm.DB, inv models.Invitation) {
 	var title, content string
 	var notifType models.NotificationType
@@ -194,4 +181,53 @@ func CreateDeclinedInvitationNotification(db *gorm.DB, inv models.Invitation) {
 		ResourceID:   &inv.ResourceID,
 		ResourceType: &rType,
 	})
+}
+
+// -------------- Private -------------- \\
+func shouldNotify(db *gorm.DB, userID uint, notifType models.NotificationType) bool {
+	var settings models.UserSettings
+
+	if err := db.First(&settings, userID).Error; err != nil {
+		return true
+	}
+
+	switch notifType {
+	// Team
+	case models.NotifTypeTeamInvite:
+		return settings.NotifyTeamInvite
+	case models.NotifTypeTeamAccept:
+		return settings.NotifyTeamInvite
+
+	// Friend
+	case models.NotifTypeFriendReq:
+		return settings.NotifyFriendReq
+	case models.NotifTypeFriendAccept:
+		return settings.NotifyFriendReq
+
+	default:
+		return true
+	}
+}
+
+// persistNotification performs the actual DB write.
+// It is private so no one accidentally bypasses the checks.
+func persistNotification(db *gorm.DB, params NotificationParams) {
+	n := models.Notification{
+		UserID:       params.RecipientID,
+		Type:         params.Type,
+		Title:        params.Title,
+		Content:      params.Content,
+		ActorID:      params.ActorID,
+		ResourceID:   params.ResourceID,
+		ResourceType: params.ResourceType,
+	}
+
+	// Savepoint
+	err := db.Transaction(func(tx *gorm.DB) error {
+		return tx.Create(&n).Error
+	})
+
+	if err != nil {
+		fmt.Printf("⚠️ Notification DB Error (swallowed): %v\n", err)
+	}
 }

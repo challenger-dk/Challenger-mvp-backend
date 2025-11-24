@@ -24,7 +24,9 @@ func RegisterRoutes(r chi.Router) {
 		r.Get("/", controllers.GetUsers)
 		r.Get("/me", controllers.GetCurrentUser)
 		r.Get("/{id}", controllers.GetUserByID)
-		r.Put("/{id}", controllers.UpdateUser)
+		r.Get("/settings", controllers.GetCurrentUserSettings)
+		r.Put("/", controllers.UpdateUser)
+		r.Put("/settings", controllers.UpdateUserSettings)
 		r.Delete("/{id}", controllers.DeleteUser)
 	})
 
@@ -77,5 +79,5 @@ func registerGenericMiddleware(r chi.Router) {
 	r.Use(ext_middleware.RequestID) // Usefull for logging and tracing
 	r.Use(ext_middleware.Recoverer)
 	r.Use(ext_middleware.Heartbeat("/health"))
-	r.Use(middleware.JsonContentType)
+	r.Use(middleware.JsonContentType) // Sets Content-Type to json for all requests
 }
