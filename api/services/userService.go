@@ -38,6 +38,33 @@ func GetUserByID(userID uint) (*models.User, error) {
 	return &user, nil
 }
 
+func GetUserByIDWithSettings(userID uint) (*models.User, error) {
+	var user models.User
+
+	err := config.DB.Preload("FavoriteSports").
+		Preload("Friends").
+		Preload("Settings").
+		First(&user, userID).
+		Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func GetUserSettings(userID uint) (*models.UserSettings, error) {
+	var settings models.UserSettings
+	err := config.DB.First(&settings, userID).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &settings, nil
+}
+
 func CreateUser(email, password, firstName, lastName string, favoriteSports []string) (*models.User, error) {
 	var user *models.User
 
@@ -62,6 +89,7 @@ func CreateUser(email, password, firstName, lastName string, favoriteSports []st
 			Password:  string(hashedPassword),
 			FirstName: firstName,
 			LastName:  lastName,
+			Settings:  &models.UserSettings{},
 		}
 
 		err = tx.Create(newUser).Error
@@ -126,6 +154,31 @@ func UpdateUser(userID uint, user dto.UserUpdateDto) error {
 		}
 
 		return nil
+	})
+}
+
+func UpdateUserSettings(userID uint, settingsDto dto.UserSettingsUpdateDto) error {
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+		var settings models.UserSettings
+
+		if err := tx.First(&settings, userID).Error; err != nil {
+			return err
+		}
+
+		if settingsDto.NotifyTeamInvite != nil {
+			settings.NotifyTeamInvite = *settingsDto.NotifyTeamInvite
+		}
+		if settingsDto.NotifyFriendReq != nil {
+			settings.NotifyFriendReq = *settingsDto.NotifyFriendReq
+		}
+		if settingsDto.NotifyChallengeInvite != nil {
+			settings.NotifyChallengeInvite = *settingsDto.NotifyChallengeInvite
+		}
+		if settingsDto.NotifyChallengeUpdate != nil {
+			settings.NotifyChallengeUpdate = *settingsDto.NotifyChallengeUpdate
+		}
+
+		return tx.Save(&settings).Error
 	})
 }
 

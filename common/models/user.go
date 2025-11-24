@@ -21,6 +21,8 @@ type User struct {
 	JoinedChallenges  []Challenge `gorm:"many2many:user_challenges;"`
 	Friends           []User      `gorm:"many2many:user_friends;joinForeignKey:UserID;JoinReferences:FriendID"`
 
+	Settings *UserSettings `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+
 	//Other
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`

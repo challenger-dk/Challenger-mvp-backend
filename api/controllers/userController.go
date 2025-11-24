@@ -74,28 +74,74 @@ func GetUserByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func UpdateUser(w http.ResponseWriter, r *http.Request) {
-	id, err := helpers.GetParamId(r)
+func GetCurrentUserSettings(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().
+		Value(middleware.UserContextKey).(*models.User)
+
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
+		return
+	}
+
+	settings, err := services.GetUserSettings(user.ID)
 	if err != nil {
 		appError.HandleError(w, err)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(*settings)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+}
+
+func UpdateUser(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().
+		Value(middleware.UserContextKey).(*models.User)
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
 		return
 	}
 
 	req := dto.UserUpdateDto{}
 
-	err = json.NewDecoder(r.Body).Decode(&req)
+	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
 	}
 
-	err = services.UpdateUser(id, req)
+	err = services.UpdateUser(user.ID, req)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func UpdateUserSettings(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().
+		Value(middleware.UserContextKey).(*models.User)
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
+		return
+	}
+
+	req := dto.UserSettingsUpdateDto{}
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	err = services.UpdateUserSettings(user.ID, req)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {

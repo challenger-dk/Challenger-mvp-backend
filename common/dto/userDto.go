@@ -34,8 +34,23 @@ type UserResponseDto struct {
 	Age            uint                    `json:"age"`
 	FavoriteSports []SportResponseDto      `json:"favorite_sports,omitempty"`
 	Friends        []PublicUserDtoResponse `json:"friends,omitempty"`
+	Settings       UserSettingsResponseDto `json:"settings"`
 	CreatedAt      time.Time               `json:"created_at"`
 	UpdatedAt      time.Time               `json:"updated_at"`
+}
+
+type UserSettingsResponseDto struct {
+	NotifyTeamInvite      bool `json:"notify_team_invite"`
+	NotifyFriendReq       bool `json:"notify_friend_req"`
+	NotifyChallengeInvite bool `json:"notify_challenge_invite"`
+	NotifyChallengeUpdate bool `json:"notify_challenge_update"`
+}
+
+type UserSettingsUpdateDto struct {
+	NotifyTeamInvite      *bool `json:"notify_team_invite"`
+	NotifyFriendReq       *bool `json:"notify_friend_req"`
+	NotifyChallengeInvite *bool `json:"notify_challenge_invite"`
+	NotifyChallengeUpdate *bool `json:"notify_challenge_update"`
 }
 
 // Used for
@@ -92,7 +107,26 @@ func ToUserResponseDto(user models.User) UserResponseDto {
 		Age:            user.Age,
 		FavoriteSports: favoriteSports,
 		Friends:        friends,
+		Settings:       ToUserSettingsResponseDto(*user.Settings),
 		CreatedAt:      user.CreatedAt,
 		UpdatedAt:      user.UpdatedAt,
+	}
+}
+
+func ToUserSettingsResponseDto(s models.UserSettings) UserSettingsResponseDto {
+	return UserSettingsResponseDto{
+		NotifyTeamInvite:      s.NotifyTeamInvite,
+		NotifyFriendReq:       s.NotifyFriendReq,
+		NotifyChallengeInvite: s.NotifyChallengeInvite,
+		NotifyChallengeUpdate: s.NotifyChallengeUpdate,
+	}
+}
+
+func UserSettingsUpdateDtoToModel(s UserSettingsUpdateDto) models.UserSettings {
+	return models.UserSettings{
+		NotifyTeamInvite:      *s.NotifyTeamInvite,
+		NotifyFriendReq:       *s.NotifyFriendReq,
+		NotifyChallengeInvite: *s.NotifyChallengeInvite,
+		NotifyChallengeUpdate: *s.NotifyChallengeUpdate,
 	}
 }

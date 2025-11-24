@@ -25,7 +25,7 @@ func ConnectDatabase() {
 	var database *gorm.DB
 	var err error
 
-	for i := 0; i < maxRetries; i++ {
+	for i := range maxRetries {
 		database, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 		if err == nil {
 			DB = database
@@ -53,7 +53,8 @@ func MigrateDB() {
 		&models.Sport{},
 		&models.Invitation{},
 		&models.Location{},
-		&models.Notification{})
+		&models.Notification{},
+		&models.UserSettings{})
 
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)

@@ -21,6 +21,7 @@ func Login(email, password string) (*models.User, string, error) {
 	var user models.User
 
 	err := config.DB.Where("email = ?", email).
+		Preload("Settings").
 		First(&user).
 		Error
 
