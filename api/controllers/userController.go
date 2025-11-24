@@ -41,7 +41,7 @@ func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Reload user with favorite sports preloaded
-	userWithSports, err := services.GetUserByID(user.ID)
+	userWithSports, err := services.GetUserByIDWithSettings(user.ID)
 	if err != nil {
 		appError.HandleError(w, err)
 		return

@@ -33,14 +33,14 @@ func main() {
 	mux.HandleFunc("/api/messages", getMessages)
 
 	server := &http.Server{
-		Addr:         ":8082",
+		Addr:         ":8002",
 		Handler:      mux,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  120 * time.Second,
 	}
 
-	log.Println("Chat Service started on :8082")
+	log.Println("Chat Service started on :8002")
 	err = server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		log.Fatal("ListenAndServe: ", err)
