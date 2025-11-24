@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"server/api/controllers/helpers"
+	"server/api/middleware"
 	"server/api/services"
 	"server/common/appError"
 	"server/common/dto"
+	"server/common/models"
 )
 
 func GetChallenge(w http.ResponseWriter, r *http.Request) {
@@ -50,6 +52,15 @@ func GetChallenges(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateChallenge(w http.ResponseWriter, r *http.Request) {
+	// Get authenticated user from context
+	user, ok := r.Context().
+		Value(middleware.UserContextKey).(*models.User)
+
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
+		return
+	}
+
 	req := dto.ChallengeCreateDto{}
 
 	// Decode request
@@ -65,7 +76,11 @@ func CreateChallenge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	createdModel, err := services.CreateChallenge(dto.ChallengeCreateDtoToModel(req), req.Users)
+	challengeModel := dto.ChallengeCreateDtoToModel(req)
+	// Set the creator ID to the authenticated user
+	challengeModel.CreatorID = user.ID
+
+	createdModel, err := services.CreateChallenge(challengeModel, req.Users)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
@@ -112,6 +127,52 @@ func UpdateChallenge(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Successfull update
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func JoinChallenge(w http.ResponseWriter, r *http.Request) {
+	id, err := helpers.GetParamId(r)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	user, ok := r.Context().
+		Value(middleware.UserContextKey).(*models.User)
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
+		return
+	}
+
+	err = services.JoinChallenge(id, user.ID)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func LeaveChallenge(w http.ResponseWriter, r *http.Request) {
+	id, err := helpers.GetParamId(r)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	user, ok := r.Context().
+		Value(middleware.UserContextKey).(*models.User)
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
+		return
+	}
+
+	err = services.LeaveChallenge(id, user.ID)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 

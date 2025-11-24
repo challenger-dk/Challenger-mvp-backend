@@ -10,7 +10,6 @@ type ChallengeCreateDto struct {
 	Description string            `json:"description"`
 	Sport       string            `json:"sport"       validate:"required,is-valid-sport"`
 	Location    LocationCreateDto `json:"location"`
-	CreatorId   uint              `json:"creator_id"    validate:"required"`
 	IsIndoor    bool              `json:"is_indoor"`
 	IsPublic    bool              `json:"is_public"`
 	PlayFor     string            `json:"play_for"`
@@ -55,7 +54,6 @@ func ChallengeCreateDtoToModel(t ChallengeCreateDto) models.Challenge {
 		Description: t.Description,
 		Sport:       t.Sport,
 		Location:    LocationCreateDtoToModel(t.Location),
-		CreatorID:   t.CreatorId,
 		IsIndoor:    t.IsIndoor,
 		IsPublic:    t.IsPublic,
 		IsCompleted: false,

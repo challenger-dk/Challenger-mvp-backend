@@ -188,6 +188,48 @@ func UpdateChallenge(id uint, ch models.Challenge) error {
 	})
 }
 
+func JoinChallenge(id uint, userId uint) error {
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+		var c models.Challenge
+		var u models.User
+
+		err := tx.First(&c, id).Error
+		if err != nil {
+			return err
+		}
+
+		err = tx.First(&u, userId).Error
+		if err != nil {
+			return err
+		}
+
+		return tx.Model(&c).
+			Association("Users").
+			Append(&u)
+	})
+}
+
+func LeaveChallenge(id uint, userId uint) error {
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+		var c models.Challenge
+		var u models.User
+
+		err := tx.First(&c, id).Error
+		if err != nil {
+			return err
+		}
+
+		err = tx.First(&u, userId).Error
+		if err != nil {
+			return err
+		}
+
+		return tx.Model(&c).
+			Association("Users").
+			Delete(&u)
+	})
+}
+
 func DeleteChallenge(id uint) error {
 	return config.DB.Transaction(func(tx *gorm.DB) error {
 		var c models.Challenge

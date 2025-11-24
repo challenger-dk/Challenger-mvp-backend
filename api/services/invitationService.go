@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"server/common/appError"
 	"server/common/config"
 	"server/common/models"
@@ -207,6 +208,8 @@ func DeclineInvitation(invitationId uint, currentUserId uint) error {
 
 // getResource fetches the resource associated with an invitation
 func getResource(invitation models.Invitation, db *gorm.DB) (any, error) {
+	fmt.Println("ResourceType:", invitation.ResourceType)
+	fmt.Println("ResourceID:", invitation.ResourceID)
 	switch invitation.ResourceType {
 	case models.ResourceTypeTeam:
 		var team models.Team

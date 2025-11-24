@@ -34,11 +34,14 @@ func RegisterRoutes(r chi.Router) {
 		r.Get("/", controllers.GetChallenges)
 		r.Get("/{id}", controllers.GetChallenge)
 
-		r.Post("/", controllers.CreateChallenge)
-
-		r.Put("/{id}", controllers.UpdateChallenge)
-
-		r.Delete("/{id}", controllers.DeleteChallenge)
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.AuthMiddleware)
+			r.Post("/", controllers.CreateChallenge)
+			r.Put("/{id}", controllers.UpdateChallenge)
+			r.Post("/{id}/join", controllers.JoinChallenge)
+			r.Post("/{id}/leave", controllers.LeaveChallenge)
+			r.Delete("/{id}", controllers.DeleteChallenge)
+		})
 	})
 
 	r.Route("/teams", func(r chi.Router) {

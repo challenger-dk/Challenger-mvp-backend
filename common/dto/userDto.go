@@ -97,6 +97,19 @@ func ToUserResponseDto(user models.User) UserResponseDto {
 		friends[i] = ToFriendDtoResponse(friend)
 	}
 
+	var settings UserSettingsResponseDto
+	if user.Settings != nil {
+		settings = ToUserSettingsResponseDto(*user.Settings)
+	} else {
+		// Default settings when Settings is nil (all notifications enabled)
+		settings = UserSettingsResponseDto{
+			NotifyTeamInvite:      true,
+			NotifyFriendReq:       true,
+			NotifyChallengeInvite: true,
+			NotifyChallengeUpdate: true,
+		}
+	}
+
 	return UserResponseDto{
 		ID:             user.ID,
 		Email:          user.Email,
@@ -107,7 +120,7 @@ func ToUserResponseDto(user models.User) UserResponseDto {
 		Age:            user.Age,
 		FavoriteSports: favoriteSports,
 		Friends:        friends,
-		Settings:       ToUserSettingsResponseDto(*user.Settings),
+		Settings:       settings,
 		CreatedAt:      user.CreatedAt,
 		UpdatedAt:      user.UpdatedAt,
 	}
