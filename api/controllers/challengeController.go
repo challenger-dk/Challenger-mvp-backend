@@ -65,7 +65,7 @@ func CreateChallenge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	createdModel, err := services.CreateChallenge(dto.ChallengeCreateDtoToModel(req))
+	createdModel, err := services.CreateChallenge(dto.ChallengeCreateDtoToModel(req), req.Users)
 	if err != nil {
 		appError.HandleError(w, err)
 		return

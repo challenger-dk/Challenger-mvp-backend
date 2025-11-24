@@ -131,6 +131,26 @@ func AcceptInvitation(invitationId uint, currentUserId uint) error {
 			// Send notification
 			commonServices.CreateAcceptedInvitationNotification(tx, invitation)
 
+		case models.ResourceTypeChallenge:
+			// Find resource
+			resource, err := getResource(invitation, tx)
+			if err != nil {
+				return err
+			}
+
+			challenge, ok := resource.(models.Challenge)
+			if !ok {
+				return appError.ErrServerError
+			}
+
+			err = addUserToChallenge(challenge.ID, invitation.InviteeId, tx)
+			if err != nil {
+				return err
+			}
+
+			// Send notification
+			commonServices.CreateAcceptedInvitationNotification(tx, invitation)
+
 		default:
 			return appError.ErrUnknownResource
 		}
@@ -199,7 +219,44 @@ func getResource(invitation models.Invitation, db *gorm.DB) (any, error) {
 		}
 		return team, nil
 
+	case models.ResourceTypeChallenge:
+		var challenge models.Challenge
+		err := db.Preload("Users").
+			First(&challenge, invitation.ResourceID).
+			Error
+
+		if err != nil {
+			return nil, err
+		}
+		return challenge, nil
+
 	default:
 		return nil, appError.ErrUnknownResource
 	}
+}
+
+// addUserToChallenge adds a user to a challenge
+func addUserToChallenge(challengeId uint, userId uint, db *gorm.DB) error {
+	var c models.Challenge
+	var u models.User
+
+	err := db.First(&c, challengeId).Error
+	if err != nil {
+		return err
+	}
+
+	err = db.First(&u, userId).Error
+	if err != nil {
+		return err
+	}
+
+	err = db.Model(&c).
+		Association("Users").
+		Append(&u)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

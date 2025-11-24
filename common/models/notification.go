@@ -20,7 +20,9 @@ const (
 	NotifTypeFriendDecline NotificationType = "friend_decline"
 
 	// Challenge
-	NotifTypeChallengeReq NotificationType = "challenge_request"
+	NotifTypeChallengeReq     NotificationType = "challenge_request"
+	NotifTypeChallengeAccept  NotificationType = "challenge_accept"
+	NotifTypeChallengeDecline NotificationType = "challenge_decline"
 )
 
 type Notification struct {

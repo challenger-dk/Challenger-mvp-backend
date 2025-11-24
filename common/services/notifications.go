@@ -97,6 +97,11 @@ func CreateInvitationNotification(db *gorm.DB, inv models.Invitation) {
 		content = "You have a new friend request."
 		notifType = models.NotifTypeFriendReq
 
+	case models.ResourceTypeChallenge:
+		title = "Challenge Invitation"
+		content = "You have been invited to join a challenge."
+		notifType = models.NotifTypeChallengeReq
+
 	default:
 		fmt.Printf("⚠️ Notification skipped: Unknown resource type %s\n", inv.ResourceType)
 		return
@@ -130,6 +135,11 @@ func CreateAcceptedInvitationNotification(db *gorm.DB, inv models.Invitation) {
 		content = fmt.Sprintf("%s has accepted your friend request", inv.Invitee.FirstName)
 		notifType = models.NotifTypeFriendAccept
 
+	case models.ResourceTypeChallenge:
+		title = "Challenge Invitation Accepted"
+		content = fmt.Sprintf("%s has accepted your challenge invitation", inv.Invitee.FirstName)
+		notifType = models.NotifTypeChallengeAccept
+
 	default:
 		fmt.Printf("⚠️ Notification skipped: Unknown resource type %s\n", inv.ResourceType)
 		return
@@ -162,6 +172,11 @@ func CreateDeclinedInvitationNotification(db *gorm.DB, inv models.Invitation) {
 		title = "Friend Request Declined"
 		content = fmt.Sprintf("%s has declined your friend request", inv.Invitee.FirstName)
 		notifType = models.NotifTypeFriendDecline
+
+	case models.ResourceTypeChallenge:
+		title = "Challenge Invitation Declined"
+		content = fmt.Sprintf("%s has declined your challenge invitation", inv.Invitee.FirstName)
+		notifType = models.NotifTypeChallengeDecline
 
 	default:
 		fmt.Printf("⚠️ Notification skipped: Unknown resource type %s\n", inv.ResourceType)
