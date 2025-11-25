@@ -1,8 +1,11 @@
 package services
 
 import (
+	"server/common/appError"
 	"server/common/config"
 	"server/common/models"
+
+	commonServices "server/common/services"
 
 	"gorm.io/gorm"
 )
@@ -129,6 +132,18 @@ func DeleteTeam(id uint) error {
 			return err
 		}
 
+		// Users to notify
+		var users []models.User
+		var creatorId uint = t.CreatorID
+
+		err = tx.Model(&t).
+			Association("Users").
+			Find(&users)
+
+		if err != nil {
+			return err
+		}
+
 		// Remove user associations
 		err = tx.Model(&t).
 			Association("Users").
@@ -138,7 +153,79 @@ func DeleteTeam(id uint) error {
 			return err
 		}
 
-		return tx.Delete(&t).Error
+		err = tx.Delete(&t).Error
+		if err != nil {
+			return err
+		}
+
+		// Notify users
+		for _, u := range users {
+			// Dont notify the creator
+			if u.ID == creatorId {
+				continue
+			}
+
+			commonServices.CreateTeamDeletedNotification(tx, u, t)
+		}
+		return nil
+	})
+}
+
+func RemoveUserFromTeam(creator models.User, teamId uint, userId uint) error {
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+		var t models.Team
+		var u models.User
+
+		err := tx.First(&t, teamId).Error
+		if err != nil {
+			return err
+		}
+
+		if creator.ID != t.CreatorID {
+			return appError.ErrUnauthorized
+		}
+
+		err = tx.First(&u, userId).Error
+		if err != nil {
+			return err
+		}
+
+		err = tx.Model(&t).
+			Association("Users").
+			Delete(&u)
+
+		if err != nil {
+			return err
+		}
+
+		// Notification
+		commonServices.CreateRemovedUserFromTeamNotification(tx, u.ID, t)
+
+		return nil
+	})
+}
+
+func LeaveTeam(user models.User, teamId uint) error {
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+		var t models.Team
+
+		err := tx.First(&t, teamId).Error
+		if err != nil {
+			return err
+		}
+
+		err = tx.Model(&t).
+			Association("Users").
+			Delete(&user)
+
+		if err != nil {
+			return err
+		}
+
+		//Notification
+		commonServices.CreateUserLeftTeamNotification(tx, user, t)
+
+		return nil
 	})
 }
 

@@ -10,9 +10,12 @@ const (
 	NotifTypeSystem NotificationType = "system"
 
 	// Team
-	NotifTypeTeamInvite  NotificationType = "team_invite"
-	NotifTypeTeamAccept  NotificationType = "team_accept"
-	NotifTypeTeamDecline NotificationType = "team_decline"
+	NotifTypeTeamInvite      NotificationType = "team_invite"
+	NotifTypeTeamAccept      NotificationType = "team_accept"
+	NotifTypeTeamDecline     NotificationType = "team_decline"
+	NotifTypeTeamRemovedUser NotificationType = "team_removed_user"
+	NotifTypeTeamUserLeft    NotificationType = "team_user_left"
+	NotifTypeTeamDeleted     NotificationType = "team_deleted"
 
 	// Friend
 	NotifTypeFriendReq     NotificationType = "friend_request"
@@ -36,6 +39,8 @@ type Notification struct {
 	Content      string           `gorm:"not null"`
 	ResourceID   *uint            // Linked ID (e.g., TeamID)
 	ResourceType *string          // Linked Type (e.g., "team")
+	InvitationID *uint            // Linked Invitation ID
 	IsRead       bool             `gorm:"default:false"`
+	IsRelevant   bool             `gorm:"default:true"` // <--- Controls visibility
 	CreatedAt    time.Time        `gorm:"autoCreateTime"`
 }

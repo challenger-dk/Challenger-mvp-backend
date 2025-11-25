@@ -96,6 +96,32 @@ func GetCurrentUserSettings(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func GetInCommonStats(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().Value(middleware.UserContextKey).(*models.User)
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
+		return
+	}
+
+	targetID, err := helpers.GetParamId(r)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	stats, err := services.GetInCommonStats(user.ID, targetID)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(stats)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+}
+
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	user, ok := r.Context().
 		Value(middleware.UserContextKey).(*models.User)

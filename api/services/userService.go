@@ -65,6 +65,55 @@ func GetUserSettings(userID uint) (*models.UserSettings, error) {
 	return &settings, nil
 }
 
+func GetInCommonStats(currentUserID, targetUserID uint) (dto.CommonStatsDto, error) {
+	var stats dto.CommonStatsDto
+	db := config.DB
+
+	// 1. Common Teams Count
+	// Corrected table name from "team_users" to "user_teams"
+	var count int64
+	err := db.Table("user_teams as t1").
+		Joins("JOIN user_teams as t2 ON t1.team_id = t2.team_id").
+		Where("t1.user_id = ? AND t2.user_id = ?", currentUserID, targetUserID).
+		Count(&count).Error
+
+	if err != nil {
+		return stats, err
+	}
+	stats.CommonTeamsCount = count
+
+	// 2. Common Friends Count
+	err = db.Table("user_friends as f1").
+		Joins("JOIN user_friends as f2 ON f1.friend_id = f2.friend_id").
+		Where("f1.user_id = ? AND f2.user_id = ?", currentUserID, targetUserID).
+		Count(&count).Error
+
+	if err != nil {
+		return stats, err
+	}
+	stats.CommonFriendsCount = count
+
+	// 3. Common Sports (Favorites)
+	var commonSports []models.Sport
+	err = db.Table("sports").
+		Joins("JOIN user_favorite_sports as us1 ON us1.sport_id = sports.id").
+		Joins("JOIN user_favorite_sports as us2 ON us2.sport_id = sports.id").
+		Where("us1.user_id = ? AND us2.user_id = ?", currentUserID, targetUserID).
+		Find(&commonSports).Error
+
+	if err != nil {
+		return stats, err
+	}
+
+	// Convert models to DTOs
+	stats.CommonSports = make([]dto.SportDto, len(commonSports))
+	for i, s := range commonSports {
+		stats.CommonSports[i] = dto.ToSportDto(s)
+	}
+
+	return stats, nil
+}
+
 func CreateUser(email, password, firstName, lastName string, favoriteSports []string) (*models.User, error) {
 	var user *models.User
 

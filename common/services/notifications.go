@@ -23,6 +23,13 @@ type NotificationParams struct {
 	ActorID      *uint
 	ResourceID   *uint
 	ResourceType *string
+	InvitationID *uint
+}
+
+type NotificationFilters struct {
+	IsRead *bool
+	Limit  int
+	Offset int
 }
 
 // Wrapper checking if the notification should be sent before creation.
@@ -35,13 +42,32 @@ func CreateNotification(db *gorm.DB, params NotificationParams) {
 	persistNotification(db, params)
 }
 
-// GetMyNotifications fetches notifications.
-func GetMyNotifications(userID uint) ([]models.Notification, error) {
+// GetMyNotifications fetches notifications with filters.
+func GetMyNotifications(userID uint, filters NotificationFilters) ([]models.Notification, error) {
 	var notifs []models.Notification
-	err := config.DB.Preload("Actor").
-		Where("user_id = ?", userID).
-		Order("created_at desc").
-		Limit(50).
+
+	// Filter: UserID matches AND IsRelevant is true
+	query := config.DB.Preload("Actor").
+		Where("user_id = ? AND is_relevant = ?", userID, true)
+
+	// Apply Read/Unread filter if provided
+	if filters.IsRead != nil {
+		query = query.Where("is_read = ?", *filters.IsRead)
+	}
+
+	// Apply Limit (default to 50 if not specified)
+	if filters.Limit > 0 {
+		query = query.Limit(filters.Limit)
+	} else {
+		query = query.Limit(50)
+	}
+
+	// Apply Offset
+	if filters.Offset > 0 {
+		query = query.Offset(filters.Offset)
+	}
+
+	err := query.Order("created_at desc").
 		Find(&notifs).
 		Error
 
@@ -64,8 +90,21 @@ func MarkAllNotificationsAsRead(userID uint) error {
 		Error
 }
 
+// HideNotificationByInvitationID marks the notification associated with an invitation as irrelevant.
+func HideNotificationByInvitationID(invitationID uint) {
+	err := config.DB.Model(&models.Notification{}).
+		Where("invitation_id = ?", invitationID).
+		Update("is_relevant", false).
+		Error
+
+	if err != nil {
+		fmt.Printf("⚠️ Failed to hide notification for invitation %d: %v\n", invitationID, err)
+	}
+}
+
 // ------------- Creators ------------- \\
 
+// ------ INVITATIONS ----- \\
 // Sends notification to the invitee
 func CreateInvitationNotification(db *gorm.DB, inv models.Invitation) {
 	var title, content string
@@ -102,6 +141,7 @@ func CreateInvitationNotification(db *gorm.DB, inv models.Invitation) {
 		ActorID:      &inv.InviterId,
 		ResourceID:   &inv.ResourceID,
 		ResourceType: &rType,
+		InvitationID: &inv.ID,
 	})
 }
 
@@ -141,6 +181,7 @@ func CreateAcceptedInvitationNotification(db *gorm.DB, inv models.Invitation) {
 		ActorID:      &inv.InviteeId,
 		ResourceID:   &inv.ResourceID,
 		ResourceType: &rType,
+		InvitationID: &inv.ID,
 	})
 }
 
@@ -180,6 +221,53 @@ func CreateDeclinedInvitationNotification(db *gorm.DB, inv models.Invitation) {
 		ActorID:      &inv.InviteeId,
 		ResourceID:   &inv.ResourceID,
 		ResourceType: &rType,
+		InvitationID: &inv.ID,
+	})
+}
+
+// ------ TEAMS ----- \\
+
+// User removed from team
+func CreateRemovedUserFromTeamNotification(db *gorm.DB, userID uint, team models.Team) {
+	var title, content string
+
+	title = "You have been Removed from a Team"
+	content = fmt.Sprintf("You have been removed from '%s'", team.Name)
+
+	CreateNotification(db, NotificationParams{
+		RecipientID: userID,
+		Type:        models.NotifTypeTeamRemovedUser,
+		Title:       title,
+		Content:     content,
+	})
+}
+
+// User left team, notifies the creator only
+func CreateUserLeftTeamNotification(db *gorm.DB, leaver models.User, team models.Team) {
+	var title, content string
+
+	title = "A User Left a Team"
+	content = fmt.Sprintf("%s has left '%s'", leaver.FirstName, team.Name)
+
+	CreateNotification(db, NotificationParams{
+		RecipientID: team.CreatorID,
+		Type:        models.NotifTypeTeamUserLeft,
+		Title:       title,
+		Content:     content,
+	})
+}
+
+func CreateTeamDeletedNotification(db *gorm.DB, user models.User, team models.Team) {
+	var title, content string
+
+	title = "A team you are a member of has been deleted"
+	content = fmt.Sprintf("'%s' has been deleted", team.Name)
+
+	CreateNotification(db, NotificationParams{
+		RecipientID: user.ID,
+		Type:        models.NotifTypeTeamDeleted,
+		Title:       title,
+		Content:     content,
 	})
 }
 
@@ -220,6 +308,8 @@ func persistNotification(db *gorm.DB, params NotificationParams) {
 		ActorID:      params.ActorID,
 		ResourceID:   params.ResourceID,
 		ResourceType: params.ResourceType,
+		InvitationID: params.InvitationID,
+		IsRelevant:   true,
 	}
 
 	// Savepoint

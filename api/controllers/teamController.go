@@ -230,3 +230,59 @@ func DeleteTeam(w http.ResponseWriter, r *http.Request) {
 	// Write 204
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func RemoveUserFromTeam(w http.ResponseWriter, r *http.Request) {
+	// Get authenticated user from context
+	user, ok := r.Context().
+		Value(middleware.UserContextKey).(*models.User)
+
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
+		return
+	}
+
+	teamId, err := helpers.GetParamId(r)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	rmvUserId, err := helpers.GetParamIdDynamic(r, "rmvUserId")
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	err = services.RemoveUserFromTeam(*user, teamId, rmvUserId)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func LeaveTeam(w http.ResponseWriter, r *http.Request) {
+	// Get authenticated user from context
+	user, ok := r.Context().
+		Value(middleware.UserContextKey).(*models.User)
+
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
+		return
+	}
+
+	teamId, err := helpers.GetParamId(r)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	err = services.LeaveTeam(*user, teamId)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

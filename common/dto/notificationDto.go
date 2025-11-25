@@ -11,9 +11,11 @@ type NotificationResponseDto struct {
 	Content      string                  `json:"content"`
 	Type         models.NotificationType `json:"type"`
 	IsRead       bool                    `json:"is_read"`
+	IsRelevant   bool                    `json:"is_relevant"`
 	Actor        *PublicUserDtoResponse  `json:"actor,omitempty"`
 	ResourceID   *uint                   `json:"resource_id,omitempty"`
 	ResourceType *string                 `json:"resource_type,omitempty"`
+	InvitationID *uint                   `json:"invitation_id,omitempty"`
 	CreatedAt    time.Time               `json:"created_at"`
 }
 
@@ -24,8 +26,10 @@ func ToNotificationResponseDto(n models.Notification) NotificationResponseDto {
 		Content:      n.Content,
 		Type:         n.Type,
 		IsRead:       n.IsRead,
+		IsRelevant:   n.IsRelevant,
 		ResourceID:   n.ResourceID,
 		ResourceType: n.ResourceType,
+		InvitationID: n.InvitationID,
 		CreatedAt:    n.CreatedAt,
 	}
 

@@ -25,9 +25,11 @@ func RegisterRoutes(r chi.Router) {
 		r.Get("/me", controllers.GetCurrentUser)
 		r.Get("/{id}", controllers.GetUserByID)
 		r.Get("/settings", controllers.GetCurrentUserSettings)
+		r.Get("/{id}/in-common", controllers.GetInCommonStats)
 		r.Put("/", controllers.UpdateUser)
 		r.Put("/settings", controllers.UpdateUserSettings)
 		r.Delete("/{id}", controllers.DeleteUser)
+		r.Delete("/{id}/remove", controllers.RemoveFriend)
 	})
 
 	r.Route("/challenges", func(r chi.Router) {
@@ -57,6 +59,8 @@ func RegisterRoutes(r chi.Router) {
 		r.Put("/{id}", controllers.UpdateTeam)
 
 		r.Delete("/{id}", controllers.DeleteTeam)
+		r.Delete("/{id}/user/{rmvUserId}", controllers.RemoveUserFromTeam)
+		r.Delete("/{id}/leave", controllers.LeaveTeam)
 	})
 
 	r.Route("/invitations", func(r chi.Router) {

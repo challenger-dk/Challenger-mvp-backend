@@ -69,6 +69,12 @@ type Login struct {
 	Password string `json:"password" validate:"required"`
 }
 
+type CommonStatsDto struct {
+	CommonFriendsCount int64      `json:"common_friends_count"`
+	CommonTeamsCount   int64      `json:"common_teams_count"`
+	CommonSports       []SportDto `json:"common_sports"`
+}
+
 func ToFriendDtoResponse(user models.User) PublicUserDtoResponse {
 	favoriteSports := make([]SportResponseDto, len(user.FavoriteSports))
 	for i, sport := range user.FavoriteSports {

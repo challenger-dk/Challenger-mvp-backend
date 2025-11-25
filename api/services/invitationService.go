@@ -71,9 +71,15 @@ func SendInvitation(invitation *models.Invitation) error {
 
 		case models.StatusDeclined:
 			// Resend by setting status back to pending
-			return tx.Model(&existing).
+			err := tx.Model(&existing).
 				Update("status", models.StatusPending).
 				Error
+			if err != nil {
+				return err
+			}
+			// Re-notify
+			commonServices.CreateInvitationNotification(tx, existing)
+			return nil
 		}
 
 		return appError.ErrUnhandledInvitationStatus
@@ -85,9 +91,9 @@ func AcceptInvitation(invitationId uint, currentUserId uint) error {
 		var invitation models.Invitation
 
 		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-			First(&invitation, invitationId).
 			Preload("Inviter").
 			Preload("Invitee").
+			First(&invitation, invitationId).
 			Error
 
 		if err != nil {
@@ -162,6 +168,9 @@ func AcceptInvitation(invitationId uint, currentUserId uint) error {
 			return err
 		}
 
+		// Mark the original invitation notification as irrelevant
+		commonServices.HideNotificationByInvitationID(invitationId)
+
 		return nil
 	})
 
@@ -172,10 +181,11 @@ func DeclineInvitation(invitationId uint, currentUserId uint) error {
 	err := config.DB.Transaction(func(tx *gorm.DB) error {
 		var invitation models.Invitation
 
+		// FIXED: Preloads must happen BEFORE First()
 		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-			First(&invitation, invitationId).
 			Preload("Inviter").
 			Preload("Invitee").
+			First(&invitation, invitationId).
 			Error
 
 		if err != nil {
@@ -196,7 +206,11 @@ func DeclineInvitation(invitationId uint, currentUserId uint) error {
 			return err
 		}
 
+		// Send notification
 		commonServices.CreateDeclinedInvitationNotification(tx, invitation)
+
+		// Mark the original invitation notification as irrelevant
+		commonServices.HideNotificationByInvitationID(invitationId)
 
 		return nil
 	})
