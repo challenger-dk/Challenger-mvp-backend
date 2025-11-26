@@ -91,3 +91,8 @@ First, you must create a configuration file.
 3.  The services will be available at:
     * **API:** `http://localhost:8080`
     * **Chat:** `http://localhost:8082` (WebSocket endpoint at `ws://localhost:8082/ws`)
+
+4.  Run a clean seed to create dummy data for local envoriment
+    ```bash
+    make seed
+    ```
