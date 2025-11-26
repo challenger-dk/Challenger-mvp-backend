@@ -81,6 +81,14 @@ func ToChallengeResponseDto(t models.Challenge) ChallengeResponseDto {
 	if t.EndTime != nil {
 		endTime = *t.EndTime
 	}
+	var playFor string
+	if t.PlayFor != nil {
+		playFor = *t.PlayFor
+	}
+	var comment string
+	if t.Comment != nil {
+		comment = *t.Comment
+	}
 	return ChallengeResponseDto{
 		ID:          t.ID,
 		Name:        t.Name,
@@ -93,9 +101,9 @@ func ToChallengeResponseDto(t models.Challenge) ChallengeResponseDto {
 		IsIndoor:    t.IsIndoor,
 		IsPublic:    t.IsPublic,
 		IsCompleted: t.IsCompleted,
-		PlayFor:     *t.PlayFor,
+		PlayFor:     playFor,
 		HasCost:     t.HasCost,
-		Comment:     *t.Comment,
+		Comment:     comment,
 		TeamSize:    t.TeamSize,
 		Date:        t.Date,
 		StartTime:   t.StartTime,
