@@ -309,6 +309,8 @@ func RemoveFriend(userIdA uint, userIdB uint) error {
 			return err
 		}
 
+		// No notifcation here
+
 		return nil
 	})
 }

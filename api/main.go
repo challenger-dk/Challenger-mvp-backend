@@ -9,6 +9,8 @@ import (
 
 	"server/api/routes"
 
+	"server/api/cron"
+
 	"github.com/go-chi/chi/v5"
 )
 
@@ -30,6 +32,8 @@ func main() {
 	if err := config.SeedSports(); err != nil {
 		log.Fatal("Failed to seed sports:", err)
 	}
+
+	cron.Start()
 
 	r := chi.NewRouter()
 	routes.RegisterRoutes(r)
