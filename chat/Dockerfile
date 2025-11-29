@@ -8,7 +8,6 @@ RUN go mod download
 COPY common ./common
 COPY chat ./chat
 
-# CORRECTED LINE: No markdown, just the plain command
 RUN go install github.com/cosmtrek/air@v1.42.0
 
 CMD ["air", "--build.cmd", "go build -o ./tmp/chat ./chat", "--build.bin", "./tmp/chat"]

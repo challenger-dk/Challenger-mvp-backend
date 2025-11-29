@@ -67,6 +67,19 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Authorization Check
+		var isMember bool
+		config.DB.Model(&models.Team{}).
+			Joins("JOIN user_teams ON user_teams.team_id = teams.id").
+			Where("teams.id = ? AND user_teams.user_id = ?", teamID, userID).
+			Select("count(*) > 0").
+			Find(&isMember)
+
+		if !isMember {
+			http.Error(w, "You are not a member of this team", http.StatusForbidden)
+			return
+		}
+
 		// A real-world check would verify if 'userID' is actually a member of 'teamID'.
 		// Assuming for now the user is authorized if the token is valid.
 		query = query.Where("team_id = ?", uint(teamID))
