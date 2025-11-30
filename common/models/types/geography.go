@@ -27,7 +27,7 @@ func (p Point) GormDataType() string {
 
 // Scan implements the sql.Scanner interface.
 // This reads the hex-encoded EWKB format from Postgres.
-func (p *Point) Scan(value interface{}) error {
+func (p *Point) Scan(value any) error {
 	var ewkbHex []byte
 
 	switch v := value.(type) {

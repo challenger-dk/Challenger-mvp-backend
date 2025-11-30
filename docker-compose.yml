@@ -12,13 +12,30 @@ services:
       - "5432:5432"
     volumes:
       - ./Database/sql/schema-init:/docker-entrypoint-initdb.d
-      - postgres-data:/var/lib/postgresql/data  # persist DB
+      - postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d challenger"]
       interval: 5s
       timeout: 5s
       retries: 15
       start_period: 10s
+  
+  postgres-test:
+    image: postgis/postgis:16-3.4
+    container_name: challenger-postgres-test
+    restart: always
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_DB: challenger_test
+      POSTGRES_MULTIPLE_EXTENSIONS: postgis
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d challenger_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   api:
     build:
@@ -28,9 +45,9 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - .env                               # inject variables
+      - .env
     volumes:
-      - ./.env:/app/.env                  # <- mount so godotenv can read it
+      - ./.env:/app/.env
       - ./api:/app/api
       - ./common:/app/common
       - ./go.mod:/app/go.mod
