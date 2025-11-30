@@ -69,5 +69,5 @@ jobs:
       - name: Run Postman API tests
         run: |
           postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }}
-          postman collection run 27701941-7be60cdb-e791-4db6-940f-3c5d1e21a9f1 \
+          postman collection run 16766561-d02d-40e3-99dc-a15776722fae \
             --env-var "baseUrl=localhost:8080"
