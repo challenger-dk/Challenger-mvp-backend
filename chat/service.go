@@ -8,7 +8,7 @@ import (
 	"server/common/dto"
 	"server/common/models"
 	"strconv"
-
+	"math"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -91,7 +91,11 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid recipient_id format", http.StatusBadRequest)
 			return
 		}
-
+		// Check bounds before casting
+		if recipientID > uint64(math.MaxUint) {
+			http.Error(w, "recipient_id out of bounds", http.StatusBadRequest)
+			return
+		}
 		// To fetch 1-on-1 history, we need messages sent FROM user A TO user B,
 		// AND messages sent FROM user B TO user A.
 		query = query.Where(
