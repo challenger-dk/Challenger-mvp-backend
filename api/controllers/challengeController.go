@@ -188,4 +188,6 @@ func DeleteChallenge(w http.ResponseWriter, r *http.Request) {
 		appError.HandleError(w, err)
 		return
 	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
