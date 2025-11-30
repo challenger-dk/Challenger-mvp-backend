@@ -12,6 +12,7 @@ jobs:
     
     services:
       postgres:
+        # Changed to PostGIS because main.go requires the extension
         image: postgis/postgis:16-3.4
         env:
           POSTGRES_USER: gouser
@@ -25,7 +26,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-      # Database for tests
+      # Add the test database service for integration tests
       postgres-test:
         image: postgis/postgis:16-3.4
         env:
@@ -33,7 +34,7 @@ jobs:
           POSTGRES_PASSWORD: test_password
           POSTGRES_DB: challenger_test
         ports:
-          - 5433:5432
+          - 5433:5432 # Expose on 5433 to match integration test setup
         options: >-
           --health-cmd "pg_isready -U test_user -d challenger_test"
           --health-interval 10s
@@ -47,6 +48,7 @@ jobs:
         with:
           go-version: '1.24.4'
           cache: true
+          # Updated path (removed src/)
           cache-dependency-path: go.sum 
 
       - name: Install dependencies
@@ -70,6 +72,7 @@ jobs:
         run: go tool cover -func=integration_coverage.out || echo "No integration coverage generated"
 
       - name: Build Go server
+        # Updated build target to ./api
         run: |
           go build -o my-server ./api
 
@@ -80,20 +83,40 @@ jobs:
           DB_USER: gouser
           DB_PASSWORD: gopassword
           DB_NAME: godb
+          # Required by config/env.go
           JWT_SECRET: testing_secret_key
         run: ./my-server > server.log 2>&1 & 
 
-      - name: Wait for server to start
-        run: sleep 10
+      - name: Wait for server to start (Health Check)
+        run: |
+          echo "Waiting for server to start..."
+          timeout=30
+          elapsed=0
+          until curl -s http://localhost:8000/health > /dev/null; do
+            if [ $elapsed -ge $timeout ]; then
+              echo "Server failed to start within $timeout seconds"
+              cat server.log
+              exit 1
+            fi
+            echo "Waiting... ($elapsed/$timeout)"
+            sleep 2
+            elapsed=$((elapsed+2))
+          done
+          echo "Server is up!"
 
       - name: Install Postman CLI
         run: curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
 
       - name: Run Postman API tests
+        # Only run if POSTMAN_API_KEY is available (optional safety check)
         if: ${{ env.POSTMAN_API_KEY != '' }}
         env: 
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
         run: |
-          postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }}
+          postman login --with-api-key $POSTMAN_API_KEY
           postman collection run 27701941-94d38989-08de-441e-9adc-3977b70b7366 \
-            --env-var "baseUrl=localhost:8080"
+            --env-var "baseUrl=localhost:8000"
+
+      - name: Show server logs on failure
+        if: failure()
+        run: cat server.log
