@@ -94,6 +94,6 @@ jobs:
         env: 
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
         run: |
-          postman login --with-api-key $POSTMAN_API_KEY
+          postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }}
           postman collection run 27701941-94d38989-08de-441e-9adc-3977b70b7366 \
             --env-var "baseUrl=localhost:8080"
