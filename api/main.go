@@ -1,36 +1,40 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 	"time"
 
 	"server/common/config"
-
-	"server/api/routes"
+	"server/common/logger" // Import the logger package
 
 	"server/api/cron"
+	"server/api/routes"
 
 	"github.com/go-chi/chi/v5"
 )
 
 func main() {
+	// 1. Initialize Global Logger first
+	logger.InitLogger()
+	slog.Info("🚀 Initializing Challenger Backend...")
 
-	// Loads config from .env and environment variables
 	config.LoadConfig()
 	config.ConnectDatabase()
 
-	// Ensure PostGIS extension is created
+	// Ensure PostGIS extension
 	err := config.DB.Exec("CREATE EXTENSION IF NOT EXISTS postgis").Error
 	if err != nil {
-		log.Fatal("Failed to create PostGIS extension:", err)
+		slog.Error("Failed to create PostGIS extension", "error", err)
+		os.Exit(1)
 	}
 
 	config.MigrateDB()
 
-	// Seed allowed sports
 	if err := config.SeedSports(); err != nil {
-		log.Fatal("Failed to seed sports:", err)
+		slog.Error("Failed to seed sports", "error", err)
+		os.Exit(1)
 	}
 
 	cron.Start()
@@ -46,8 +50,9 @@ func main() {
 		IdleTimeout:  15 * time.Second,
 	}
 
-	log.Println("Starting server on :8000")
+	slog.Info("Starting server on :8000")
 	if err := server.ListenAndServe(); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+		slog.Error("Server failed to start", "error", err)
+		os.Exit(1)
 	}
 }

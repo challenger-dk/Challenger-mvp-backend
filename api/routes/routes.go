@@ -82,7 +82,7 @@ func RegisterRoutes(r chi.Router) {
 
 func registerGenericMiddleware(r chi.Router) {
 	r.Use(middleware.CorsMiddleware())
-	r.Use(ext_middleware.Logger)
+	r.Use(middleware.SlogMiddleware)
 	r.Use(ext_middleware.RequestID) // Usefull for logging and tracing
 	r.Use(ext_middleware.Recoverer)
 	r.Use(ext_middleware.Heartbeat("/health"))

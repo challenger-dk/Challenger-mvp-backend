@@ -6,6 +6,7 @@ import (
 	"server/common/models/types"
 )
 
+// Publicly exposed, if needed use outside of package
 type Point = types.Point
 
 type Location struct {

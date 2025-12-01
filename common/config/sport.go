@@ -1,20 +1,19 @@
-package config // or database
+package config
 
 import (
-	"log"
+	"log/slog"
+	"os"
 	"server/common/models"
 )
 
-// SportsCache holds the allowed sports for quick validation
 var SportsCache = make(map[string]bool)
 
-// Should be called before LoadSportsCache
 func SeedSports() error {
 	allowedSports := models.GetAllowedSports()
 
 	for _, sportName := range allowedSports {
 		var sport models.Sport
-
+		// FirstOrCreate to avoid duplicates
 		err := DB.Where("name = ?", sportName).
 			FirstOrCreate(&sport, models.Sport{Name: sportName}).
 			Error
@@ -25,31 +24,26 @@ func SeedSports() error {
 	}
 
 	loadSportsCache()
-
 	return nil
 }
 
-// LoadSportsCache loads the allowed sports from the database into the SportsCache map
-// Ensures the server autoamatically has the latest allowed sports in the database
 func loadSportsCache() {
 	var sports []models.Sport
 
-	// Use the DB connection we already have
-	// Assumes your sport model is models.Sport and table is "sports"
 	err := DB.Model(&models.Sport{}).
 		Select("name").
 		Find(&sports).
 		Error
 
 	if err != nil {
-		log.Fatalf("Failed to load sports cache: %v", err)
+		slog.Error("Failed to load sports cache", "error", err)
+		os.Exit(1)
 	}
 
-	// Clear the cache and reload
 	SportsCache = make(map[string]bool)
 	for _, sport := range sports {
 		SportsCache[sport.Name] = true
 	}
 
-	log.Printf("✅ Loaded %d sports into cache", len(sports))
+	slog.Info("✅ Loaded sports into cache", "count", len(sports))
 }

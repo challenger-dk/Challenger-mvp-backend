@@ -1,14 +1,17 @@
 package config
 
 import (
-	"log"
+	"log/slog"
+	"os"
 
 	"github.com/caarlos0/env/v10"
 	"github.com/joho/godotenv"
 )
 
-// Config holds all configuration for the application
 type Config struct {
+	// App Environment (development, production)
+	AppEnv string `env:"APP_ENV" envDefault:"development"`
+
 	// Database connection settings
 	DBHost     string `env:"DB_HOST,required"`
 	DBPort     string `env:"DB_PORT" envDefault:"5432"`
@@ -20,7 +23,6 @@ type Config struct {
 	JWTSecret string `env:"JWT_SECRET,required"`
 
 	// Cron Settings
-	// In production, set this to "true" on only ONE instance/container
 	EnableCron bool `env:"ENABLE_CRON" envDefault:"true"`
 }
 
@@ -28,12 +30,13 @@ var AppConfig Config
 
 func LoadConfig() {
 	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, using system environment")
+		slog.Warn("No .env file found, using system environment")
 	}
 
 	if err := env.Parse(&AppConfig); err != nil {
-		log.Fatalf("Failed to parse config: %+v", err)
+		slog.Error("Failed to parse config", "error", err)
+		os.Exit(1)
 	}
 
-	log.Println("✅ Configuration loaded")
+	slog.Info("Configuration loaded", "env", AppConfig.AppEnv)
 }

@@ -114,13 +114,11 @@ func GetInCommonStats(currentUserID, targetUserID uint) (dto.CommonStatsDto, err
 	return stats, nil
 }
 
-func CreateUser(email, password, firstName, lastName string, favoriteSports []string) (*models.User, error) {
-	var user *models.User
-
+func CreateUser(newUser models.User, password string) (*models.User, error) {
 	err := config.DB.Transaction(func(tx *gorm.DB) error {
 		var existingUser models.User
 
-		err := tx.Where("email = ?", email).
+		err := tx.Where("email = ?", newUser.Email).
 			First(&existingUser).
 			Error
 
@@ -133,31 +131,28 @@ func CreateUser(email, password, firstName, lastName string, favoriteSports []st
 			return err
 		}
 
-		newUser := &models.User{
-			Email:     email,
-			Password:  string(hashedPassword),
-			FirstName: firstName,
-			LastName:  lastName,
-			Settings:  &models.UserSettings{},
-		}
+		newUser.Password = string(hashedPassword)
 
-		err = tx.Create(newUser).Error
+		err = tx.Omit("FavoriteSports").Create(&newUser).Error
 		if err != nil {
 			return err
 		}
 
 		// Associate favorite sports if provided
-		if len(favoriteSports) > 0 {
-			if err := associateFavoriteSports(tx, newUser.ID, favoriteSports); err != nil {
+		if len(newUser.FavoriteSports) > 0 {
+			sports := make([]string, len(newUser.FavoriteSports))
+			for i, sport := range newUser.FavoriteSports {
+				sports[i] = sport.Name
+			}
+			if err := associateFavoriteSports(tx, newUser.ID, sports); err != nil {
 				return err
 			}
 			// Reload user with favorite sports
-			if err := tx.Preload("FavoriteSports").First(newUser, newUser.ID).Error; err != nil {
+			if err := tx.Preload("FavoriteSports").First(&newUser, newUser.ID).Error; err != nil {
 				return err
 			}
 		}
 
-		user = newUser
 		return nil
 	})
 
@@ -165,7 +160,7 @@ func CreateUser(email, password, firstName, lastName string, favoriteSports []st
 		return nil, err
 	}
 
-	return user, nil
+	return &newUser, nil
 }
 
 func UpdateUser(userID uint, user dto.UserUpdateDto) error {

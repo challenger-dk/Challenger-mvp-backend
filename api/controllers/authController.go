@@ -24,7 +24,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := services.CreateUser(req.Email, req.Password, req.FirstName, req.LastName, req.FavoriteSports)
+	user, err := services.CreateUser(dto.UserCreateDtoToModel(req), req.Password)
 	if err != nil {
 		appError.HandleError(w, err)
 		return

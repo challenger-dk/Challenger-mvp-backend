@@ -1,7 +1,7 @@
 package cron
 
 import (
-	"log"
+	"log/slog"
 	"os"
 	"server/api/cron/tasks"
 	"server/common/config"
@@ -9,43 +9,43 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
+// cronLogger adapts slog to the cron.Logger interface
+type cronLogger struct{}
+
+func (l cronLogger) Info(msg string, keysAndValues ...interface{}) {
+	slog.Info(msg, keysAndValues...)
+}
+
+func (l cronLogger) Error(err error, msg string, keysAndValues ...interface{}) {
+	args := append([]interface{}{"error", err}, keysAndValues...)
+	slog.Error(msg, args...)
+}
+
 func Start() {
-	// 1. Check if Cron is enabled in this environment
-	// This prevents multiple containers from running the same job simultaneously.
 	if !config.AppConfig.EnableCron {
-		log.Println("🛑 Cron scheduler disabled on this instance")
+		slog.Info("🛑 Cron scheduler disabled on this instance")
 		return
 	}
 
-	// 2. Initialize with Safety Middleware
-	// - Recover: Captures panics so the server doesn't crash if a job fails.
-	// - SkipIfStillRunning: Prevents the same job from piling up if the previous one is slow.
-	logger := cron.VerbosePrintfLogger(log.New(os.Stdout, "cron: ", log.LstdFlags))
-
+	// Use custom logger adapter
 	c := cron.New(
 		cron.WithChain(
-			cron.Recover(logger),
-			cron.SkipIfStillRunning(logger),
+			cron.Recover(cronLogger{}),
+			cron.SkipIfStillRunning(cronLogger{}),
 		),
+		cron.WithLogger(cronLogger{}),
 	)
 
-	// 3. Register Tasks
 	addTasks(c)
 
-	// 4. Start
 	c.Start()
-	log.Println("✅ Cron scheduler started (Recover & SkipOverlap enabled)")
+	slog.Info("✅ Cron scheduler started", "middleware", "Recover & SkipOverlap")
 }
 
-// AddTasks manages the registration of all background jobs.
-// To add a new job, simply add a new line here.
 func addTasks(c *cron.Cron) {
-	var err error
-
-	// --- Job 1: Notification Cleanup ---
-	// Schedule: Run every day at midnight ("0 0 * * *")
-	_, err = c.AddFunc("0 0 * * *", tasks.RunCleanupNotifications)
+	_, err := c.AddFunc("0 0 * * *", tasks.RunCleanupNotifications)
 	if err != nil {
-		log.Fatalf("Error scheduling CleanupNotifications: %v", err)
+		slog.Error("Error scheduling CleanupNotifications", "error", err)
+		os.Exit(1)
 	}
 }

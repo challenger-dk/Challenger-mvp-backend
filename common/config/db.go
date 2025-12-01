@@ -2,7 +2,8 @@ package config
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
+	"os"
 	"time"
 
 	"server/common/models"
@@ -14,11 +15,9 @@ import (
 var DB *gorm.DB
 
 func ConnectDatabase() {
-	// Build the DSN from the loaded AppConfig struct
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
 		AppConfig.DBHost, AppConfig.DBUser, AppConfig.DBPassword, AppConfig.DBName, AppConfig.DBPort)
 
-	// Retry connection with exponential backoff
 	maxRetries := 10
 	retryDelay := 2 * time.Second
 
@@ -29,35 +28,46 @@ func ConnectDatabase() {
 		database, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 		if err == nil {
 			DB = database
-			fmt.Println("✅ Connected to database")
+			slog.Info("✅ Connected to database")
 			return
 		}
 
 		if i < maxRetries-1 {
-			log.Printf("[error] failed to initialize database, got error %v. Retrying in %v... (attempt %d/%d)", err, retryDelay, i+1, maxRetries)
+			slog.Warn("Failed to initialize database, retrying...",
+				"error", err,
+				"attempt", i+1,
+				"max_retries", maxRetries,
+				"retry_delay", retryDelay,
+			)
 			time.Sleep(retryDelay)
-			retryDelay *= 2 // Exponential backoff
+			retryDelay *= 2
 			if retryDelay > 10*time.Second {
-				retryDelay = 10 * time.Second // Cap at 10 seconds
+				retryDelay = 10 * time.Second
 			}
 		}
 	}
 
-	log.Fatal("Failed to connect to database:", err)
+	slog.Error("Failed to connect to database after retries", "error", err)
+	os.Exit(1)
 }
 
 func MigrateDB() {
-	err := DB.AutoMigrate(&models.User{},
+	// Added the new models (City, Country) from the normalization step
+	err := DB.AutoMigrate(
+		&models.User{},
 		&models.Team{},
 		&models.Challenge{},
 		&models.Sport{},
 		&models.Invitation{},
 		&models.Location{},
 		&models.Notification{},
-		&models.UserSettings{})
+		&models.UserSettings{},
+		&models.Message{},
+	)
 
 	if err != nil {
-		log.Fatal("Failed to migrate database:", err)
+		slog.Error("Failed to migrate database", "error", err)
+		os.Exit(1)
 	}
-	log.Println("Database migrated successfully")
+	slog.Info("Database migrated successfully")
 }

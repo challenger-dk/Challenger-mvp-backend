@@ -149,3 +149,22 @@ func UserSettingsUpdateDtoToModel(s UserSettingsUpdateDto) models.UserSettings {
 		NotifyChallengeUpdate: *s.NotifyChallengeUpdate,
 	}
 }
+
+func UserCreateDtoToModel(u UserCreateDto) models.User {
+	favoriteSports := make([]models.Sport, len(u.FavoriteSports))
+	for i, sportName := range u.FavoriteSports {
+		favoriteSports[i] = models.Sport{Name: sportName}
+	}
+
+	return models.User{
+		Email:          u.Email,
+		Password:       u.Password,
+		FirstName:      u.FirstName,
+		LastName:       u.LastName,
+		ProfilePicture: u.ProfilePicture,
+		Bio:            u.Bio,
+		Age:            u.Age,
+		FavoriteSports: favoriteSports,
+		Settings:       &models.UserSettings{},
+	}
+}

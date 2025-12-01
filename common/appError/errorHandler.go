@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"server/common/models"
 	"strings"
@@ -25,7 +25,8 @@ type ValidationErrorResponse struct {
 
 // --- HandleError (Updated) ---
 func HandleError(w http.ResponseWriter, err error) {
-	log.Printf("ERROR: %v", err)
+	// Log the error using structured logging
+	slog.Error("Request Error", "error", err)
 
 	// 1. Check for validation errors
 	var validationErrors validator.ValidationErrors
@@ -57,7 +58,7 @@ func HandleError(w http.ResponseWriter, err error) {
 		}
 
 		if encodeErr := json.NewEncoder(w).Encode(resp); encodeErr != nil {
-			log.Printf("Error encoding validation error response: %v", encodeErr)
+			slog.Error("Failed to encode validation error response", "error", encodeErr)
 		}
 		return
 	}
@@ -74,7 +75,7 @@ func HandleError(w http.ResponseWriter, err error) {
 					resp = ErrorResponse{Error: err.Error()}
 				}
 				if encodeErr := json.NewEncoder(w).Encode(resp); encodeErr != nil {
-					log.Printf("Error encoding error response: %v", encodeErr)
+					slog.Error("Failed to encode error response", "error", encodeErr)
 				}
 				return
 			}
@@ -84,7 +85,7 @@ func HandleError(w http.ResponseWriter, err error) {
 	// 3. Default to 500
 	w.WriteHeader(http.StatusInternalServerError)
 	if encodeErr := json.NewEncoder(w).Encode(ErrorResponse{Error: fmt.Sprintf("An unexpected error occured: %s", err.Error())}); encodeErr != nil {
-		log.Printf("Error encoding default error response: %v", encodeErr)
+		slog.Error("Failed to encode default error response", "error", encodeErr)
 	}
 }
 
