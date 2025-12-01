@@ -22,6 +22,7 @@ var (
 	ErrInvalidAuthHeader  = errors.New("invalid authorization header format")
 	ErrUserNotFound       = errors.New("user not found")
 	ErrInvalidFriendship  = errors.New("invalid friendship")
+	ErrSameUser           = errors.New("same user")
 )
 
 var (

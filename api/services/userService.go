@@ -310,6 +310,62 @@ func RemoveFriend(userIdA uint, userIdB uint) error {
 	})
 }
 
+func BlockUser(userIdA uint, userIdB uint) error {
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+		var userA, userB models.User
+
+		if userA.ID == userB.ID {
+			return appError.ErrSameUser
+		}
+
+		err := tx.Model(&userA).
+			Association("BlockedUsers").
+			Append(&userB)
+
+		if err != nil {
+			return err
+		}
+
+		err = tx.Model(&userB).
+			Association("BlockedUsers").
+			Append(&userA)
+
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func UnblockUser(userIdA uint, userIdB uint) error {
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+		var userA, userB models.User
+
+		if userA.ID == userB.ID {
+			return appError.ErrSameUser
+		}
+
+		err := tx.Model(&userA).
+			Association("BlockedUsers").
+			Delete(&userB)
+
+		if err != nil {
+			return err
+		}
+
+		err = tx.Model(&userB).
+			Association("BlockedUsers").
+			Delete(&userA)
+
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
 // Package private
 // createFriendship adds both users to each other's friends list
 func createFriendship(userIdA uint, userIdB uint, db *gorm.DB) error {

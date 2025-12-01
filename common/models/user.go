@@ -20,6 +20,7 @@ type User struct {
 	CreatedChallenges []Challenge `gorm:"foreignKey:CreatorID"`
 	JoinedChallenges  []Challenge `gorm:"many2many:user_challenges;"`
 	Friends           []User      `gorm:"many2many:user_friends;joinForeignKey:UserID;JoinReferences:FriendID"`
+	BlockedUsers      []User      `gorm:"many2many:user_blocked_users;joinForeignKey:UserID;JoinReferences:BlockedUserID"`
 
 	Settings *UserSettings `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 
