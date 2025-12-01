@@ -4,6 +4,7 @@ import (
 	"server/api/services"
 	"server/common/appError"
 	"server/common/config"
+	"server/common/models"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,7 +24,12 @@ func TestAuthService_FullFlow(t *testing.T) {
 	assert.ErrorIs(t, err, appError.ErrInvalidCredentials)
 
 	// 2. Create User
-	createdUser, err := services.CreateUser(email, password, "Auth", "User", nil)
+	userModel := models.User{
+		Email:     email,
+		FirstName: "Auth",
+		LastName:  "User",
+	}
+	createdUser, err := services.CreateUser(userModel, password)
 	assert.NoError(t, err)
 
 	// 3. Login Wrong Password

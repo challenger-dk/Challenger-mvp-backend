@@ -13,8 +13,8 @@ func TestInvitationService_TeamFlow(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	inviter, _ := services.CreateUser("inv@t.com", "pw", "I", "I", nil)
-	invitee, _ := services.CreateUser("rec@t.com", "pw", "R", "R", nil)
+	inviter, _ := services.CreateUser(models.User{Email: "inv@t.com", FirstName: "I", LastName: "I"}, "pw")
+	invitee, _ := services.CreateUser(models.User{Email: "rec@t.com", FirstName: "R", LastName: "R"}, "pw")
 	team, _ := services.CreateTeam(models.Team{Name: "T", CreatorID: inviter.ID})
 
 	// 1. Send Invite
@@ -54,8 +54,8 @@ func TestInvitationService_FriendRequest(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	u1, _ := services.CreateUser("u1@f.com", "pw", "1", "1", nil)
-	u2, _ := services.CreateUser("u2@f.com", "pw", "2", "2", nil)
+	u1, _ := services.CreateUser(models.User{Email: "u1@f.com", FirstName: "1", LastName: "1"}, "pw")
+	u2, _ := services.CreateUser(models.User{Email: "u2@f.com", FirstName: "2", LastName: "2"}, "pw")
 
 	// 1. Send Friend Req
 	inv := &models.Invitation{
@@ -81,8 +81,8 @@ func TestInvitationService_Errors(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	u1, _ := services.CreateUser("e1@e.com", "pw", "1", "1", nil)
-	u2, _ := services.CreateUser("e2@e.com", "pw", "2", "2", nil)
+	u1, _ := services.CreateUser(models.User{Email: "e1@e.com", FirstName: "1", LastName: "1"}, "pw")
+	u2, _ := services.CreateUser(models.User{Email: "e2@e.com", FirstName: "2", LastName: "2"}, "pw")
 
 	// 1. Invite Self
 	inv := &models.Invitation{InviterId: u1.ID, InviteeId: u1.ID, ResourceType: models.ResourceTypeFriend}
@@ -103,8 +103,8 @@ func TestInvitationService_DeclineResend(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	u1, _ := services.CreateUser("d1@d.com", "pw", "1", "1", nil)
-	u2, _ := services.CreateUser("d2@d.com", "pw", "2", "2", nil)
+	u1, _ := services.CreateUser(models.User{Email: "d1@d.com", FirstName: "1", LastName: "1"}, "pw")
+	u2, _ := services.CreateUser(models.User{Email: "d2@d.com", FirstName: "2", LastName: "2"}, "pw")
 
 	inv := &models.Invitation{InviterId: u1.ID, InviteeId: u2.ID, ResourceType: models.ResourceTypeFriend}
 	services.SendInvitation(inv)

@@ -13,7 +13,7 @@ func TestTeamService_CRUD(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	creator, _ := services.CreateUser("creator@team.com", "pw", "C", "C", nil)
+	creator, _ := services.CreateUser(models.User{Email: "creator@team.com", FirstName: "C", LastName: "C"}, "pw")
 
 	// 1. Create Team
 	teamModel := models.Team{
@@ -58,7 +58,7 @@ func TestTeamService_List(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	u, _ := services.CreateUser("u@team.com", "pw", "U", "U", nil)
+	u, _ := services.CreateUser(models.User{Email: "u@team.com", FirstName: "U", LastName: "U"}, "pw")
 	services.CreateTeam(models.Team{Name: "T1", CreatorID: u.ID})
 	services.CreateTeam(models.Team{Name: "T2", CreatorID: u.ID})
 
@@ -77,26 +77,13 @@ func TestTeamService_Membership(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	creator, _ := services.CreateUser("c@t.com", "pw", "C", "C", nil)
-	member, _ := services.CreateUser("m@t.com", "pw", "M", "M", nil)
-	outsider, _ := services.CreateUser("o@t.com", "pw", "O", "O", nil)
+	creator, _ := services.CreateUser(models.User{Email: "c@t.com", FirstName: "C", LastName: "C"}, "pw")
+	member, _ := services.CreateUser(models.User{Email: "m@t.com", FirstName: "M", LastName: "M"}, "pw")
+	outsider, _ := services.CreateUser(models.User{Email: "o@t.com", FirstName: "O", LastName: "O"}, "pw")
 
 	team, _ := services.CreateTeam(models.Team{Name: "T", CreatorID: creator.ID})
 
 	// Manually add member for test setup
-	// We need to re-fetch the team to get the Association handler on the instance properly attached
-	// or use the DB directly on the association table
-	services.AcceptInvitation(999, 999) // Accessing unexported if needed? No, use Invitation service logic later or direct DB.
-
-	// Direct DB insert into join table
-	services.JoinChallenge(0, 0) // Just to access the package... wait, we are in `integration` package.
-	// We can use models.
-
-	// Add member via service helper simulation (since we don't have public AddUser)
-	// We will use `AcceptInvitation` flow in a real scenario, but here we hack DB for speed
-	// Actually, `services.JoinChallenge` exists, but `services.AddUserToTeam` is private.
-	// We'll use the Invitation Service to add the user properly to test `RemoveUserFromTeam`.
-
 	invitation := &models.Invitation{
 		InviterId:    creator.ID,
 		InviteeId:    member.ID,

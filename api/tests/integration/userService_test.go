@@ -5,6 +5,7 @@ import (
 	"server/common/appError"
 	"server/common/config"
 	"server/common/dto"
+	"server/common/models"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,12 +17,19 @@ func TestUserService_CRUD(t *testing.T) {
 
 	// 1. Create User Success
 	email := "test@example.com"
-	createdUser, err := services.CreateUser(email, "password123", "John", "Doe", []string{"Tennis"})
+	userModel := models.User{
+		Email:          email,
+		FirstName:      "John",
+		LastName:       "Doe",
+		FavoriteSports: []models.Sport{{Name: "Tennis"}},
+		Settings:       &models.UserSettings{},
+	}
+	createdUser, err := services.CreateUser(userModel, "password123")
 	assert.NoError(t, err)
 	assert.NotZero(t, createdUser.ID)
 
 	// 2. Create Duplicate User (Should Fail)
-	_, err = services.CreateUser(email, "password123", "John", "Doe", nil)
+	_, err = services.CreateUser(models.User{Email: email, FirstName: "John", LastName: "Doe"}, "password123")
 	assert.ErrorIs(t, err, appError.ErrUserExists)
 
 	// 3. Get User By ID (Success)
@@ -72,7 +80,7 @@ func TestUserService_Settings(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	user, _ := services.CreateUser("settings@test.com", "pw", "Set", "Tings", nil)
+	user, _ := services.CreateUser(models.User{Email: "settings@test.com", FirstName: "Set", LastName: "Tings", Settings: &models.UserSettings{}}, "pw")
 
 	// 1. Get Settings
 	settings, err := services.GetUserSettings(user.ID)
@@ -100,8 +108,8 @@ func TestUserService_GetUsers(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	services.CreateUser("u1@test.com", "pw", "U1", "L1", nil)
-	services.CreateUser("u2@test.com", "pw", "U2", "L2", nil)
+	services.CreateUser(models.User{Email: "u1@test.com", FirstName: "U1", LastName: "L1"}, "pw")
+	services.CreateUser(models.User{Email: "u2@test.com", FirstName: "U2", LastName: "L2"}, "pw")
 
 	users, err := services.GetUsers()
 	assert.NoError(t, err)
@@ -112,9 +120,21 @@ func TestUserService_FriendshipAndStats(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	u1, _ := services.CreateUser("f1@test.com", "pw", "F1", "L1", []string{"Tennis", "Football"})
-	u2, _ := services.CreateUser("f2@test.com", "pw", "F2", "L2", []string{"Tennis", "Basketball"})
-	u3, _ := services.CreateUser("f3@test.com", "pw", "F3", "L3", nil)
+	u1, _ := services.CreateUser(models.User{
+		Email:          "f1@test.com",
+		FirstName:      "F1",
+		LastName:       "L1",
+		FavoriteSports: []models.Sport{{Name: "Tennis"}, {Name: "Football"}},
+	}, "pw")
+
+	u2, _ := services.CreateUser(models.User{
+		Email:          "f2@test.com",
+		FirstName:      "F2",
+		LastName:       "L2",
+		FavoriteSports: []models.Sport{{Name: "Tennis"}, {Name: "Basketball"}},
+	}, "pw")
+
+	u3, _ := services.CreateUser(models.User{Email: "f3@test.com", FirstName: "F3", LastName: "L3"}, "pw")
 
 	// 1. Manually create friendship between u1 and u2 (Direct Friendship)
 	config.DB.Model(u1).Association("Friends").Append(u2)

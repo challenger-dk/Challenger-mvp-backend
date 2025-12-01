@@ -14,7 +14,12 @@ func TestChallengeService_CRUD(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	creator, _ := services.CreateUser("chal@test.com", "pw", "C", "C", nil)
+	creatorModel := models.User{
+		Email:     "chal@test.com",
+		FirstName: "C",
+		LastName:  "C",
+	}
+	creator, _ := services.CreateUser(creatorModel, "pw")
 
 	// 1. Create
 	chalDto := dto.ChallengeCreateDto{
@@ -71,8 +76,8 @@ func TestChallengeService_Participation(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	c1, _ := services.CreateUser("c1@c.com", "pw", "C", "C", nil)
-	u1, _ := services.CreateUser("u1@c.com", "pw", "U", "U", nil)
+	c1, _ := services.CreateUser(models.User{Email: "c1@c.com", FirstName: "C", LastName: "C"}, "pw")
+	u1, _ := services.CreateUser(models.User{Email: "u1@c.com", FirstName: "U", LastName: "U"}, "pw")
 
 	chal := models.Challenge{
 		Name:      "Join Test",
@@ -102,16 +107,16 @@ func TestChallengeService_CreateWithComplexInvites(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	creator, _ := services.CreateUser("creator@c.com", "pw", "C", "C", nil)
+	creator, _ := services.CreateUser(models.User{Email: "creator@c.com", FirstName: "C", LastName: "C"}, "pw")
 
 	// User 1: Has no prior invite (Normal flow)
-	u1, _ := services.CreateUser("u1@c.com", "pw", "U1", "U1", nil)
+	u1, _ := services.CreateUser(models.User{Email: "u1@c.com", FirstName: "U1", LastName: "U1"}, "pw")
 
 	// User 2: Has a declined invite (Should resend)
 	// Note: In CreateChallenge for a NEW challenge, prior invites to *this specific challenge ID*
 	// are impossible unless IDs are reused. This test primarily verifies the creation of invites
 	// for a list of users.
-	u2, _ := services.CreateUser("u2@c.com", "pw", "U2", "U2", nil)
+	u2, _ := services.CreateUser(models.User{Email: "u2@c.com", FirstName: "U2", LastName: "U2"}, "pw")
 
 	chalModel := models.Challenge{
 		Name:      "Invite Match",
