@@ -5,15 +5,24 @@ import (
 	"server/common/config"
 	"server/common/dto"
 	"server/common/models"
+	commonServices "server/common/services"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
-func GetUsers() ([]models.User, error) {
+// GetUsers returns a list of users, excluding those blocked by or blocking the requesting user.
+func GetUsers(requestingUserID uint) ([]models.User, error) {
 	var users []models.User
 
+	// Subquery to find IDs that the requesting user has blocked (or is blocked by, due to symmetry)
+	blockedSubQuery := config.DB.Table("user_blocked_users").
+		Select("blocked_user_id").
+		Where("user_id = ?", requestingUserID)
+
 	err := config.DB.Preload("FavoriteSports").
+		Where("id != ?", requestingUserID).      // Optional: Exclude self from list
+		Where("id NOT IN (?)", blockedSubQuery). // Exclude blocked users
 		Find(&users).
 		Error
 
@@ -23,6 +32,8 @@ func GetUsers() ([]models.User, error) {
 	return users, nil
 }
 
+// GetUserByID fetches a user by ID directly.
+// IMPORTANT: Use GetVisibleUser for controller logic to ensure blocking rules are applied.
 func GetUserByID(userID uint) (*models.User, error) {
 	var user models.User
 
@@ -36,6 +47,22 @@ func GetUserByID(userID uint) (*models.User, error) {
 	}
 
 	return &user, nil
+}
+
+// GetVisibleUser fetches a user only if they are not blocked by the requester.
+func GetVisibleUser(requestingUserID, targetUserID uint) (*models.User, error) {
+	// If asking for self, just return ID
+	if requestingUserID == targetUserID {
+		return GetUserByID(targetUserID)
+	}
+
+	// Check if a block exists between the two users
+	if commonServices.IsBlocked(requestingUserID, targetUserID) {
+		// Return UserNotFound to avoid leaking that the user exists but is blocked
+		return nil, appError.ErrUserNotFound
+	}
+
+	return GetUserByID(targetUserID)
 }
 
 func GetUserByIDWithSettings(userID uint) (*models.User, error) {
@@ -67,10 +94,15 @@ func GetUserSettings(userID uint) (*models.UserSettings, error) {
 
 func GetInCommonStats(currentUserID, targetUserID uint) (dto.CommonStatsDto, error) {
 	var stats dto.CommonStatsDto
+
+	// Check blocking
+	if commonServices.IsBlocked(currentUserID, targetUserID) {
+		return stats, appError.ErrUserNotFound
+	}
+
 	db := config.DB
 
 	// 1. Common Teams Count
-	// Corrected table name from "team_users" to "user_teams"
 	var count int64
 	err := db.Table("user_teams as t1").
 		Joins("JOIN user_teams as t2 ON t1.team_id = t2.team_id").

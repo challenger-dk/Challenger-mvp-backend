@@ -6,6 +6,7 @@ import (
 	"server/common/config"
 	"server/common/dto"
 	"server/common/models"
+	commonServices "server/common/services"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -108,12 +109,65 @@ func TestUserService_GetUsers(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	services.CreateUser(models.User{Email: "u1@test.com", FirstName: "U1", LastName: "L1"}, "pw")
-	services.CreateUser(models.User{Email: "u2@test.com", FirstName: "U2", LastName: "L2"}, "pw")
+	u1, _ := services.CreateUser(models.User{Email: "u1@test.com", FirstName: "U1", LastName: "L1"}, "pw")
+	u2, _ := services.CreateUser(models.User{Email: "u2@test.com", FirstName: "U2", LastName: "L2"}, "pw")
+	u3, _ := services.CreateUser(models.User{Email: "u3@test.com", FirstName: "U3", LastName: "L3"}, "pw")
 
-	users, err := services.GetUsers()
+	// 1. Get Users as u1 (Should see u2 and u3)
+	users, err := services.GetUsers(u1.ID)
 	assert.NoError(t, err)
-	assert.GreaterOrEqual(t, len(users), 2)
+	// Current impl excludes self, so should be 2
+	assert.Equal(t, 2, len(users))
+
+	// 2. Block u2 (u1 blocks u2)
+	err = commonServices.BlockUser(u1.ID, u2.ID)
+	assert.NoError(t, err)
+
+	// 3. Get Users as u1 (Should ONLY see u3)
+	usersAfterBlock, err := services.GetUsers(u1.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(usersAfterBlock))
+	assert.Equal(t, u3.ID, usersAfterBlock[0].ID)
+
+	// 4. Get Users as u2 (Should ONLY see u3, u1 is hidden due to block)
+	usersForBlocked, err := services.GetUsers(u2.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(usersForBlocked))
+	assert.Equal(t, u3.ID, usersForBlocked[0].ID)
+}
+
+func TestUserService_Blocking(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	u1, _ := services.CreateUser(models.User{Email: "b1@test.com", FirstName: "B1", LastName: "L1"}, "pw")
+	u2, _ := services.CreateUser(models.User{Email: "b2@test.com", FirstName: "B2", LastName: "L2"}, "pw")
+
+	// 1. Check Visibility (Should be visible)
+	user, err := services.GetVisibleUser(u1.ID, u2.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, u2.ID, user.ID)
+
+	// 2. Block User
+	err = commonServices.BlockUser(u1.ID, u2.ID)
+	assert.NoError(t, err)
+
+	// 3. Check Visibility (Should be Not Found)
+	_, err = services.GetVisibleUser(u1.ID, u2.ID)
+	assert.ErrorIs(t, err, appError.ErrUserNotFound)
+
+	// 4. Check Stats (Should be Not Found)
+	_, err = services.GetInCommonStats(u1.ID, u2.ID)
+	assert.ErrorIs(t, err, appError.ErrUserNotFound)
+
+	// 5. Unblock
+	err = commonServices.UnblockUser(u1.ID, u2.ID)
+	assert.NoError(t, err)
+
+	// 6. Check Visibility (Should be visible again)
+	user, err = services.GetVisibleUser(u1.ID, u2.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, u2.ID, user.ID)
 }
 
 func TestUserService_FriendshipAndStats(t *testing.T) {

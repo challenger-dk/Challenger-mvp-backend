@@ -13,7 +13,16 @@ import (
 )
 
 func GetUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := services.GetUsers()
+	// Get authenticated user to filter out blocked users
+	user, ok := r.Context().
+		Value(middleware.UserContextKey).(*models.User)
+
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
+		return
+	}
+
+	users, err := services.GetUsers(user.ID)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
@@ -56,19 +65,28 @@ func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetUserByID(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().
+		Value(middleware.UserContextKey).(*models.User)
+
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
+		return
+	}
+
 	id, err := helpers.GetParamId(r)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
 	}
 
-	user, err := services.GetUserByID(id)
+	// Use GetVisibleUser to respect blocking rules
+	targetUser, err := services.GetVisibleUser(user.ID, id)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(dto.ToUserResponseDto(*user))
+	err = json.NewEncoder(w).Encode(dto.ToUserResponseDto(*targetUser))
 	if err != nil {
 		appError.HandleError(w, err)
 		return

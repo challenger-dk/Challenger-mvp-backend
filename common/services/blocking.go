@@ -27,6 +27,19 @@ func BlockUser(userIdA uint, userIdB uint) error {
 			return err
 		}
 
+		// 1. Remove Friendship (if exists)
+		// Since blocking breaks the relationship, they should no longer be friends.
+		// We try to delete the association in both directions.
+		err = tx.Model(&userA).Association("Friends").Delete(&userB)
+		if err != nil {
+			return err
+		}
+		err = tx.Model(&userB).Association("Friends").Delete(&userA)
+		if err != nil {
+			return err
+		}
+
+		// 2. Add to BlockedUsers (Symmetric blocking)
 		err = tx.Model(&userA).
 			Association("BlockedUsers").
 			Append(&userB)
