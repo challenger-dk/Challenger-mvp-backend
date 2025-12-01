@@ -23,6 +23,7 @@ var (
 	ErrUserNotFound       = errors.New("user not found")
 	ErrInvalidFriendship  = errors.New("invalid friendship")
 	ErrSameUser           = errors.New("same user")
+	ErrUserBlocked        = errors.New("you have been blocked by this user")
 )
 
 var (
@@ -59,6 +60,9 @@ var errorMap = map[int][]error{
 		ErrUnauthorized,
 		ErrUserNotFound,
 	},
+	http.StatusForbidden: {
+		ErrUserBlocked,
+	},
 	http.StatusConflict: {
 		ErrUserExists,
 		ErrInvitationPending,
@@ -74,6 +78,7 @@ var errorMap = map[int][]error{
 		ErrMissingIdParam,
 		ErrIdBelowOne,
 		ErrInvalidFriendship,
+		ErrSameUser,
 	},
 	http.StatusInternalServerError: {
 		ErrUnhandledInvitationStatus,

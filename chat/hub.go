@@ -48,6 +48,12 @@ func (h *Hub) run() {
 			for client := range h.clients {
 				shouldSend := false
 
+				// Check blocking
+				// If the recipient (client) has blocked the sender, they should NOT receive the message
+				if client.blockedUserIDs[msgDto.SenderID] {
+					continue
+				}
+
 				if msgDto.TeamID != nil {
 					if _, isMember := client.teamIDs[*msgDto.TeamID]; isMember {
 						shouldSend = true

@@ -69,7 +69,7 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	}
 
 	var user models.User
-	if err := config.DB.Preload("Teams").First(&user, claims.UserID).Error; err != nil {
+	if err := config.DB.Preload("Teams").Preload("BlockedUsers").First(&user, claims.UserID).Error; err != nil {
 		http.Error(w, "User not found", http.StatusUnauthorized)
 		return
 	}
@@ -77,6 +77,11 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	allowedTeams := make(map[uint]bool)
 	for _, team := range user.Teams {
 		allowedTeams[team.ID] = true
+	}
+
+	blockedUsers := make(map[uint]bool)
+	for _, blocked := range user.BlockedUsers {
+		blockedUsers[blocked.ID] = true
 	}
 
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
@@ -87,11 +92,12 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	}
 
 	client := &Client{
-		hub:     hub,
-		conn:    conn,
-		send:    make(chan []byte, 256),
-		userID:  claims.UserID,
-		teamIDs: allowedTeams,
+		hub:            hub,
+		conn:           conn,
+		send:           make(chan []byte, 256),
+		userID:         claims.UserID,
+		teamIDs:        allowedTeams,
+		blockedUserIDs: blockedUsers,
 	}
 
 	client.hub.register <- client

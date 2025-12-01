@@ -33,6 +33,11 @@ func SendInvitation(invitation *models.Invitation) error {
 		return appError.ErrInviteSameUser
 	}
 
+	// Check if Invitee has blocked Inviter
+	if commonServices.IsBlocked(invitation.InviteeId, invitation.InviterId) {
+		return appError.ErrUserBlocked
+	}
+
 	return config.DB.Transaction(func(tx *gorm.DB) error {
 		var existing models.Invitation
 

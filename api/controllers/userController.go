@@ -9,6 +9,7 @@ import (
 	"server/common/appError"
 	"server/common/dto"
 	"server/common/models"
+	commonServices "server/common/services"
 )
 
 func GetUsers(w http.ResponseWriter, r *http.Request) {
@@ -223,7 +224,7 @@ func BlockUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = services.BlockUser(user.ID, id)
+	err = commonServices.BlockUser(user.ID, id)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
@@ -246,7 +247,7 @@ func UnblockUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = services.UnblockUser(user.ID, id)
+	err = commonServices.UnblockUser(user.ID, id)
 	if err != nil {
 		appError.HandleError(w, err)
 		return

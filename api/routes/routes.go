@@ -26,6 +26,8 @@ func RegisterRoutes(r chi.Router) {
 		r.Get("/{id}", controllers.GetUserByID)
 		r.Get("/settings", controllers.GetCurrentUserSettings)
 		r.Get("/{id}/in-common", controllers.GetInCommonStats)
+		r.Post("/block/{id}", controllers.BlockUser)
+		r.Post("/unblock/{id}", controllers.UnblockUser)
 		r.Put("/", controllers.UpdateUser)
 		r.Put("/settings", controllers.UpdateUserSettings)
 		r.Delete("/{id}", controllers.DeleteUser)

@@ -34,8 +34,16 @@ type NotificationFilters struct {
 
 // Wrapper checking if the notification should be sent before creation.
 func CreateNotification(db *gorm.DB, params NotificationParams) {
+	// 1. Check if user settings allow this notification
 	if !shouldNotify(db, params.RecipientID, params.Type) {
 		return
+	}
+
+	// 2. Check if Recipient has blocked Actor
+	if params.ActorID != nil {
+		if IsBlocked(params.RecipientID, *params.ActorID) {
+			return
+		}
 	}
 
 	// Create the actual notification
@@ -254,6 +262,7 @@ func CreateUserLeftTeamNotification(db *gorm.DB, leaver models.User, team models
 		Type:        models.NotifTypeTeamUserLeft,
 		Title:       title,
 		Content:     content,
+		ActorID:     &leaver.ID,
 	})
 }
 

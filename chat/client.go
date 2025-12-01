@@ -6,6 +6,7 @@ import (
 	"server/common/config"
 	"server/common/dto"
 	"server/common/models"
+	"server/common/services"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -24,11 +25,12 @@ var upgrader = websocket.Upgrader{
 }
 
 type Client struct {
-	hub     *Hub
-	conn    *websocket.Conn
-	send    chan []byte
-	userID  uint
-	teamIDs map[uint]bool
+	hub            *Hub
+	conn           *websocket.Conn
+	send           chan []byte
+	userID         uint
+	teamIDs        map[uint]bool
+	blockedUserIDs map[uint]bool
 }
 
 func (c *Client) readPump() {
@@ -69,6 +71,16 @@ func (c *Client) readPump() {
 
 		if req.Content == "" || (req.TeamID == nil && req.RecipientID == nil) {
 			continue
+		}
+
+		// --- Blocking Check (Incoming DM) ---
+		// Prevent user from sending a DM to someone who has blocked them
+		if req.RecipientID != nil {
+			if services.IsBlocked(*req.RecipientID, c.userID) {
+				// User is blocked by recipient. Ignore message.
+				// Optionally send an error message back to client via c.send
+				continue
+			}
 		}
 
 		dbMsg := models.Message{
