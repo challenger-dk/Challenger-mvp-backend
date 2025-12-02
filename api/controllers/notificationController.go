@@ -10,7 +10,7 @@ import (
 	"server/common/models"
 	"strconv"
 
-	commonServices "server/common/services"
+	"server/common/services"
 )
 
 func GetMyNotifications(w http.ResponseWriter, r *http.Request) {
@@ -21,7 +21,7 @@ func GetMyNotifications(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse query parameters
-	filters := commonServices.NotificationFilters{}
+	filters := services.NotificationFilters{}
 
 	// "read" filter (e.g. ?read=false)
 	if readStr := r.URL.Query().Get("read"); readStr != "" {
@@ -43,7 +43,7 @@ func GetMyNotifications(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	notifs, err := commonServices.GetMyNotifications(user.ID, filters)
+	notifs, err := services.GetMyNotifications(user.ID, filters)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
@@ -76,7 +76,7 @@ func MarkRead(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = commonServices.MarkNotificationAsRead(id, user.ID)
+	err = services.MarkNotificationAsRead(id, user.ID)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
@@ -92,7 +92,7 @@ func MarkAllRead(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := commonServices.MarkAllNotificationsAsRead(user.ID)
+	err := services.MarkAllNotificationsAsRead(user.ID)
 	if err != nil {
 		appError.HandleError(w, err)
 		return

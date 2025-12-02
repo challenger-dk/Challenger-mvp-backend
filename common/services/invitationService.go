@@ -6,7 +6,6 @@ import (
 	"server/common/appError"
 	"server/common/config"
 	"server/common/models"
-	commonServices "server/common/services"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -34,7 +33,7 @@ func SendInvitation(invitation *models.Invitation) error {
 	}
 
 	// Check if Invitee has blocked Inviter
-	if commonServices.IsBlocked(invitation.InviteeId, invitation.InviterId) {
+	if IsBlocked(invitation.InviteeId, invitation.InviterId) {
 		return appError.ErrUserBlocked
 	}
 
@@ -57,7 +56,7 @@ func SendInvitation(invitation *models.Invitation) error {
 
 			// Successfully send invitation.
 			// Create notification
-			commonServices.CreateInvitationNotification(tx, *invitation)
+			CreateInvitationNotification(tx, *invitation)
 
 			return nil
 		}
@@ -72,7 +71,60 @@ func SendInvitation(invitation *models.Invitation) error {
 			return appError.ErrInvitationPending
 
 		case models.StatusAccepted:
-			return appError.ErrInvitationAccepted
+			// Check if they are currently part of the resource (Team, Friend, Challenge)
+			// If they ARE part of it, return error.
+			// If they are NOT part of it (they left), reset invitation to pending.
+
+			isActive := false
+			switch existing.ResourceType {
+			case models.ResourceTypeTeam:
+				var count int64
+				err := tx.Table("user_teams").
+					Where("user_id = ? AND team_id = ?", existing.InviteeId, existing.ResourceID).
+					Count(&count).Error
+				if err != nil {
+					return err
+				}
+				isActive = count > 0
+
+			case models.ResourceTypeFriend:
+				var count int64
+				// Check friendship (friends are usually stored bidirectionally or checked via association)
+				err := tx.Table("user_friends").
+					Where("user_id = ? AND friend_id = ?", existing.InviteeId, existing.InviterId).
+					Count(&count).Error
+				if err != nil {
+					return err
+				}
+				isActive = count > 0
+
+			case models.ResourceTypeChallenge:
+				var count int64
+				err := tx.Table("user_challenges").
+					Where("user_id = ? AND challenge_id = ?", existing.InviteeId, existing.ResourceID).
+					Count(&count).Error
+				if err != nil {
+					return err
+				}
+				isActive = count > 0
+			}
+
+			// If they are still active members/friends, we cannot invite them again
+			if isActive {
+				return appError.ErrInvitationAccepted
+			}
+
+			// If not active, they left/unfriended. Reset invitation to pending.
+			err := tx.Model(&existing).
+				Update("status", models.StatusPending).
+				Error
+			if err != nil {
+				return err
+			}
+
+			// Re-notify
+			CreateInvitationNotification(tx, existing)
+			return nil
 
 		case models.StatusDeclined:
 			// Resend by setting status back to pending
@@ -83,7 +135,7 @@ func SendInvitation(invitation *models.Invitation) error {
 				return err
 			}
 			// Re-notify
-			commonServices.CreateInvitationNotification(tx, existing)
+			CreateInvitationNotification(tx, existing)
 			return nil
 		}
 
@@ -132,7 +184,7 @@ func AcceptInvitation(invitationId uint, currentUserId uint) error {
 			}
 
 			// Send notification
-			commonServices.CreateAcceptedInvitationNotification(tx, invitation)
+			CreateAcceptedInvitationNotification(tx, invitation)
 
 		case models.ResourceTypeFriend:
 			err = createFriendship(invitation.InviterId, invitation.InviteeId, tx)
@@ -141,7 +193,7 @@ func AcceptInvitation(invitationId uint, currentUserId uint) error {
 			}
 
 			// Send notification
-			commonServices.CreateAcceptedInvitationNotification(tx, invitation)
+			CreateAcceptedInvitationNotification(tx, invitation)
 
 		case models.ResourceTypeChallenge:
 			// Find resource
@@ -161,7 +213,7 @@ func AcceptInvitation(invitationId uint, currentUserId uint) error {
 			}
 
 			// Send notification
-			commonServices.CreateAcceptedInvitationNotification(tx, invitation)
+			CreateAcceptedInvitationNotification(tx, invitation)
 
 		default:
 			return appError.ErrUnknownResource
@@ -174,7 +226,7 @@ func AcceptInvitation(invitationId uint, currentUserId uint) error {
 		}
 
 		// Mark the original invitation notification as irrelevant
-		commonServices.HideNotificationByInvitationID(invitationId)
+		HideNotificationByInvitationID(invitationId)
 
 		return nil
 	})
@@ -212,10 +264,10 @@ func DeclineInvitation(invitationId uint, currentUserId uint) error {
 		}
 
 		// Send notification
-		commonServices.CreateDeclinedInvitationNotification(tx, invitation)
+		CreateDeclinedInvitationNotification(tx, invitation)
 
 		// Mark the original invitation notification as irrelevant
-		commonServices.HideNotificationByInvitationID(invitationId)
+		HideNotificationByInvitationID(invitationId)
 
 		return nil
 	})
@@ -255,30 +307,4 @@ func getResource(invitation models.Invitation, db *gorm.DB) (any, error) {
 	default:
 		return nil, appError.ErrUnknownResource
 	}
-}
-
-// addUserToChallenge adds a user to a challenge
-func addUserToChallenge(challengeId uint, userId uint, db *gorm.DB) error {
-	var c models.Challenge
-	var u models.User
-
-	err := db.First(&c, challengeId).Error
-	if err != nil {
-		return err
-	}
-
-	err = db.First(&u, userId).Error
-	if err != nil {
-		return err
-	}
-
-	err = db.Model(&c).
-		Association("Users").
-		Append(&u)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

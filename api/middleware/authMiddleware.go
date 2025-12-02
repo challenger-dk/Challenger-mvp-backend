@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"server/api/services"
 	"server/common/appError"
+	"server/common/services"
 )
 
 // contextKey is an unexported type to avoid key collisions in context.

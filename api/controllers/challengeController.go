@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"server/api/controllers/helpers"
 	"server/api/middleware"
-	"server/api/services"
 	"server/common/appError"
 	"server/common/dto"
 	"server/common/models"
+	"server/common/services"
 )
 
 func GetChallenge(w http.ResponseWriter, r *http.Request) {

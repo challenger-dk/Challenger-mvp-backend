@@ -5,8 +5,6 @@ import (
 	"server/common/config"
 	"server/common/models"
 
-	commonServices "server/common/services"
-
 	"gorm.io/gorm"
 )
 
@@ -165,7 +163,7 @@ func DeleteTeam(id uint) error {
 				continue
 			}
 
-			commonServices.CreateTeamDeletedNotification(tx, u, t)
+			CreateTeamDeletedNotification(tx, u, t)
 		}
 		return nil
 	})
@@ -199,7 +197,7 @@ func RemoveUserFromTeam(creator models.User, teamId uint, userId uint) error {
 		}
 
 		// Notification
-		commonServices.CreateRemovedUserFromTeamNotification(tx, u.ID, t)
+		CreateRemovedUserFromTeamNotification(tx, u.ID, t)
 
 		return nil
 	})
@@ -223,7 +221,7 @@ func LeaveTeam(user models.User, teamId uint) error {
 		}
 
 		//Notification
-		commonServices.CreateUserLeftTeamNotification(tx, user, t)
+		CreateUserLeftTeamNotification(tx, user, t)
 
 		return nil
 	})

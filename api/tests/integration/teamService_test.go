@@ -1,9 +1,9 @@
 package integration
 
 import (
-	"server/api/services"
 	"server/common/appError"
 	"server/common/models"
+	"server/common/services"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

@@ -1,12 +1,11 @@
 package integration
 
 import (
-	"server/api/services"
 	"server/common/appError"
 	"server/common/config"
 	"server/common/dto"
 	"server/common/models"
-	commonServices "server/common/services"
+	"server/common/services"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -120,7 +119,7 @@ func TestUserService_GetUsers(t *testing.T) {
 	assert.Equal(t, 2, len(users))
 
 	// 2. Block u2 (u1 blocks u2)
-	err = commonServices.BlockUser(u1.ID, u2.ID)
+	err = services.BlockUser(u1.ID, u2.ID)
 	assert.NoError(t, err)
 
 	// 3. Get Users as u1 (Should ONLY see u3)
@@ -149,7 +148,7 @@ func TestUserService_Blocking(t *testing.T) {
 	assert.Equal(t, u2.ID, user.ID)
 
 	// 2. Block User
-	err = commonServices.BlockUser(u1.ID, u2.ID)
+	err = services.BlockUser(u1.ID, u2.ID)
 	assert.NoError(t, err)
 
 	// 3. Check Visibility (Should be Not Found)
@@ -161,7 +160,7 @@ func TestUserService_Blocking(t *testing.T) {
 	assert.ErrorIs(t, err, appError.ErrUserNotFound)
 
 	// 5. Unblock
-	err = commonServices.UnblockUser(u1.ID, u2.ID)
+	err = services.UnblockUser(u1.ID, u2.ID)
 	assert.NoError(t, err)
 
 	// 6. Check Visibility (Should be visible again)

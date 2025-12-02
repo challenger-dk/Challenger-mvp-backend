@@ -3,9 +3,9 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
-	"server/api/services"
 	"server/common/appError"
 	"server/common/dto"
+	"server/common/services"
 )
 
 func GetSports(w http.ResponseWriter, r *http.Request) {

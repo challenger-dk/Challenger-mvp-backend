@@ -1,9 +1,9 @@
 package integration
 
 import (
-	"server/api/services"
 	"server/common/dto"
 	"server/common/models"
+	"server/common/services"
 	"testing"
 	"time"
 

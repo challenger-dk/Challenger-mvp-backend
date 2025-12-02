@@ -4,7 +4,6 @@ import (
 	"errors"
 	"server/common/config"
 	"server/common/models"
-	commonServices "server/common/services"
 
 	"gorm.io/gorm"
 )
@@ -102,7 +101,7 @@ func CreateChallenge(c models.Challenge, invitedUserIds []uint) (models.Challeng
 				}
 
 				// Create notification
-				commonServices.CreateInvitationNotification(tx, invitation)
+				CreateInvitationNotification(tx, invitation)
 			} else if err == nil {
 				// Invitation already exists, handle based on status
 				switch existing.Status {
@@ -130,7 +129,7 @@ func CreateChallenge(c models.Challenge, invitedUserIds []uint) (models.Challeng
 					if err != nil {
 						return err
 					}
-					commonServices.CreateInvitationNotification(tx, existing)
+					CreateInvitationNotification(tx, existing)
 				}
 			} else {
 				// Some other error occurred
@@ -258,4 +257,30 @@ func DeleteChallenge(id uint) error {
 
 		return tx.Delete(&c).Error
 	})
+}
+
+// addUserToChallenge adds a user to a challenge
+func addUserToChallenge(challengeId uint, userId uint, db *gorm.DB) error {
+	var c models.Challenge
+	var u models.User
+
+	err := db.First(&c, challengeId).Error
+	if err != nil {
+		return err
+	}
+
+	err = db.First(&u, userId).Error
+	if err != nil {
+		return err
+	}
+
+	err = db.Model(&c).
+		Association("Users").
+		Append(&u)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

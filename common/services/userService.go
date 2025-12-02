@@ -5,7 +5,6 @@ import (
 	"server/common/config"
 	"server/common/dto"
 	"server/common/models"
-	commonServices "server/common/services"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -57,7 +56,7 @@ func GetVisibleUser(requestingUserID, targetUserID uint) (*models.User, error) {
 	}
 
 	// Check if a block exists between the two users
-	if commonServices.IsBlocked(requestingUserID, targetUserID) {
+	if IsBlocked(requestingUserID, targetUserID) {
 		// Return UserNotFound to avoid leaking that the user exists but is blocked
 		return nil, appError.ErrUserNotFound
 	}
@@ -96,7 +95,7 @@ func GetInCommonStats(currentUserID, targetUserID uint) (dto.CommonStatsDto, err
 	var stats dto.CommonStatsDto
 
 	// Check blocking
-	if commonServices.IsBlocked(currentUserID, targetUserID) {
+	if IsBlocked(currentUserID, targetUserID) {
 		return stats, appError.ErrUserNotFound
 	}
 
