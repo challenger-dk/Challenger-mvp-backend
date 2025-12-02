@@ -63,6 +63,7 @@ func MigrateDB() {
 		&models.Notification{},
 		&models.UserSettings{},
 		&models.Message{},
+		&models.Report{},
 	)
 
 	if err != nil {

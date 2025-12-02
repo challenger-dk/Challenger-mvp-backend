@@ -80,6 +80,11 @@ func RegisterRoutes(r chi.Router) {
 		r.Put("/read-all", controllers.MarkAllRead)
 		r.Put("/{id}/read", controllers.MarkRead)
 	})
+
+	r.Route("/reports", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware)
+		r.Post("/", controllers.CreateReport)
+	})
 }
 
 func registerGenericMiddleware(r chi.Router) {

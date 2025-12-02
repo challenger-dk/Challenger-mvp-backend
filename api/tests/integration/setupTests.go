@@ -53,6 +53,7 @@ func setupTestDB() {
 			&models.Notification{},
 			&models.UserSettings{},
 			&models.Message{},
+			&models.Report{},
 		)
 		if err != nil {
 			log.Fatalf("❌ Failed to migrate test database: %v", err)
@@ -89,6 +90,7 @@ func clearDB() {
 
 	// Truncate tables in specific order to handle foreign keys
 	tables := []string{
+		"reports",
 		"messages",
 		"notifications",
 		"invitations",
