@@ -1,0 +1,54 @@
+name: Notify .env.sample Changes
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+    paths:
+      - '.env.sample'
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  notify-team:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # Required to compare with the previous commit
+
+      - name: Prepare Issue Body
+        run: |
+          # 1. Create the header
+          echo "### Configuration Update Detected 🚨" > issue_body.md
+          echo "" >> issue_body.md
+          echo "The \`.env.sample\` file was modified in commit ${{ github.sha }}." >> issue_body.md
+          echo "" >> issue_body.md
+          
+          # 2. Add the diff (changes) inside a code block
+          echo "**New Changes:**" >> issue_body.md
+          echo "\`\`\`diff" >> issue_body.md
+          # Compare previous commit (HEAD^) with current (HEAD) for specific file
+          git diff HEAD^ HEAD -- .env.sample >> issue_body.md 
+          echo "\`\`\`" >> issue_body.md
+          echo "" >> issue_body.md
+
+          # 3. Add the footer
+          echo "**Action Required:**" >> issue_body.md
+          echo "Please check the diff above and add any new variables to your local \`.env\` file." >> issue_body.md
+          echo "" >> issue_body.md
+          echo "- **Author:** @${{ github.actor }}" >> issue_body.md
+          echo "- **Branch:** ${{ github.ref_name }}" >> issue_body.md
+
+      - name: Create Notification Issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "⚠️ configuration change: .env.sample updated" \
+            --body-file issue_body.md \
+            --assignee ${{ github.actor }}
