@@ -12,20 +12,22 @@ type AddUserToChatDto struct {
 }
 
 type ChatResponseDto struct {
-	ID    uint              `json:"id"`
-	Name  string            `json:"name"`
-	Users []UserResponseDto `json:"users"`
+	ID          uint              `json:"id"`
+	Name        string            `json:"name"`
+	Users       []UserResponseDto `json:"users"`
+	UnreadCount int64             `json:"unread_count"`
 }
 
-func ToChatResponseDto(c models.Chat) ChatResponseDto {
+func ToChatResponseDto(c models.Chat, unreadCount int64) ChatResponseDto {
 	users := make([]UserResponseDto, len(c.Users))
 	for i, u := range c.Users {
 		users[i] = ToUserResponseDto(u)
 	}
 
 	return ChatResponseDto{
-		ID:    c.ID,
-		Name:  c.Name,
-		Users: users,
+		ID:          c.ID,
+		Name:        c.Name,
+		Users:       users,
+		UnreadCount: unreadCount,
 	}
 }

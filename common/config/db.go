@@ -52,7 +52,6 @@ func ConnectDatabase() {
 }
 
 func MigrateDB() {
-	// Added the new models (City, Country) from the normalization step
 	err := DB.AutoMigrate(
 		&models.User{},
 		&models.Team{},
@@ -64,6 +63,8 @@ func MigrateDB() {
 		&models.UserSettings{},
 		&models.Message{},
 		&models.Report{},
+		&models.UserChat{},
+		&models.Chat{},
 	)
 
 	if err != nil {
