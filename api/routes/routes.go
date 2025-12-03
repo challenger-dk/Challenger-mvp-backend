@@ -74,6 +74,14 @@ func RegisterRoutes(r chi.Router) {
 		r.Post("/{id}/decline", controllers.DeclineInvitation)
 	})
 
+	r.Route("/chats", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware)
+		r.Get("/", controllers.GetMyChats)
+		r.Post("/", controllers.CreateChat)
+		r.Get("/{id}", controllers.GetChat)
+		r.Post("/{id}/users", controllers.AddUserToChat)
+	})
+
 	r.Route("/notifications", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware)
 		r.Get("/", controllers.GetMyNotifications)

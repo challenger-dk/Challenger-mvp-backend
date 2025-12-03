@@ -6,7 +6,6 @@ import (
 	"server/common/config"
 	"server/common/dto"
 	"server/common/models"
-	"server/common/services"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -30,6 +29,7 @@ type Client struct {
 	send           chan []byte
 	userID         uint
 	teamIDs        map[uint]bool
+	chatIDs        map[uint]bool
 	blockedUserIDs map[uint]bool
 }
 
@@ -69,25 +69,36 @@ func (c *Client) readPump() {
 			continue
 		}
 
-		if req.Content == "" || (req.TeamID == nil && req.RecipientID == nil) {
+		if req.Content == "" {
 			continue
 		}
 
-		// --- Blocking Check (Incoming DM) ---
-		// Prevent user from sending a DM to someone who has blocked them
-		if req.RecipientID != nil {
-			if services.IsBlocked(*req.RecipientID, c.userID) {
-				// User is blocked by recipient. Ignore message.
-				// Optionally send an error message back to client via c.send
+		// Must have either TeamID or ChatID
+		if req.TeamID == nil && req.ChatID == nil {
+			continue
+		}
+
+		// Validation: Is user member of Team?
+		if req.TeamID != nil {
+			if !c.teamIDs[*req.TeamID] {
+				log.Printf("User %d attempted to message Team %d without membership", c.userID, *req.TeamID)
+				continue
+			}
+		}
+
+		// Validation: Is user member of Chat?
+		if req.ChatID != nil {
+			if !c.chatIDs[*req.ChatID] {
+				log.Printf("User %d attempted to message Chat %d without membership", c.userID, *req.ChatID)
 				continue
 			}
 		}
 
 		dbMsg := models.Message{
-			SenderID:    c.userID,
-			TeamID:      req.TeamID,
-			RecipientID: req.RecipientID,
-			Content:     req.Content,
+			SenderID: c.userID,
+			TeamID:   req.TeamID,
+			ChatID:   req.ChatID,
+			Content:  req.Content,
 		}
 
 		if err := config.DB.Create(&dbMsg).Error; err != nil {

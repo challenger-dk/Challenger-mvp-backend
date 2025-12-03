@@ -14,7 +14,8 @@ func main() {
 	config.LoadConfig()
 	config.ConnectDatabase()
 
-	err := config.DB.AutoMigrate(&models.Message{}, &models.User{}, &models.Team{})
+	// Ensure tables exist
+	err := config.DB.AutoMigrate(&models.Message{}, &models.User{}, &models.Team{}, &models.Chat{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -69,7 +70,8 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	}
 
 	var user models.User
-	if err := config.DB.Preload("Teams").Preload("BlockedUsers").First(&user, claims.UserID).Error; err != nil {
+	// Preload Teams, Chats, and BlockedUsers
+	if err := config.DB.Preload("Teams").Preload("Chats").Preload("BlockedUsers").First(&user, claims.UserID).Error; err != nil {
 		http.Error(w, "User not found", http.StatusUnauthorized)
 		return
 	}
@@ -77,6 +79,11 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	allowedTeams := make(map[uint]bool)
 	for _, team := range user.Teams {
 		allowedTeams[team.ID] = true
+	}
+
+	allowedChats := make(map[uint]bool)
+	for _, chat := range user.Chats {
+		allowedChats[chat.ID] = true
 	}
 
 	blockedUsers := make(map[uint]bool)
@@ -97,6 +104,7 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 		send:           make(chan []byte, 256),
 		userID:         claims.UserID,
 		teamIDs:        allowedTeams,
+		chatIDs:        allowedChats,
 		blockedUserIDs: blockedUsers,
 	}
 

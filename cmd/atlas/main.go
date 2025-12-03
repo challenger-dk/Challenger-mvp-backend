@@ -11,8 +11,6 @@ import (
 
 func main() {
 	// 1. INJECT POSTGIS EXTENSION HERE
-	// This tells Atlas that the "postgis" extension is part of your schema.
-	// Atlas will execute this on the Dev DB before creating tables.
 	fmt.Println(`CREATE EXTENSION IF NOT EXISTS "postgis";`)
 
 	// 2. Load your GORM models
@@ -26,6 +24,7 @@ func main() {
 		&models.Notification{},
 		&models.UserSettings{},
 		&models.Message{},
+		&models.Chat{},
 	)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to load gorm schema: %v\n", err)
