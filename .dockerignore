@@ -1,0 +1,14 @@
+# Exclude duplicate service files that conflict with Service.go versions
+common/services/blocking.go
+common/services/notifications.go
+
+# Standard ignores
+.git
+.gitignore
+.env
+*.md
+.vscode
+tmp/
+dist/
+vendor/
+
