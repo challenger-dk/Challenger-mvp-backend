@@ -65,10 +65,7 @@ jobs:
           script: |
             cd ~/challenger-app
 
-            echo "🧹 Cleaning up old containers..."
-            docker compose -f docker-compose.prod.yml down || true
-
-            echo "🚀 Building and starting containers..."
+            echo "🚀 Building and updating containers (preserving data)..."
             # Verify .env file exists before starting containers
             if [ ! -f .env ]; then
               echo "❌ .env file not found!"
