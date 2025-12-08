@@ -67,9 +67,17 @@ func GetVisibleUser(requestingUserID, targetUserID uint) (*models.User, error) {
 func GetUserByIDWithSettings(userID uint) (*models.User, error) {
 	var user models.User
 
-	err := config.DB.Preload("FavoriteSports").
+	err := config.DB.
+		Preload("FavoriteSports").
 		Preload("Friends").
 		Preload("Settings").
+		Preload("JoinedChallenges", func(db *gorm.DB) *gorm.DB {
+			return db.Order("date ASC").Order("start_time ASC")
+		}).
+		Preload("JoinedChallenges.Location").
+		Preload("JoinedChallenges.Creator").
+		Preload("JoinedChallenges.Users").
+		Preload("JoinedChallenges.Teams").
 		First(&user, userID).
 		Error
 

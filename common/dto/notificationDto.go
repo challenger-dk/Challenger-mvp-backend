@@ -34,7 +34,7 @@ func ToNotificationResponseDto(n models.Notification) NotificationResponseDto {
 	}
 
 	if n.Actor != nil {
-		actorDto := ToFriendDtoResponse(*n.Actor)
+		actorDto := ToPublicUserDtoResponse(*n.Actor)
 		dto.Actor = &actorDto
 	}
 

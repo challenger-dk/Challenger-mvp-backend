@@ -2,8 +2,10 @@ package dto
 
 import (
 	"server/common/models"
-	"time"
 )
+
+// How many upcoming challenges to show in user profile
+const UserNextChallengesCount uint = 3
 
 type UserCreateDto struct {
 	Email          string   `json:"email"           validate:"required,email"`
@@ -25,18 +27,18 @@ type UserUpdateDto struct {
 }
 
 type UserResponseDto struct {
-	ID             uint                    `json:"id"`
-	Email          string                  `json:"email"`
-	FirstName      string                  `json:"first_name"`
-	LastName       string                  `json:"last_name"`
-	ProfilePicture string                  `json:"profile_picture,omitempty"`
-	Bio            string                  `json:"bio,omitempty"`
-	Age            uint                    `json:"age"`
-	FavoriteSports []SportResponseDto      `json:"favorite_sports,omitempty"`
-	Friends        []PublicUserDtoResponse `json:"friends,omitempty"`
-	Settings       UserSettingsResponseDto `json:"settings"`
-	CreatedAt      time.Time               `json:"created_at"`
-	UpdatedAt      time.Time               `json:"updated_at"`
+	ID                  uint                    `json:"id"`
+	Email               string                  `json:"email"`
+	FirstName           string                  `json:"first_name"`
+	LastName            string                  `json:"last_name"`
+	ProfilePicture      string                  `json:"profile_picture,omitempty"`
+	Bio                 string                  `json:"bio,omitempty"`
+	Age                 uint                    `json:"age"`
+	FavoriteSports      []SportResponseDto      `json:"favorite_sports,omitempty"`
+	Friends             []PublicUserDtoResponse `json:"friends,omitempty"`
+	CompletedChallenges uint                    `json:"completed_challenges"`
+	NextChallenges      []ChallengeResponseDto  `json:"next_challenges,omitempty"`
+	Settings            UserSettingsResponseDto `json:"settings"`
 }
 
 type UserSettingsResponseDto struct {
@@ -75,7 +77,7 @@ type CommonStatsDto struct {
 	CommonSports       []SportDto `json:"common_sports"`
 }
 
-func ToFriendDtoResponse(user models.User) PublicUserDtoResponse {
+func ToPublicUserDtoResponse(user models.User) PublicUserDtoResponse {
 	favoriteSports := make([]SportResponseDto, len(user.FavoriteSports))
 	for i, sport := range user.FavoriteSports {
 		favoriteSports[i] = ToSportResponseDto(sport)
@@ -100,7 +102,7 @@ func ToUserResponseDto(user models.User) UserResponseDto {
 
 	friends := make([]PublicUserDtoResponse, len(user.Friends))
 	for i, friend := range user.Friends {
-		friends[i] = ToFriendDtoResponse(friend)
+		friends[i] = ToPublicUserDtoResponse(friend)
 	}
 
 	var settings UserSettingsResponseDto
@@ -116,19 +118,39 @@ func ToUserResponseDto(user models.User) UserResponseDto {
 		}
 	}
 
+	// Count completed challenges
+	var completedChallengesCount uint
+	for _, challenge := range user.JoinedChallenges {
+		if challenge.IsCompleted {
+			completedChallengesCount++
+		}
+	}
+
+	// Get next upcoming challenges (limited to UserNextChallengesCount)
+	nextChallenges := make([]ChallengeResponseDto, 0, UserNextChallengesCount)
+	for _, ch := range user.JoinedChallenges {
+		if ch.IsCompleted {
+			continue
+		}
+		if len(nextChallenges) >= int(UserNextChallengesCount) {
+			break
+		}
+		nextChallenges = append(nextChallenges, ToChallengeResponseDto(ch))
+	}
+
 	return UserResponseDto{
-		ID:             user.ID,
-		Email:          user.Email,
-		FirstName:      user.FirstName,
-		LastName:       user.LastName,
-		ProfilePicture: user.ProfilePicture,
-		Bio:            user.Bio,
-		Age:            user.Age,
-		FavoriteSports: favoriteSports,
-		Friends:        friends,
-		Settings:       settings,
-		CreatedAt:      user.CreatedAt,
-		UpdatedAt:      user.UpdatedAt,
+		ID:                  user.ID,
+		Email:               user.Email,
+		FirstName:           user.FirstName,
+		LastName:            user.LastName,
+		ProfilePicture:      user.ProfilePicture,
+		Bio:                 user.Bio,
+		Age:                 user.Age,
+		FavoriteSports:      favoriteSports,
+		Friends:             friends,
+		Settings:            settings,
+		CompletedChallenges: completedChallengesCount,
+		NextChallenges:      nextChallenges,
 	}
 }
 
