@@ -35,8 +35,7 @@ func CreateChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// For a newly created chat, unread count is 0
-	err = json.NewEncoder(w).Encode(dto.ToChatResponseDto(*chat, 0))
+	err = json.NewEncoder(w).Encode(dto.ToChatResponseDto(*chat))
 	if err != nil {
 		appError.HandleError(w, err)
 		return
@@ -52,14 +51,18 @@ func GetMyChats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Changed to use the service that calculates unread counts
-	dtos, err := services.GetUserChatsWithUnread(user.ID)
+	chats, err := services.GetUserChats(user.ID)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(dtos)
+	resp := make([]dto.ChatResponseDto, len(chats))
+	for i, c := range chats {
+		resp[i] = dto.ToChatResponseDto(c)
+	}
+
+	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
@@ -85,8 +88,7 @@ func GetChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// For getting a single chat, we return 0 for unread count as the user is now viewing it
-	err = json.NewEncoder(w).Encode(dto.ToChatResponseDto(*chat, 0))
+	err = json.NewEncoder(w).Encode(dto.ToChatResponseDto(*chat))
 	if err != nil {
 		appError.HandleError(w, err)
 		return
@@ -113,28 +115,6 @@ func AddUserToChat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = services.AddUserToChat(id, user.ID, req.UserID)
-	if err != nil {
-		appError.HandleError(w, err)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
-}
-
-func MarkChatRead(w http.ResponseWriter, r *http.Request) {
-	user, ok := r.Context().Value(middleware.UserContextKey).(*models.User)
-	if !ok {
-		appError.HandleError(w, appError.ErrUnauthorized)
-		return
-	}
-
-	id, err := helpers.GetParamId(r)
-	if err != nil {
-		appError.HandleError(w, err)
-		return
-	}
-
-	err = services.MarkChatAsRead(id, user.ID)
 	if err != nil {
 		appError.HandleError(w, err)
 		return

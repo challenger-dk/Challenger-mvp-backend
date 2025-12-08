@@ -80,7 +80,6 @@ func RegisterRoutes(r chi.Router) {
 		r.Post("/", controllers.CreateChat)
 		r.Get("/{id}", controllers.GetChat)
 		r.Post("/{id}/users", controllers.AddUserToChat)
-		r.Put("/{id}/read", controllers.MarkChatRead)
 	})
 
 	r.Route("/notifications", func(r chi.Router) {

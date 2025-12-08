@@ -81,12 +81,6 @@ func (c *Client) readPump() {
 		// Validation: Is user member of Team?
 		if req.TeamID != nil {
 			if !c.teamIDs[*req.TeamID] {
-				// Lazy load: Check DB in case membership is new
-				//var count int64
-				// Assuming standard GORM join table name or checking association
-				// Ideally: config.DB.Table("user_teams").Where("user_id = ? AND team_id = ?", c.userID, *req.TeamID).Count(&count)
-				// Since we might not have the table name handy, we'll skip DB check for teams for now or assuming strictness.
-				// If you have issues with Teams similar to Chats, uncomment below if table name is known.
 				log.Printf("User %d attempted to message Team %d without membership", c.userID, *req.TeamID)
 				continue
 			}
@@ -95,14 +89,8 @@ func (c *Client) readPump() {
 		// Validation: Is user member of Chat?
 		if req.ChatID != nil {
 			if !c.chatIDs[*req.ChatID] {
-				// Lazy load: Check DB to see if user was recently added to this chat
-				var count int64
-				if err := config.DB.Table("user_chats").Where("chat_id = ? AND user_id = ?", *req.ChatID, c.userID).Count(&count).Error; err != nil || count == 0 {
-					log.Printf("User %d attempted to message Chat %d without membership", c.userID, *req.ChatID)
-					continue
-				}
-				// If found in DB, update the cache so next time it's fast
-				c.chatIDs[*req.ChatID] = true
+				log.Printf("User %d attempted to message Chat %d without membership", c.userID, *req.ChatID)
+				continue
 			}
 		}
 
