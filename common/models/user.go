@@ -21,7 +21,6 @@ type User struct {
 	JoinedChallenges  []Challenge `gorm:"many2many:user_challenges;"`
 	Friends           []User      `gorm:"many2many:user_friends;joinForeignKey:UserID;JoinReferences:FriendID"`
 	BlockedUsers      []User      `gorm:"many2many:user_blocked_users;joinForeignKey:UserID;JoinReferences:BlockedUserID"`
-	Chats             []Chat      `gorm:"many2many:user_chats;"`
 
 	Settings *UserSettings `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 

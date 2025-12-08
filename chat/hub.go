@@ -7,8 +7,11 @@ import (
 )
 
 type Hub struct {
-	clients    map[*Client]bool
-	broadcast  chan dto.MessageResponseDto
+	clients map[*Client]bool
+
+	// Changed to handle DTOs
+	broadcast chan dto.MessageResponseDto
+
 	register   chan *Client
 	unregister chan *Client
 }
@@ -46,20 +49,19 @@ func (h *Hub) run() {
 				shouldSend := false
 
 				// Check blocking
+				// If the recipient (client) has blocked the sender, they should NOT receive the message
 				if client.blockedUserIDs[msgDto.SenderID] {
 					continue
 				}
 
-				// 1. Team Chat Broadcast
 				if msgDto.TeamID != nil {
-					if client.teamIDs[*msgDto.TeamID] {
+					if _, isMember := client.teamIDs[*msgDto.TeamID]; isMember {
 						shouldSend = true
 					}
 				}
 
-				// 2. Group/DM Chat Broadcast
-				if msgDto.ChatID != nil {
-					if client.chatIDs[*msgDto.ChatID] {
+				if msgDto.RecipientID != nil {
+					if client.userID == *msgDto.RecipientID || client.userID == msgDto.SenderID {
 						shouldSend = true
 					}
 				}

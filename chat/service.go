@@ -8,7 +8,7 @@ import (
 	"server/common/dto"
 	"server/common/models"
 	"strconv"
-
+	"math"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -39,7 +39,7 @@ func authenticateRequest(r *http.Request) (*struct {
 	return claims, nil
 }
 
-// getMessages handles fetching chat history.
+// getMessages handles fetching chat history for a group or 1-on-1 conversation.
 func getMessages(w http.ResponseWriter, r *http.Request) {
 	claims, err := authenticateRequest(r)
 	if err != nil {
@@ -49,9 +49,10 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 
 	// 1. Get Query Parameters
 	teamIDStr := r.URL.Query().Get("team_id")
-	chatIDStr := r.URL.Query().Get("chat_id")
+	recipientIDStr := r.URL.Query().Get("recipient_id")
 	userID := claims.UserID
 
+	// Default limit for messages
 	limit := 50
 
 	// 2. Build the DB Query
@@ -59,7 +60,7 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	query := config.DB.Preload("Sender").Order("created_at DESC").Limit(limit)
 
 	if teamIDStr != "" {
-		// --- Team Chat History ---
+		// --- Group Chat History ---
 		teamID, err := strconv.ParseUint(teamIDStr, 10, 64)
 		if err != nil {
 			http.Error(w, "Invalid team_id format", http.StatusBadRequest)
@@ -79,33 +80,32 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// A real-world check would verify if 'userID' is actually a member of 'teamID'.
+		// Assuming for now the user is authorized if the token is valid.
 		query = query.Where("team_id = ?", uint(teamID))
 
-	} else if chatIDStr != "" {
-		// --- Group/DM Chat History ---
-		chatID, err := strconv.ParseUint(chatIDStr, 10, 64)
+	} else if recipientIDStr != "" {
+		// --- 1-on-1 Chat History ---
+		recipientID, err := strconv.ParseUint(recipientIDStr, 10, 64)
 		if err != nil {
-			http.Error(w, "Invalid chat_id format", http.StatusBadRequest)
+			http.Error(w, "Invalid recipient_id format", http.StatusBadRequest)
 			return
 		}
-
-		// Authorization Check
-		var isMember bool
-		config.DB.Model(&models.Chat{}).
-			Joins("JOIN user_chats ON user_chats.chat_id = chats.id").
-			Where("chats.id = ? AND user_chats.user_id = ?", chatID, userID).
-			Select("count(*) > 0").
-			Find(&isMember)
-
-		if !isMember {
-			http.Error(w, "You are not a participant of this chat", http.StatusForbidden)
+		// Check bounds before casting
+		if recipientID > uint64(math.MaxUint) {
+			http.Error(w, "recipient_id out of bounds", http.StatusBadRequest)
 			return
 		}
-
-		query = query.Where("chat_id = ?", uint(chatID))
+		// To fetch 1-on-1 history, we need messages sent FROM user A TO user B,
+		// AND messages sent FROM user B TO user A.
+		query = query.Where(
+			"(sender_id = ? AND recipient_id = ?) OR (sender_id = ? AND recipient_id = ?)",
+			userID, uint(recipientID),
+			uint(recipientID), userID,
+		).Where("team_id IS NULL") // Ensure it's not a group chat message
 
 	} else {
-		http.Error(w, "Must provide either team_id or chat_id", http.StatusBadRequest)
+		http.Error(w, "Must provide either team_id or recipient_id", http.StatusBadRequest)
 		return
 	}
 
@@ -115,9 +115,10 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 4. Transform to DTOs and Reverse Order
+	// 4. Transform to DTOs and Reverse Order (to get oldest first for display)
 	responseDTOs := make([]dto.MessageResponseDto, len(messages))
 	for i, msg := range messages {
+		// Fill responseDTOs from back to front to get them in ascending (chronological) order
 		responseDTOs[len(messages)-1-i] = dto.ToMessageResponseDto(msg)
 	}
 
