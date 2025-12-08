@@ -6,6 +6,7 @@ import (
 	"server/common/config"
 	"server/common/dto"
 	"server/common/models"
+	"server/common/services"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -29,7 +30,6 @@ type Client struct {
 	send           chan []byte
 	userID         uint
 	teamIDs        map[uint]bool
-	chatIDs        map[uint]bool
 	blockedUserIDs map[uint]bool
 }
 
@@ -69,48 +69,25 @@ func (c *Client) readPump() {
 			continue
 		}
 
-		if req.Content == "" {
+		if req.Content == "" || (req.TeamID == nil && req.RecipientID == nil) {
 			continue
 		}
 
-		// Must have either TeamID or ChatID
-		if req.TeamID == nil && req.ChatID == nil {
-			continue
-		}
-
-		// Validation: Is user member of Team?
-		if req.TeamID != nil {
-			if !c.teamIDs[*req.TeamID] {
-				// Lazy load: Check DB in case membership is new
-				//var count int64
-				// Assuming standard GORM join table name or checking association
-				// Ideally: config.DB.Table("user_teams").Where("user_id = ? AND team_id = ?", c.userID, *req.TeamID).Count(&count)
-				// Since we might not have the table name handy, we'll skip DB check for teams for now or assuming strictness.
-				// If you have issues with Teams similar to Chats, uncomment below if table name is known.
-				log.Printf("User %d attempted to message Team %d without membership", c.userID, *req.TeamID)
+		// --- Blocking Check (Incoming DM) ---
+		// Prevent user from sending a DM to someone who has blocked them
+		if req.RecipientID != nil {
+			if services.IsBlocked(*req.RecipientID, c.userID) {
+				// User is blocked by recipient. Ignore message.
+				// Optionally send an error message back to client via c.send
 				continue
 			}
 		}
 
-		// Validation: Is user member of Chat?
-		if req.ChatID != nil {
-			if !c.chatIDs[*req.ChatID] {
-				// Lazy load: Check DB to see if user was recently added to this chat
-				var count int64
-				if err := config.DB.Table("user_chats").Where("chat_id = ? AND user_id = ?", *req.ChatID, c.userID).Count(&count).Error; err != nil || count == 0 {
-					log.Printf("User %d attempted to message Chat %d without membership", c.userID, *req.ChatID)
-					continue
-				}
-				// If found in DB, update the cache so next time it's fast
-				c.chatIDs[*req.ChatID] = true
-			}
-		}
-
 		dbMsg := models.Message{
-			SenderID: c.userID,
-			TeamID:   req.TeamID,
-			ChatID:   req.ChatID,
-			Content:  req.Content,
+			SenderID:    c.userID,
+			TeamID:      req.TeamID,
+			RecipientID: req.RecipientID,
+			Content:     req.Content,
 		}
 
 		if err := config.DB.Create(&dbMsg).Error; err != nil {

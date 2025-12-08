@@ -3,13 +3,15 @@ package main
 import (
 	"encoding/json"
 	"log"
-	"server/common/config"
 	"server/common/dto"
 )
 
 type Hub struct {
-	clients    map[*Client]bool
-	broadcast  chan dto.MessageResponseDto
+	clients map[*Client]bool
+
+	// Changed to handle DTOs
+	broadcast chan dto.MessageResponseDto
+
 	register   chan *Client
 	unregister chan *Client
 }
@@ -43,45 +45,23 @@ func (h *Hub) run() {
 				continue
 			}
 
-			// Optimization: Pre-fetch chat members if it's a chat message
-			// This ensures we don't rely on stale client.chatIDs maps
-			allowedUserIDs := make(map[uint]bool)
-
-			if msgDto.ChatID != nil {
-				var userIDs []uint
-				// Query the join table directly to get current members
-				if err := config.DB.Table("user_chats").
-					Where("chat_id = ?", *msgDto.ChatID).
-					Pluck("user_id", &userIDs).Error; err == nil {
-					for _, uid := range userIDs {
-						allowedUserIDs[uid] = true
-					}
-				}
-			}
-
 			for client := range h.clients {
 				shouldSend := false
 
 				// Check blocking
+				// If the recipient (client) has blocked the sender, they should NOT receive the message
 				if client.blockedUserIDs[msgDto.SenderID] {
 					continue
 				}
 
-				// 1. Team Chat Broadcast
 				if msgDto.TeamID != nil {
-					if client.teamIDs[*msgDto.TeamID] {
+					if _, isMember := client.teamIDs[*msgDto.TeamID]; isMember {
 						shouldSend = true
 					}
 				}
 
-				// 2. Group/DM Chat Broadcast
-				if msgDto.ChatID != nil {
-					// Check local cache OR strict DB check results
-					if client.chatIDs[*msgDto.ChatID] {
-						shouldSend = true
-					} else if allowedUserIDs[client.userID] {
-						// Self-healing: User is in DB but not in cache. Update cache and send.
-						client.chatIDs[*msgDto.ChatID] = true
+				if msgDto.RecipientID != nil {
+					if client.userID == *msgDto.RecipientID || client.userID == msgDto.SenderID {
 						shouldSend = true
 					}
 				}
