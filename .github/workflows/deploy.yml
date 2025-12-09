@@ -83,8 +83,9 @@ jobs:
             fi
             docker compose -f docker-compose.prod.yml up -d --build
 
-            echo "🔗 Restarting Tailscale Funnel..."
+            echo "🔗 Setting up Tailscale Funnel..."
             sudo tailscale funnel reset || true
-            sudo tailscale funnel --bg 8080
+            sudo tailscale funnel --bg --set-path /chat 8002
+            sudo tailscale funnel --bg --set-path /api 8000
 
             echo "✅ Deployment complete."
