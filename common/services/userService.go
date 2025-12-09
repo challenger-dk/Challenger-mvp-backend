@@ -272,34 +272,26 @@ func DeleteUser(userID uint) error {
 			return err
 		}
 
-		// Clear all many-to-many associations
-		if err := tx.Model(&user).Association("FavoriteSports").Clear(); err != nil {
-			return err
-		}
-		if err := tx.Model(&user).Association("Friends").Clear(); err != nil {
-			return err
-		}
-		if err := tx.Model(&user).Association("Teams").Clear(); err != nil {
-			return err
-		}
-		if err := tx.Model(&user).Association("JoinedChallenges").Clear(); err != nil {
+		// Soft delete related Challenges/Teams created by this user
+		// (these will be soft-deleted as long as those models have DeletedAt)
+		if err := tx.Where("creator_id = ?", userID).
+			Delete(&models.Challenge{}).Error; err != nil {
 			return err
 		}
 
-		// Handle one-to-many relationships (delete or set to null)
-		if err := tx.Where("creator_id = ?", userID).Delete(&models.Challenge{}).Error; err != nil {
-			return err
-		}
-		if err := tx.Where("creator_id = ?", userID).Delete(&models.Team{}).Error; err != nil {
+		if err := tx.Where("creator_id = ?", userID).
+			Delete(&models.Team{}).Error; err != nil {
 			return err
 		}
 
 		// Clean up invitations
-		if err := tx.Where("inviter_id = ? OR invitee_id = ?", userID, userID).Delete(&models.Invitation{}).Error; err != nil {
+		if err := tx.
+			Where("inviter_id = ? OR invitee_id = ?", userID, userID).
+			Delete(&models.Invitation{}).Error; err != nil {
 			return err
 		}
 
-		// Delete the user
+		// Finally, soft delete the user
 		if err := tx.Delete(&user).Error; err != nil {
 			return err
 		}
