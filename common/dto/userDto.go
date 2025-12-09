@@ -8,21 +8,21 @@ import (
 const UserNextChallengesCount uint = 3
 
 type UserCreateDto struct {
-	Email          string   `json:"email"           validate:"required,email"`
-	Password       string   `json:"password"        validate:"required,min=8"`
-	FirstName      string   `json:"first_name"      validate:"required,min=3"`
-	LastName       string   `json:"last_name"`
-	ProfilePicture string   `json:"profile_picture,omitempty"`
-	Bio            string   `json:"bio,omitempty"`
+	Email          string   `json:"email"           validate:"sanitize,required,email"`
+	Password       string   `json:"password"        validate:"sanitize,required,min=8"`
+	FirstName      string   `json:"first_name"      validate:"sanitize,required,min=3"`
+	LastName       string   `json:"last_name"        validate:"sanitize"`
+	ProfilePicture string   `json:"profile_picture,omitempty" validate:"sanitize"`
+	Bio            string   `json:"bio,omitempty" validate:"sanitize"`
 	Age            uint     `json:"age"             validate:"min=1"`
 	FavoriteSports []string `json:"favorite_sports,omitempty"`
 }
 
 type UserUpdateDto struct {
-	FirstName      string   `json:"first_name"      validate:"min=3"`
-	LastName       string   `json:"last_name"`
-	ProfilePicture string   `json:"profile_picture"`
-	Bio            string   `json:"bio,omitempty"`
+	FirstName      string   `json:"first_name"      validate:"sanitize,min=3"`
+	LastName       string   `json:"last_name" validate:"sanitize"`
+	ProfilePicture string   `json:"profile_picture" validate:"sanitize"`
+	Bio            string   `json:"bio,omitempty" validate:"sanitize"`
 	FavoriteSports []string `json:"favorite_sports,omitempty"`
 }
 
@@ -67,8 +67,8 @@ type PublicUserDtoResponse struct {
 }
 
 type Login struct {
-	Email    string `json:"email"    validate:"required,email"`
-	Password string `json:"password" validate:"required"`
+	Email    string `json:"email"    validate:"sanitize,required,email"`
+	Password string `json:"password" validate:"sanitize,required,min=8"`
 }
 
 type CommonStatsDto struct {

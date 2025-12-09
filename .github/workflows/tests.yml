@@ -56,12 +56,12 @@ jobs:
 
       - name: Run unit tests
         # Run only unit tests
-        run: go test -v -coverprofile=unit_coverage.out ./api/tests/unit/...
+        run: go test -v -coverprofile=unit_coverage.out ./tests/unit/...
 
       - name: Run integration tests
         # Run integration tests specifically. 
         # Note: We use -p 1 to run tests sequentially to avoid race conditions on the single test DB.
-        run: go test -v -p 1 -coverprofile=integration_coverage.out ./api/tests/integration/...
+        run: go test -v -p 1 -coverprofile=integration_coverage.out ./tests/integration/...
 
       - name: Coverage summary (Unit)
         if: always() # Run even if tests fail to see what was covered

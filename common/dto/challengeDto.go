@@ -6,15 +6,15 @@ import (
 )
 
 type ChallengeCreateDto struct {
-	Name        string            `json:"name"        validate:"required,min=3"`
-	Description string            `json:"description"`
-	Sport       string            `json:"sport"       validate:"required,is-valid-sport"`
+	Name        string            `json:"name"        validate:"sanitize,required,min=3"`
+	Description string            `json:"description" validate:"sanitize"`
+	Sport       string            `json:"sport"       validate:"sanitize,required,is-valid-sport"`
 	Location    LocationCreateDto `json:"location"`
 	IsIndoor    bool              `json:"is_indoor"`
 	IsPublic    bool              `json:"is_public"`
-	PlayFor     string            `json:"play_for"`
+	PlayFor     string            `json:"play_for"    validate:"sanitize"`
 	HasCost     bool              `json:"has_cost"`
-	Comment     string            `json:"comment"`
+	Comment     string            `json:"comment"     validate:"sanitize"`
 	TeamSize    *int              `json:"team_size"`
 	Users       []uint            `json:"users"`
 	Teams       []uint            `json:"teams"`

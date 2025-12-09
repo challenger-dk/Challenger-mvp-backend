@@ -8,7 +8,7 @@ import (
 type IncomingMessage struct {
 	TeamID      *uint  `json:"team_id,omitempty"`
 	RecipientID *uint  `json:"recipient_id,omitempty"`
-	Content     string `json:"content"`
+	Content     string `json:"content" validate:"sanitize"`
 }
 
 type MessageResponseDto struct {
