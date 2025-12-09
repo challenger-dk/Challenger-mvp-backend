@@ -125,46 +125,30 @@ func DeleteTeam(id uint) error {
 	return config.DB.Transaction(func(tx *gorm.DB) error {
 		var t models.Team
 
-		err := tx.First(&t, id).Error
-		if err != nil {
+		// Load team + users in a single query
+		if err := tx.Preload("Users").First(&t, id).Error; err != nil {
 			return err
 		}
 
 		// Users to notify
-		var users []models.User
-		var creatorId uint = t.CreatorID
+		users := t.Users
+		creatorId := t.CreatorID
 
-		err = tx.Model(&t).
-			Association("Users").
-			Find(&users)
-
-		if err != nil {
+		// Soft delete the team.
+		// With gorm.DeletedAt on Team, this sets deleted_at instead of hard-deleting.
+		if err := tx.Delete(&t).Error; err != nil {
 			return err
 		}
 
-		// Remove user associations
-		err = tx.Model(&t).
-			Association("Users").
-			Clear()
-
-		if err != nil {
-			return err
-		}
-
-		err = tx.Delete(&t).Error
-		if err != nil {
-			return err
-		}
-
-		// Notify users
+		// Notify users (except creator)
 		for _, u := range users {
-			// Dont notify the creator
 			if u.ID == creatorId {
 				continue
 			}
 
 			CreateTeamDeletedNotification(tx, u, t)
 		}
+
 		return nil
 	})
 }

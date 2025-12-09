@@ -8,6 +8,7 @@ import (
 	"server/common/dto"
 	"server/common/models"
 	"server/common/services"
+	"server/common/validator"
 )
 
 func CreateReport(w http.ResponseWriter, r *http.Request) {
@@ -26,7 +27,7 @@ func CreateReport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 3. Validate
-	if err := validate.Struct(req); err != nil {
+	if err := validator.V.Struct(req); err != nil {
 		appError.HandleError(w, err)
 		return
 	}

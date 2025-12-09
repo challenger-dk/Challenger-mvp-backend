@@ -9,6 +9,7 @@ import (
 	"server/common/dto"
 	"server/common/models"
 	"server/common/services"
+	"server/common/validator"
 )
 
 func GetChallenge(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +72,7 @@ func CreateChallenge(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate
-	if err := validate.Struct(req); err != nil {
+	if err := validator.V.Struct(req); err != nil {
 		appError.HandleError(w, err)
 		return
 	}
@@ -113,7 +114,7 @@ func UpdateChallenge(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate
-	if err := validate.Struct(req); err != nil {
+	if err := validator.V.Struct(req); err != nil {
 		appError.HandleError(w, err)
 		return
 	}

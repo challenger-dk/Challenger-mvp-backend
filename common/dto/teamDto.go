@@ -17,12 +17,12 @@ type Team struct {
 */
 
 type TeamCreateDto struct {
-	Name     string             `json:"name"               validate:"required,min=3"`
+	Name     string             `json:"name"               validate:"sanitize,required,min=3"`
 	Location *LocationCreateDto `json:"location,omitempty"`
 }
 
 type TeamUpdateDto struct {
-	Name string `json:"name"        validate:"min=3"`
+	Name string `json:"name"        validate:"sanitize,min=3"`
 }
 
 type TeamResponseDto struct {

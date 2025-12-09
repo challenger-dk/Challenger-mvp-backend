@@ -233,29 +233,16 @@ func DeleteChallenge(id uint) error {
 	return config.DB.Transaction(func(tx *gorm.DB) error {
 		var c models.Challenge
 
-		err := tx.First(&c, id).Error
-		if err != nil {
+		if err := tx.First(&c, id).Error; err != nil {
 			return err
 		}
 
-		// clear many2many associations to avoid orphan join rows
-		err = tx.Model(&c).
-			Association("Teams").
-			Clear()
-
-		if err != nil {
+		// Soft delete: this sets c.DeletedAt, keeps row & associations
+		if err := tx.Delete(&c).Error; err != nil {
 			return err
 		}
 
-		err = tx.Model(&c).
-			Association("Users").
-			Clear()
-
-		if err != nil {
-			return err
-		}
-
-		return tx.Delete(&c).Error
+		return nil
 	})
 }
 

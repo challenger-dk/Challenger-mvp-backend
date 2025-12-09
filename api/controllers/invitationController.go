@@ -9,6 +9,7 @@ import (
 	"server/common/dto"
 	"server/common/models"
 	"server/common/services"
+	"server/common/validator"
 )
 
 func GetInvitationsByUserId(w http.ResponseWriter, r *http.Request) {
@@ -74,7 +75,7 @@ func SendInvitation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate
-	if err := validate.Struct(invitationDto); err != nil {
+	if err := validator.V.Struct(invitationDto); err != nil {
 		appError.HandleError(w, err)
 		return
 	}

@@ -7,6 +7,7 @@ import (
 	"server/common/appError"
 	"server/common/dto"
 	"server/common/services"
+	"server/common/validator"
 )
 
 func Register(w http.ResponseWriter, r *http.Request) {
@@ -19,7 +20,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate
-	if err := validate.Struct(req); err != nil {
+	if err := validator.V.Struct(req); err != nil {
 		appError.HandleError(w, err)
 		return
 	}
@@ -58,7 +59,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate
-	if err := validate.Struct(req); err != nil {
+	if err := validator.V.Struct(req); err != nil {
 		appError.HandleError(w, err)
 		return
 	}

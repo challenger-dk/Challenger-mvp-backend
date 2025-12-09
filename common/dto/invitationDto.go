@@ -29,7 +29,7 @@ type InvitationResponseDto struct {
 
 type InvitationCreateDto struct {
 	InviteeId    uint                  `json:"invitee_id"    validate:"required"`
-	Note         string                `json:"note"`
+	Note         string                `json:"note"          validate:"sanitize"`
 	ResourceType models.InvitationType `json:"resource_type" validate:"required,oneof=team friend challenge"`
 	ResourceID   uint                  `json:"resource_id"   validate:"required_if=ResourceType team required_if=ResourceType challenge"` // Friend invitations may not need ResourceID
 }

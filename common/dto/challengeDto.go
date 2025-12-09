@@ -6,15 +6,15 @@ import (
 )
 
 type ChallengeCreateDto struct {
-	Name        string            `json:"name"        validate:"required,min=3"`
-	Description string            `json:"description"`
-	Sport       string            `json:"sport"       validate:"required,is-valid-sport"`
+	Name        string            `json:"name"        validate:"sanitize,required,min=3"`
+	Description string            `json:"description" validate:"sanitize"`
+	Sport       string            `json:"sport"       validate:"sanitize,required,is-valid-sport"`
 	Location    LocationCreateDto `json:"location"`
 	IsIndoor    bool              `json:"is_indoor"`
 	IsPublic    bool              `json:"is_public"`
-	PlayFor     string            `json:"play_for"`
+	PlayFor     string            `json:"play_for"    validate:"sanitize"`
 	HasCost     bool              `json:"has_cost"`
-	Comment     string            `json:"comment"`
+	Comment     string            `json:"comment"     validate:"sanitize"`
 	TeamSize    *int              `json:"team_size"`
 	Users       []uint            `json:"users"`
 	Teams       []uint            `json:"teams"`
@@ -24,24 +24,24 @@ type ChallengeCreateDto struct {
 }
 
 type ChallengeResponseDto struct {
-	ID          uint                `json:"id"`
-	Name        string              `json:"name"`
-	Description string              `json:"description"`
-	Sport       string              `json:"sport"`
-	Location    LocationResponseDto `json:"location"`
-	Creator     UserResponseDto     `json:"creator"`
-	Users       []UserResponseDto   `json:"users"`
-	Teams       []TeamResponseDto   `json:"teams"`
-	IsIndoor    bool                `json:"is_indoor"`
-	IsPublic    bool                `json:"is_public"`
-	IsCompleted bool                `json:"is_completed"`
-	PlayFor     string              `json:"play_for"`
-	HasCost     bool                `json:"has_cost"`
-	Comment     string              `json:"comment"`
-	TeamSize    *int                `json:"team_size"`
-	Date        time.Time           `json:"date"`
-	StartTime   time.Time           `json:"start_time"`
-	EndTime     time.Time           `json:"end_time"`
+	ID          uint                    `json:"id"`
+	Name        string                  `json:"name"`
+	Description string                  `json:"description"`
+	Sport       string                  `json:"sport"`
+	Location    LocationResponseDto     `json:"location"`
+	Creator     PublicUserDtoResponse   `json:"creator"`
+	Users       []PublicUserDtoResponse `json:"users"`
+	Teams       []TeamResponseDto       `json:"teams"`
+	IsIndoor    bool                    `json:"is_indoor"`
+	IsPublic    bool                    `json:"is_public"`
+	IsCompleted bool                    `json:"is_completed"`
+	PlayFor     string                  `json:"play_for"`
+	HasCost     bool                    `json:"has_cost"`
+	Comment     string                  `json:"comment"`
+	TeamSize    *int                    `json:"team_size"`
+	Date        time.Time               `json:"date"`
+	StartTime   time.Time               `json:"start_time"`
+	EndTime     time.Time               `json:"end_time"`
 }
 
 func ChallengeCreateDtoToModel(t ChallengeCreateDto) models.Challenge {
@@ -68,10 +68,10 @@ func ChallengeCreateDtoToModel(t ChallengeCreateDto) models.Challenge {
 }
 
 func ToChallengeResponseDto(t models.Challenge) ChallengeResponseDto {
-	creator := ToUserResponseDto(t.Creator)
-	users := make([]UserResponseDto, len(t.Users))
+	creator := ToPublicUserDtoResponse(t.Creator)
+	users := make([]PublicUserDtoResponse, len(t.Users))
 	for i, user := range t.Users {
-		users[i] = ToUserResponseDto(user)
+		users[i] = ToPublicUserDtoResponse(user)
 	}
 	teams := make([]TeamResponseDto, len(t.Teams))
 	for i, team := range t.Teams {

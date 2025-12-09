@@ -6,12 +6,12 @@ import (
 )
 
 type LocationCreateDto struct {
-	Address    string  `json:"address"   validate:"required"`
+	Address    string  `json:"address"   validate:"sanitize,required"`
 	Latitude   float64 `json:"latitude"  validate:"required,min=-90,max=90"`
 	Longitude  float64 `json:"longitude" validate:"required,min=-180,max=180"`
-	PostalCode string  `json:"postal_code" validate:"required"`
-	City       string  `json:"city" validate:"required"`
-	Country    string  `json:"country" validate:"required"`
+	PostalCode string  `json:"postal_code" validate:"sanitize,required"`
+	City       string  `json:"city" validate:"sanitize,required"`
+	Country    string  `json:"country" validate:"sanitize,required"`
 }
 
 type LocationResponseDto struct {
