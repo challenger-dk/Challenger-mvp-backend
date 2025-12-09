@@ -12,12 +12,12 @@ import (
 // cronLogger adapts slog to the cron.Logger interface
 type cronLogger struct{}
 
-func (l cronLogger) Info(msg string, keysAndValues ...interface{}) {
+func (l cronLogger) Info(msg string, keysAndValues ...any) {
 	slog.Info(msg, keysAndValues...)
 }
 
-func (l cronLogger) Error(err error, msg string, keysAndValues ...interface{}) {
-	args := append([]interface{}{"error", err}, keysAndValues...)
+func (l cronLogger) Error(err error, msg string, keysAndValues ...any) {
+	args := append([]any{"error", err}, keysAndValues...)
 	slog.Error(msg, args...)
 }
 

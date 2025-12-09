@@ -85,7 +85,7 @@ func GetUserByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(dto.ToUserResponseDto(*targetUser))
+	err = json.NewEncoder(w).Encode(dto.ToPublicUserDtoResponse(*targetUser))
 	if err != nil {
 		appError.HandleError(w, err)
 		return

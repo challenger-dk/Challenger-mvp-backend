@@ -57,13 +57,16 @@ type UserSettingsUpdateDto struct {
 
 // Used for
 type PublicUserDtoResponse struct {
-	ID             uint               `json:"id"`
-	FirstName      string             `json:"first_name"`
-	LastName       string             `json:"last_name"`
-	ProfilePicture string             `json:"profile_picture,omitempty"`
-	Bio            string             `json:"bio,omitempty"`
-	Age            uint               `json:"age"`
-	FavoriteSports []SportResponseDto `json:"favorite_sports,omitempty"`
+	ID                  uint               `json:"id"`
+	FirstName           string             `json:"first_name"`
+	LastName            string             `json:"last_name"`
+	ProfilePicture      string             `json:"profile_picture,omitempty"`
+	Bio                 string             `json:"bio,omitempty"`
+	Age                 uint               `json:"age"`
+	FavoriteSports      []SportResponseDto `json:"favorite_sports,omitempty"`
+	FriendsCount        uint               `json:"friends_count,omitempty"`
+	TeamsCount          uint               `json:"teams_count,omitempty"`
+	CompletedChallenges uint               `json:"completed_challenges,omitempty"`
 }
 
 type Login struct {
@@ -83,14 +86,28 @@ func ToPublicUserDtoResponse(user models.User) PublicUserDtoResponse {
 		favoriteSports[i] = ToSportResponseDto(sport)
 	}
 
+	friendsCount := uint(len(user.Friends))
+	teamsCount := uint(len(user.Teams))
+
+	// Count completed challenges
+	var completedChallengesCount uint
+	for _, challenge := range user.JoinedChallenges {
+		if challenge.IsCompleted {
+			completedChallengesCount++
+		}
+	}
+
 	return PublicUserDtoResponse{
-		ID:             user.ID,
-		FirstName:      user.FirstName,
-		LastName:       user.LastName,
-		ProfilePicture: user.ProfilePicture,
-		Bio:            user.Bio,
-		FavoriteSports: favoriteSports,
-		Age:            user.Age,
+		ID:                  user.ID,
+		FirstName:           user.FirstName,
+		LastName:            user.LastName,
+		ProfilePicture:      user.ProfilePicture,
+		Bio:                 user.Bio,
+		FavoriteSports:      favoriteSports,
+		Age:                 user.Age,
+		FriendsCount:        friendsCount,
+		TeamsCount:          teamsCount,
+		CompletedChallenges: completedChallengesCount,
 	}
 }
 

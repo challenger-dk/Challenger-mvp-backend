@@ -38,6 +38,8 @@ func GetUserByID(userID uint) (*models.User, error) {
 
 	err := config.DB.Preload("FavoriteSports").
 		Preload("Friends").
+		Preload("Teams").
+		Preload("JoinedChallenges").
 		First(&user, userID).
 		Error
 
