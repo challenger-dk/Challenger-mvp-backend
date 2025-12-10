@@ -34,6 +34,13 @@ func RegisterRoutes(r chi.Router) {
 		r.Delete("/{id}/remove", controllers.RemoveFriend)
 	})
 
+	r.Route("/emergency-info", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware)
+		r.Post("/", controllers.CreateEmergencyContact)
+		r.Put("/{id}", controllers.UpdateEmergencyContact)
+		r.Delete("/{id}", controllers.DeleteEmergencyContact)
+	})
+
 	r.Route("/challenges", func(r chi.Router) {
 		r.Get("/", controllers.GetChallenges)
 		r.Get("/{id}", controllers.GetChallenge)

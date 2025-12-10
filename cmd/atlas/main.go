@@ -26,6 +26,7 @@ func main() {
 		&models.Notification{},
 		&models.UserSettings{},
 		&models.Message{},
+		&models.EmergencyInfo{},
 	)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to load gorm schema: %v\n", err)

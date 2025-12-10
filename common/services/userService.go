@@ -40,6 +40,8 @@ func GetUserByID(userID uint) (*models.User, error) {
 		Preload("Friends").
 		Preload("Teams").
 		Preload("JoinedChallenges").
+		Preload("CreatedChallenges").
+		Preload("EmergencyContacts").
 		First(&user, userID).
 		Error
 
@@ -80,6 +82,7 @@ func GetUserByIDWithSettings(userID uint) (*models.User, error) {
 		Preload("JoinedChallenges.Creator").
 		Preload("JoinedChallenges.Users").
 		Preload("JoinedChallenges.Teams").
+		Preload("EmergencyContacts").
 		First(&user, userID).
 		Error
 

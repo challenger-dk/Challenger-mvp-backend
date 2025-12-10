@@ -27,18 +27,19 @@ type UserUpdateDto struct {
 }
 
 type UserResponseDto struct {
-	ID                  uint                    `json:"id"`
-	Email               string                  `json:"email"`
-	FirstName           string                  `json:"first_name"`
-	LastName            string                  `json:"last_name"`
-	ProfilePicture      string                  `json:"profile_picture,omitempty"`
-	Bio                 string                  `json:"bio,omitempty"`
-	Age                 uint                    `json:"age"`
-	FavoriteSports      []SportResponseDto      `json:"favorite_sports,omitempty"`
-	Friends             []PublicUserDtoResponse `json:"friends,omitempty"`
-	CompletedChallenges uint                    `json:"completed_challenges"`
-	NextChallenges      []ChallengeResponseDto  `json:"next_challenges,omitempty"`
-	Settings            UserSettingsResponseDto `json:"settings"`
+	ID                  uint                       `json:"id"`
+	Email               string                     `json:"email"`
+	FirstName           string                     `json:"first_name"`
+	LastName            string                     `json:"last_name"`
+	ProfilePicture      string                     `json:"profile_picture,omitempty"`
+	Bio                 string                     `json:"bio,omitempty"`
+	Age                 uint                       `json:"age"`
+	FavoriteSports      []SportResponseDto         `json:"favorite_sports,omitempty"`
+	Friends             []PublicUserDtoResponse    `json:"friends,omitempty"`
+	CompletedChallenges uint                       `json:"completed_challenges"`
+	NextChallenges      []ChallengeResponseDto     `json:"next_challenges,omitempty"`
+	Settings            UserSettingsResponseDto    `json:"settings"`
+	EmergencyContacts   []EmergencyInfoResponseDto `json:"emergency_contacts,omitempty"`
 }
 
 type UserSettingsResponseDto struct {
@@ -155,6 +156,11 @@ func ToUserResponseDto(user models.User) UserResponseDto {
 		nextChallenges = append(nextChallenges, ToChallengeResponseDto(ch))
 	}
 
+	emergencyContacts := make([]EmergencyInfoResponseDto, len(user.EmergencyContacts))
+	for i, contact := range user.EmergencyContacts {
+		emergencyContacts[i] = ToEmergencyInfoResponseDto(contact)
+	}
+
 	return UserResponseDto{
 		ID:                  user.ID,
 		Email:               user.Email,
@@ -168,6 +174,7 @@ func ToUserResponseDto(user models.User) UserResponseDto {
 		Settings:            settings,
 		CompletedChallenges: completedChallengesCount,
 		NextChallenges:      nextChallenges,
+		EmergencyContacts:   emergencyContacts,
 	}
 }
 

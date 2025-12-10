@@ -54,6 +54,7 @@ func setupTestDB() {
 			&models.UserSettings{},
 			&models.Message{},
 			&models.Report{},
+			&models.EmergencyInfo{},
 		)
 		if err != nil {
 			log.Fatalf("❌ Failed to migrate test database: %v", err)
