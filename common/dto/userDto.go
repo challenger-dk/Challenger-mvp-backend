@@ -15,6 +15,7 @@ type UserCreateDto struct {
 	ProfilePicture string   `json:"profile_picture,omitempty" validate:"sanitize"`
 	Bio            string   `json:"bio,omitempty" validate:"sanitize"`
 	Age            uint     `json:"age"             validate:"min=1"`
+	City           string   `json:"city"            validate:"sanitize"`
 	FavoriteSports []string `json:"favorite_sports,omitempty"`
 }
 
@@ -23,6 +24,8 @@ type UserUpdateDto struct {
 	LastName       string   `json:"last_name" validate:"sanitize"`
 	ProfilePicture string   `json:"profile_picture" validate:"sanitize"`
 	Bio            string   `json:"bio,omitempty" validate:"sanitize"`
+	Age            uint     `json:"age"             validate:"min=1"`
+	City           string   `json:"city"            validate:"sanitize"`
 	FavoriteSports []string `json:"favorite_sports,omitempty"`
 }
 
@@ -34,6 +37,7 @@ type UserResponseDto struct {
 	ProfilePicture      string                     `json:"profile_picture,omitempty"`
 	Bio                 string                     `json:"bio,omitempty"`
 	Age                 uint                       `json:"age"`
+	City                string                     `json:"city"`
 	FavoriteSports      []SportResponseDto         `json:"favorite_sports,omitempty"`
 	Friends             []PublicUserDtoResponse    `json:"friends,omitempty"`
 	CompletedChallenges uint                       `json:"completed_challenges"`
@@ -64,6 +68,7 @@ type PublicUserDtoResponse struct {
 	ProfilePicture      string             `json:"profile_picture,omitempty"`
 	Bio                 string             `json:"bio,omitempty"`
 	Age                 uint               `json:"age"`
+	City                string             `json:"city"`
 	FavoriteSports      []SportResponseDto `json:"favorite_sports,omitempty"`
 	FriendsCount        uint               `json:"friends_count,omitempty"`
 	TeamsCount          uint               `json:"teams_count,omitempty"`
@@ -106,6 +111,7 @@ func ToPublicUserDtoResponse(user models.User) PublicUserDtoResponse {
 		Bio:                 user.Bio,
 		FavoriteSports:      favoriteSports,
 		Age:                 user.Age,
+		City:                user.City,
 		FriendsCount:        friendsCount,
 		TeamsCount:          teamsCount,
 		CompletedChallenges: completedChallengesCount,
@@ -169,6 +175,7 @@ func ToUserResponseDto(user models.User) UserResponseDto {
 		ProfilePicture:      user.ProfilePicture,
 		Bio:                 user.Bio,
 		Age:                 user.Age,
+		City:                user.City,
 		FavoriteSports:      favoriteSports,
 		Friends:             friends,
 		Settings:            settings,
@@ -210,6 +217,7 @@ func UserCreateDtoToModel(u UserCreateDto) models.User {
 		ProfilePicture: u.ProfilePicture,
 		Bio:            u.Bio,
 		Age:            u.Age,
+		City:           u.City,
 		FavoriteSports: favoriteSports,
 		Settings:       &models.UserSettings{},
 	}

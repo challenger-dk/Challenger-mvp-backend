@@ -15,6 +15,7 @@ type User struct {
 	ProfilePicture string
 	Bio            string
 	Age            uint
+	City           string
 
 	// Relationships
 	FavoriteSports    []Sport     `gorm:"many2many:user_favorite_sports;"`

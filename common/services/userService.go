@@ -230,6 +230,14 @@ func UpdateUser(userID uint, user dto.UserUpdateDto) error {
 			existingUser.Bio = user.Bio
 		}
 
+		if user.Age != 0 {
+			existingUser.Age = user.Age
+		}
+
+		if user.City != "" {
+			existingUser.City = user.City
+		}
+
 		if err := tx.Save(&existingUser).Error; err != nil {
 			return err
 		}
