@@ -120,18 +120,18 @@ func CreateInvitationNotification(db *gorm.DB, inv models.Invitation) {
 
 	switch inv.ResourceType {
 	case models.ResourceTypeTeam:
-		title = "Team Invitation"
-		content = "You have been invited to join a team."
+		title = "Holdinvitation"
+		content = "Du er blevet inviteret til at deltage i et hold."
 		notifType = models.NotifTypeTeamInvite
 
 	case models.ResourceTypeFriend:
-		title = "Friend Request"
-		content = "You have a new friend request."
+		title = "Venneanmodning"
+		content = "Du har en ny venneanmodning."
 		notifType = models.NotifTypeFriendReq
 
 	case models.ResourceTypeChallenge:
-		title = "Challenge Invitation"
-		content = "You have been invited to join a challenge."
+		title = "Challenge invitation"
+		content = "Du er blevet inviteret til at deltage i en challenge."
 		notifType = models.NotifTypeChallengeReq
 
 	default:
@@ -160,18 +160,18 @@ func CreateAcceptedInvitationNotification(db *gorm.DB, inv models.Invitation) {
 
 	switch inv.ResourceType {
 	case models.ResourceTypeTeam:
-		title = "Team Invitation Accepted"
-		content = fmt.Sprintf("%s has joined your team", inv.Invitee.FirstName)
+		title = "Holdinvitation accepteret"
+		content = fmt.Sprintf("%s er blevet medlem af dit hold", inv.Invitee.FirstName)
 		notifType = models.NotifTypeTeamAccept
 
 	case models.ResourceTypeFriend:
-		title = "Friend Request Accepted"
-		content = fmt.Sprintf("%s has accepted your friend request", inv.Invitee.FirstName)
+		title = "Venneanmodning accepteret"
+		content = fmt.Sprintf("%s har accepteret din venneanmodning", inv.Invitee.FirstName)
 		notifType = models.NotifTypeFriendAccept
 
 	case models.ResourceTypeChallenge:
-		title = "Challenge Invitation Accepted"
-		content = fmt.Sprintf("%s has accepted your challenge invitation", inv.Invitee.FirstName)
+		title = "Udfordringsinvitation accepteret"
+		content = fmt.Sprintf("%s har accepteret din challenge invitation", inv.Invitee.FirstName)
 		notifType = models.NotifTypeChallengeAccept
 
 	default:
@@ -200,18 +200,18 @@ func CreateDeclinedInvitationNotification(db *gorm.DB, inv models.Invitation) {
 
 	switch inv.ResourceType {
 	case models.ResourceTypeTeam:
-		title = "Team Invitation Declined"
-		content = fmt.Sprintf("%s has declined your team invitation", inv.Invitee.FirstName)
+		title = "Holdinvitation afvist"
+		content = fmt.Sprintf("%s har afvist din holdinvitation", inv.Invitee.FirstName)
 		notifType = models.NotifTypeTeamDecline
 
 	case models.ResourceTypeFriend:
-		title = "Friend Request Declined"
-		content = fmt.Sprintf("%s has declined your friend request", inv.Invitee.FirstName)
+		title = "Venneanmodning afvist"
+		content = fmt.Sprintf("%s har afvist din venneanmodning", inv.Invitee.FirstName)
 		notifType = models.NotifTypeFriendDecline
 
 	case models.ResourceTypeChallenge:
-		title = "Challenge Invitation Declined"
-		content = fmt.Sprintf("%s has declined your challenge invitation", inv.Invitee.FirstName)
+		title = "Udfordringsinvitation afvist"
+		content = fmt.Sprintf("%s har afvist din challenge invitation", inv.Invitee.FirstName)
 		notifType = models.NotifTypeChallengeDecline
 
 	default:
@@ -239,8 +239,8 @@ func CreateDeclinedInvitationNotification(db *gorm.DB, inv models.Invitation) {
 func CreateRemovedUserFromTeamNotification(db *gorm.DB, userID uint, team models.Team) {
 	var title, content string
 
-	title = "You have been Removed from a Team"
-	content = fmt.Sprintf("You have been removed from '%s'", team.Name)
+	title = "Du er blevet fjernet fra et hold"
+	content = fmt.Sprintf("Du er blevet fjernet fra '%s'", team.Name)
 
 	CreateNotification(db, NotificationParams{
 		RecipientID: userID,
@@ -254,8 +254,8 @@ func CreateRemovedUserFromTeamNotification(db *gorm.DB, userID uint, team models
 func CreateUserLeftTeamNotification(db *gorm.DB, leaver models.User, team models.Team) {
 	var title, content string
 
-	title = "A User Left a Team"
-	content = fmt.Sprintf("%s has left '%s'", leaver.FirstName, team.Name)
+	title = "En bruger har forladt holdet"
+	content = fmt.Sprintf("%s har forladt '%s'", leaver.FirstName, team.Name)
 
 	CreateNotification(db, NotificationParams{
 		RecipientID: team.CreatorID,
@@ -269,8 +269,8 @@ func CreateUserLeftTeamNotification(db *gorm.DB, leaver models.User, team models
 func CreateTeamDeletedNotification(db *gorm.DB, user models.User, team models.Team) {
 	var title, content string
 
-	title = "A team you are a member of has been deleted"
-	content = fmt.Sprintf("'%s' has been deleted", team.Name)
+	title = "Et hold du er medlem af er blevet slettet"
+	content = fmt.Sprintf("'%s' er blevet slettet", team.Name)
 
 	CreateNotification(db, NotificationParams{
 		RecipientID: user.ID,
