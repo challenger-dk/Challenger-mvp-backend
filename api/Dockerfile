@@ -5,11 +5,16 @@ FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
+# Ensure static build
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+ENV GOARCH=amd64
+
 # Copy module files
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy all code
+# Copy source
 COPY api ./api
 COPY common ./common
 
@@ -17,14 +22,13 @@ COPY common ./common
 RUN go build -o /api-server ./api
 
 # =====================
-# 2. Runtime stage
+# 2. Runtime stage (distroless)
 # =====================
-FROM alpine
+FROM gcr.io/distroless/static
 
-WORKDIR /app
+COPY --from=builder /api-server /api-server
 
-COPY --from=builder /api-server .
-
+# Cloud Run will set PORT env variable
 EXPOSE 8000
 
-CMD ["./api-server"]
+CMD ["/api-server"]
