@@ -9,7 +9,6 @@ import (
 	"server/common/config"
 	"server/common/logger" // Import the logger package
 
-	"server/api/cron"
 	"server/api/routes"
 
 	"github.com/go-chi/chi/v5"
@@ -24,20 +23,20 @@ func main() {
 	config.ConnectDatabase()
 
 	// Ensure PostGIS extension
-	err := config.DB.Exec("CREATE EXTENSION IF NOT EXISTS postgis").Error
-	if err != nil {
-		slog.Error("Failed to create PostGIS extension", "error", err)
-		os.Exit(1)
-	}
+	// err := config.DB.Exec("CREATE EXTENSION IF NOT EXISTS postgis").Error
+	// if err != nil {
+	// 	slog.Error("Failed to create PostGIS extension", "error", err)
+	// 	os.Exit(1)
+	// }
 
-	config.MigrateDB()
+	// config.MigrateDB()
 
-	if err := config.SeedSports(); err != nil {
-		slog.Error("Failed to seed sports", "error", err)
-		os.Exit(1)
-	}
+	// if err := config.SeedSports(); err != nil {
+	// 	slog.Error("Failed to seed sports", "error", err)
+	// 	os.Exit(1)
+	// }
 
-	cron.Start()
+	// cron.Start()
 
 	r := chi.NewRouter()
 	routes.RegisterRoutes(r)
