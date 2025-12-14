@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -46,6 +48,7 @@ func main() {
 	if port == "" {
 		port = "8000"
 	}
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
 
 	server := &http.Server{
 		Addr:         ":" + port,
