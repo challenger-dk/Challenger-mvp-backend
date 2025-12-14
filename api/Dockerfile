@@ -1,13 +1,30 @@
-FROM golang:1.24-alpine
+# =====================
+# 1. Build stage
+# =====================
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
+# Copy module files
 COPY go.mod go.sum ./
 RUN go mod download
 
-COPY common ./common
+# Copy all code
 COPY api ./api
+COPY common ./common
 
-RUN go install github.com/cosmtrek/air@v1.42.0
+# Build production binary
+RUN go build -o /api-server ./api
 
-CMD ["air", "--build.cmd", "go build -o ./tmp/api ./api", "--build.bin", "./tmp/api"]
+# =====================
+# 2. Runtime stage
+# =====================
+FROM alpine
+
+WORKDIR /app
+
+COPY --from=builder /api-server .
+
+EXPOSE 8000
+
+CMD ["./api-server"]
