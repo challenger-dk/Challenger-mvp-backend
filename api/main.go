@@ -42,15 +42,21 @@ func main() {
 	r := chi.NewRouter()
 	routes.RegisterRoutes(r)
 
+	// Port from Cloud Run environment variable
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8000"
+	}
+
 	server := &http.Server{
-		Addr:         ":8000",
+		Addr:         ":" + port,
 		Handler:      r,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  15 * time.Second,
 	}
 
-	slog.Info("Starting server on :8000")
+	slog.Info("Starting server on :" + port)
 	if err := server.ListenAndServe(); err != nil {
 		slog.Error("Server failed to start", "error", err)
 		os.Exit(1)
