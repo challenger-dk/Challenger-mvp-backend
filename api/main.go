@@ -26,11 +26,11 @@ func main() {
 	config.ConnectDatabase()
 
 	// Ensure PostGIS extension
-	// err := config.DB.Exec("CREATE EXTENSION IF NOT EXISTS postgis").Error
-	// if err != nil {
-	// 	slog.Error("Failed to create PostGIS extension", "error", err)
-	// 	os.Exit(1)
-	// }
+	err := config.DB.Exec("CREATE EXTENSION IF NOT EXISTS postgis").Error
+	if err != nil {
+		slog.Error("Failed to create PostGIS extension", "error", err)
+		os.Exit(1)
+	}
 
 	config.MigrateDB()
 
