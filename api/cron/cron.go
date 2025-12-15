@@ -48,4 +48,11 @@ func addTasks(c *cron.Cron) {
 		slog.Error("Error scheduling CleanupNotifications", "error", err)
 		os.Exit(1)
 	}
+
+	// Run every hour to update expired challenges
+	_, err = c.AddFunc("0 * * * *", tasks.RunUpdateExpiredChallenges)
+	if err != nil {
+		slog.Error("Error scheduling UpdateExpiredChallenges", "error", err)
+		os.Exit(1)
+	}
 }

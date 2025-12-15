@@ -12,6 +12,7 @@ type ChallengeCreateDto struct {
 	Location    LocationCreateDto `json:"location"`
 	IsIndoor    bool              `json:"is_indoor"`
 	IsPublic    bool              `json:"is_public"`
+	Status      string            `json:"status"      validate:"sanitize"`
 	PlayFor     string            `json:"play_for"    validate:"sanitize"`
 	HasCost     bool              `json:"has_cost"`
 	Comment     string            `json:"comment"     validate:"sanitize"`
@@ -35,6 +36,7 @@ type ChallengeResponseDto struct {
 	IsIndoor    bool                    `json:"is_indoor"`
 	IsPublic    bool                    `json:"is_public"`
 	IsCompleted bool                    `json:"is_completed"`
+	Status      string                  `json:"status"`
 	PlayFor     string                  `json:"play_for"`
 	HasCost     bool                    `json:"has_cost"`
 	Comment     string                  `json:"comment"`
@@ -49,6 +51,13 @@ func ChallengeCreateDtoToModel(t ChallengeCreateDto) models.Challenge {
 	if !t.EndTime.IsZero() {
 		endTime = &t.EndTime
 	}
+
+	// Set status, defaulting to "open" if not provided
+	status := models.ChallengeStatusOpen
+	if t.Status != "" {
+		status = models.ChallengeStatus(t.Status)
+	}
+
 	return models.Challenge{
 		Name:        t.Name,
 		Description: t.Description,
@@ -57,6 +66,7 @@ func ChallengeCreateDtoToModel(t ChallengeCreateDto) models.Challenge {
 		IsIndoor:    t.IsIndoor,
 		IsPublic:    t.IsPublic,
 		IsCompleted: false,
+		Status:      status,
 		PlayFor:     &t.PlayFor,
 		HasCost:     t.HasCost,
 		Comment:     &t.Comment,
@@ -101,6 +111,7 @@ func ToChallengeResponseDto(t models.Challenge) ChallengeResponseDto {
 		IsIndoor:    t.IsIndoor,
 		IsPublic:    t.IsPublic,
 		IsCompleted: t.IsCompleted,
+		Status:      string(t.Status),
 		PlayFor:     playFor,
 		HasCost:     t.HasCost,
 		Comment:     comment,

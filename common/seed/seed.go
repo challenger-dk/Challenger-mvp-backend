@@ -365,6 +365,7 @@ func seedChallenges(users []models.User, teams []models.Team, locations []models
 			IsIndoor:    false,
 			IsPublic:    true,
 			IsCompleted: false,
+			Status:      models.ChallengeStatusOpen,
 			Date:        now.AddDate(0, 0, 7), // Next week
 			StartTime:   now.AddDate(0, 0, 7),
 			EndTime:     timePtr(now.AddDate(0, 0, 7).Add(2 * time.Hour)),
@@ -379,6 +380,7 @@ func seedChallenges(users []models.User, teams []models.Team, locations []models
 			IsIndoor:    false,
 			IsPublic:    true,
 			IsCompleted: false,
+			Status:      models.ChallengeStatusOpen,
 			Date:        now, // Today
 			StartTime:   now,
 			EndTime:     timePtr(now.Add(2 * time.Hour)),
@@ -393,6 +395,7 @@ func seedChallenges(users []models.User, teams []models.Team, locations []models
 			IsIndoor:    false,
 			IsPublic:    false,
 			IsCompleted: false,
+			Status:      models.ChallengeStatusOpen,
 			Date:        now, // Today
 			StartTime:   now,
 			EndTime:     timePtr(now.Add(2 * time.Hour)),
@@ -407,6 +410,7 @@ func seedChallenges(users []models.User, teams []models.Team, locations []models
 			IsIndoor:    false,
 			IsPublic:    true,
 			IsCompleted: false,
+			Status:      models.ChallengeStatusOpen,
 			Date:        now.AddDate(0, 0, 10), // In 10 days
 			StartTime:   now,
 			EndTime:     timePtr(now.AddDate(0, 0, 10).Add(2 * time.Hour)),

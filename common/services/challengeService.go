@@ -4,6 +4,7 @@ import (
 	"errors"
 	"server/common/config"
 	"server/common/models"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -22,6 +23,9 @@ func GetChallengeByID(id uint) (models.Challenge, error) {
 		return models.Challenge{}, err
 	}
 
+	// Update status to completed if EndTime has passed
+	updateChallengeStatusIfExpired(&c)
+
 	return c, nil
 }
 
@@ -38,6 +42,11 @@ func GetChallenges() ([]models.Challenge, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	// Update status to completed for challenges where EndTime has passed
+	for i := range challenges {
+		updateChallengeStatusIfExpired(&challenges[i])
 	}
 
 	return challenges, nil
@@ -183,6 +192,10 @@ func UpdateChallenge(id uint, ch models.Challenge) error {
 			c.TeamSize = ch.TeamSize
 		}
 
+		if ch.Status != "" {
+			c.Status = ch.Status
+		}
+
 		return tx.Save(&c).Error
 	})
 }
@@ -244,6 +257,21 @@ func DeleteChallenge(id uint) error {
 
 		return nil
 	})
+}
+
+// updateChallengeStatusIfExpired checks if a challenge's EndTime has passed
+// and updates the status to "completed" if it has and the challenge is not already completed
+func updateChallengeStatusIfExpired(c *models.Challenge) {
+	if c.EndTime == nil {
+		return
+	}
+
+	now := time.Now()
+	if c.EndTime.Before(now) && c.Status != models.ChallengeStatusCompleted {
+		// Only update if not already completed to avoid unnecessary database writes
+		config.DB.Model(c).Update("status", models.ChallengeStatusCompleted)
+		c.Status = models.ChallengeStatusCompleted
+	}
 }
 
 // addUserToChallenge adds a user to a challenge
