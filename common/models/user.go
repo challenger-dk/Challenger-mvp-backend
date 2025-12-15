@@ -14,7 +14,7 @@ type User struct {
 	LastName       string
 	ProfilePicture string
 	Bio            string
-	Age            uint
+	BirthDate      time.Time
 	City           string
 
 	// Relationships

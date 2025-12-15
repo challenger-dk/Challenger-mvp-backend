@@ -135,7 +135,7 @@ func seedUsers() ([]models.User, error) {
 			FirstName: "Alice",
 			LastName:  "Johnson",
 			Bio:       "Tennisentusiast og weekendkriger",
-			Age:       28,
+			BirthDate: time.Date(1995, 1, 1, 0, 0, 0, 0, time.UTC),
 			Settings:  &models.UserSettings{},
 		},
 		{
@@ -144,7 +144,7 @@ func seedUsers() ([]models.User, error) {
 			FirstName: "Bob",
 			LastName:  "Smith",
 			Bio:       "Fodboldspiller på jagt efter konkurrencedygtige kampe",
-			Age:       32,
+			BirthDate: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
 			Settings:  &models.UserSettings{},
 		},
 		{
@@ -153,7 +153,7 @@ func seedUsers() ([]models.User, error) {
 			FirstName: "Charlie",
 			LastName:  "Brown",
 			Bio:       "Basketballfanatiker",
-			Age:       25,
+			BirthDate: time.Date(1992, 1, 1, 0, 0, 0, 0, time.UTC),
 			Settings:  &models.UserSettings{},
 		},
 		{
@@ -162,7 +162,7 @@ func seedUsers() ([]models.User, error) {
 			FirstName: "Diana",
 			LastName:  "Williams",
 			Bio:       "Elsker at spille padel tennis og volleyball",
-			Age:       30,
+			BirthDate: time.Date(2003, 1, 1, 0, 0, 0, 0, time.UTC),
 			Settings:  &models.UserSettings{},
 		},
 		{
@@ -171,7 +171,7 @@ func seedUsers() ([]models.User, error) {
 			FirstName: "Eve",
 			LastName:  "Davis",
 			Bio:       "Løbe- og cykelentusiast",
-			Age:       27,
+			BirthDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
 			Settings:  &models.UserSettings{},
 		},
 	}
@@ -365,9 +365,9 @@ func seedChallenges(users []models.User, teams []models.Team, locations []models
 			IsIndoor:    false,
 			IsPublic:    true,
 			IsCompleted: false,
-			Date:        now.AddDate(0, 0, 7),                              // Next week
-			StartTime:   now.AddDate(0, 0, 7).Add(10 * time.Hour),          // 10 AM
-			EndTime:     timePtr(now.AddDate(0, 0, 7).Add(12 * time.Hour)), // 12 PM
+			Date:        now.AddDate(0, 0, 7), // Next week
+			StartTime:   now.AddDate(0, 0, 7),
+			EndTime:     timePtr(now.AddDate(0, 0, 7).Add(2 * time.Hour)),
 			TeamSize:    intPtr(4),
 		},
 		{
@@ -379,9 +379,9 @@ func seedChallenges(users []models.User, teams []models.Team, locations []models
 			IsIndoor:    false,
 			IsPublic:    true,
 			IsCompleted: false,
-			Date:        now.AddDate(0, 0, 3),                              // In 3 days
-			StartTime:   now.AddDate(0, 0, 3).Add(18 * time.Hour),          // 6 PM
-			EndTime:     timePtr(now.AddDate(0, 0, 3).Add(20 * time.Hour)), // 8 PM
+			Date:        now, // Today
+			StartTime:   now,
+			EndTime:     timePtr(now.Add(2 * time.Hour)),
 			TeamSize:    intPtr(10),
 		},
 		{
@@ -393,9 +393,9 @@ func seedChallenges(users []models.User, teams []models.Team, locations []models
 			IsIndoor:    false,
 			IsPublic:    false,
 			IsCompleted: false,
-			Date:        now.AddDate(0, 0, 5),                              // In 5 days
-			StartTime:   now.AddDate(0, 0, 5).Add(17 * time.Hour),          // 5 PM
-			EndTime:     timePtr(now.AddDate(0, 0, 5).Add(19 * time.Hour)), // 7 PM
+			Date:        now, // Today
+			StartTime:   now,
+			EndTime:     timePtr(now.Add(2 * time.Hour)),
 			Comment:     stringPtr("Medbring dit eget udstyr"),
 		},
 		{
@@ -407,9 +407,9 @@ func seedChallenges(users []models.User, teams []models.Team, locations []models
 			IsIndoor:    false,
 			IsPublic:    true,
 			IsCompleted: false,
-			Date:        now.AddDate(0, 0, 10),                              // In 10 days
-			StartTime:   now.AddDate(0, 0, 10).Add(14 * time.Hour),          // 2 PM
-			EndTime:     timePtr(now.AddDate(0, 0, 10).Add(18 * time.Hour)), // 6 PM
+			Date:        now.AddDate(0, 0, 10), // In 10 days
+			StartTime:   now,
+			EndTime:     timePtr(now.AddDate(0, 0, 10).Add(2 * time.Hour)),
 			HasCost:     true,
 			PlayFor:     stringPtr("Sjov"),
 		},

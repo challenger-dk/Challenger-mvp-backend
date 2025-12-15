@@ -2,31 +2,32 @@ package dto
 
 import (
 	"server/common/models"
+	"time"
 )
 
 // How many upcoming challenges to show in user profile
 const UserNextChallengesCount uint = 3
 
 type UserCreateDto struct {
-	Email          string   `json:"email"           validate:"sanitize,required,email"`
-	Password       string   `json:"password"        validate:"sanitize,required,min=8"`
-	FirstName      string   `json:"first_name"      validate:"sanitize,required,min=3"`
-	LastName       string   `json:"last_name"        validate:"sanitize"`
-	ProfilePicture string   `json:"profile_picture,omitempty" validate:"sanitize"`
-	Bio            string   `json:"bio,omitempty" validate:"sanitize"`
-	Age            uint     `json:"age"             validate:"min=1"`
-	City           string   `json:"city"            validate:"sanitize"`
-	FavoriteSports []string `json:"favorite_sports,omitempty"`
+	Email          string    `json:"email"           validate:"sanitize,required,email"`
+	Password       string    `json:"password"        validate:"sanitize,required,min=8"`
+	FirstName      string    `json:"first_name"      validate:"sanitize,required,min=3"`
+	LastName       string    `json:"last_name"        validate:"sanitize"`
+	ProfilePicture string    `json:"profile_picture,omitempty" validate:"sanitize"`
+	Bio            string    `json:"bio,omitempty" validate:"sanitize"`
+	BirthDate      time.Time `json:"birth_date"      validate:"required"`
+	City           string    `json:"city"            validate:"sanitize"`
+	FavoriteSports []string  `json:"favorite_sports,omitempty"`
 }
 
 type UserUpdateDto struct {
-	FirstName      string   `json:"first_name"      validate:"sanitize,min=3"`
-	LastName       string   `json:"last_name" validate:"sanitize"`
-	ProfilePicture string   `json:"profile_picture" validate:"sanitize"`
-	Bio            string   `json:"bio,omitempty" validate:"sanitize"`
-	Age            uint     `json:"age"             validate:"min=1"`
-	City           string   `json:"city"            validate:"sanitize"`
-	FavoriteSports []string `json:"favorite_sports,omitempty"`
+	FirstName      string    `json:"first_name"      validate:"sanitize,min=3"`
+	LastName       string    `json:"last_name" validate:"sanitize"`
+	ProfilePicture string    `json:"profile_picture" validate:"sanitize"`
+	Bio            string    `json:"bio,omitempty" validate:"sanitize"`
+	BirthDate      time.Time `json:"birth_date"      validate:"required"`
+	City           string    `json:"city"            validate:"sanitize"`
+	FavoriteSports []string  `json:"favorite_sports,omitempty"`
 }
 
 type UserResponseDto struct {
@@ -36,7 +37,7 @@ type UserResponseDto struct {
 	LastName            string                     `json:"last_name"`
 	ProfilePicture      string                     `json:"profile_picture,omitempty"`
 	Bio                 string                     `json:"bio,omitempty"`
-	Age                 uint                       `json:"age"`
+	BirthDate           time.Time                  `json:"birth_date"`
 	City                string                     `json:"city"`
 	FavoriteSports      []SportResponseDto         `json:"favorite_sports,omitempty"`
 	Friends             []PublicUserDtoResponse    `json:"friends,omitempty"`
@@ -67,7 +68,7 @@ type PublicUserDtoResponse struct {
 	LastName            string             `json:"last_name"`
 	ProfilePicture      string             `json:"profile_picture,omitempty"`
 	Bio                 string             `json:"bio,omitempty"`
-	Age                 uint               `json:"age"`
+	BirthDate           time.Time          `json:"birth_date"`
 	City                string             `json:"city"`
 	FavoriteSports      []SportResponseDto `json:"favorite_sports,omitempty"`
 	FriendsCount        uint               `json:"friends_count,omitempty"`
@@ -110,7 +111,7 @@ func ToPublicUserDtoResponse(user models.User) PublicUserDtoResponse {
 		ProfilePicture:      user.ProfilePicture,
 		Bio:                 user.Bio,
 		FavoriteSports:      favoriteSports,
-		Age:                 user.Age,
+		BirthDate:           user.BirthDate,
 		City:                user.City,
 		FriendsCount:        friendsCount,
 		TeamsCount:          teamsCount,
@@ -174,7 +175,7 @@ func ToUserResponseDto(user models.User) UserResponseDto {
 		LastName:            user.LastName,
 		ProfilePicture:      user.ProfilePicture,
 		Bio:                 user.Bio,
-		Age:                 user.Age,
+		BirthDate:           user.BirthDate,
 		City:                user.City,
 		FavoriteSports:      favoriteSports,
 		Friends:             friends,
@@ -216,7 +217,7 @@ func UserCreateDtoToModel(u UserCreateDto) models.User {
 		LastName:       u.LastName,
 		ProfilePicture: u.ProfilePicture,
 		Bio:            u.Bio,
-		Age:            u.Age,
+		BirthDate:      u.BirthDate,
 		City:           u.City,
 		FavoriteSports: favoriteSports,
 		Settings:       &models.UserSettings{},

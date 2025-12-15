@@ -5,6 +5,7 @@ import (
 	"server/common/config"
 	"server/common/dto"
 	"server/common/models"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -230,8 +231,8 @@ func UpdateUser(userID uint, user dto.UserUpdateDto) error {
 			existingUser.Bio = user.Bio
 		}
 
-		if user.Age != 0 {
-			existingUser.Age = user.Age
+		if user.BirthDate != (time.Time{}) {
+			existingUser.BirthDate = user.BirthDate
 		}
 
 		if user.City != "" {
