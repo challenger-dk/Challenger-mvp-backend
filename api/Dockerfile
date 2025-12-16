@@ -20,7 +20,7 @@ RUN go build -o /api-server ./api
 # =====================
 # 2. Runtime stage
 # =====================
-FROM gcr.io/distroless/static
+FROM busybox:1.36-glibc
 
 WORKDIR /app
 

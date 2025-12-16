@@ -26,6 +26,8 @@ func main() {
 		&models.Notification{},
 		&models.UserSettings{},
 		&models.Message{},
+		&models.Conversation{},
+		&models.ConversationParticipant{},
 		&models.EmergencyInfo{},
 	)
 	if err != nil {

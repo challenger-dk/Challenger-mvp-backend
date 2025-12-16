@@ -23,15 +23,21 @@ func main() {
 	config.LoadConfig()
 	config.ConnectDatabase()
 
-	// Ensure PostGIS extension
+	// Ensure PostGIS extension is created
 	err := config.DB.Exec("CREATE EXTENSION IF NOT EXISTS postgis").Error
 	if err != nil {
 		slog.Error("Failed to create PostGIS extension", "error", err)
 		os.Exit(1)
 	}
+	slog.Info("✅ PostGIS extension ensured")
 
-	config.MigrateDB()
+	// Run migrations (for local development with Docker)
+	// In production, migrations are handled by Atlas
+	if config.AppConfig.AppEnv == "development" {
+		config.MigrateDB()
+	}
 
+	// Seed sports data if not already seeded
 	if err := config.SeedSports(); err != nil {
 		slog.Error("Failed to seed sports", "error", err)
 		os.Exit(1)

@@ -2,7 +2,7 @@ package routes
 
 import (
 	"server/api/controllers"
-	"server/api/middleware"
+	"server/common/middleware"
 
 	"github.com/go-chi/chi/v5"
 	ext_middleware "github.com/go-chi/chi/v5/middleware"

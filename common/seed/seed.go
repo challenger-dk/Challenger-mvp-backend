@@ -8,6 +8,7 @@ import (
 	"server/common/config"
 	"server/common/models"
 	"server/common/models/types"
+	"server/common/services"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -67,6 +68,11 @@ func SeedDatabase() error {
 		return fmt.Errorf("failed to seed invitations: %w", err)
 	}
 
+	// Seed conversations
+	if err := seedConversations(users, teams); err != nil {
+		return fmt.Errorf("failed to seed conversations: %w", err)
+	}
+
 	log.Println("✅ Database seeding completed successfully!")
 	return nil
 }
@@ -75,6 +81,15 @@ func clearDatabase() error {
 	log.Println("🧹 Clearing existing data...")
 
 	// Delete in reverse order of dependencies
+	if err := config.DB.Exec("DELETE FROM messages").Error; err != nil {
+		return err
+	}
+	if err := config.DB.Exec("DELETE FROM conversation_participants").Error; err != nil {
+		return err
+	}
+	if err := config.DB.Exec("DELETE FROM conversations").Error; err != nil {
+		return err
+	}
 	if err := config.DB.Exec("DELETE FROM user_challenges").Error; err != nil {
 		return err
 	}
@@ -523,4 +538,104 @@ func timePtr(t time.Time) *time.Time {
 
 func intPtr(i int) *int {
 	return &i
+}
+
+func seedConversations(users []models.User, teams []models.Team) error {
+	log.Println("💬 Seeding conversations...")
+
+	if len(users) < 3 {
+		return nil
+	}
+
+	// Create direct conversations using the service function
+	// This ensures participants are created with proper joined_at timestamps
+	directConv1, err := services.CreateDirectConversation(users[0].ID, users[1].ID)
+	if err != nil {
+		return fmt.Errorf("failed to create direct conversation 1: %w", err)
+	}
+
+	directConv2, err := services.CreateDirectConversation(users[0].ID, users[2].ID)
+	if err != nil {
+		return fmt.Errorf("failed to create direct conversation 2: %w", err)
+	}
+
+	directConv3, err := services.CreateDirectConversation(users[1].ID, users[2].ID)
+	if err != nil {
+		return fmt.Errorf("failed to create direct conversation 3: %w", err)
+	}
+
+	directConversations := []*models.Conversation{directConv1, directConv2, directConv3}
+
+	// Create a group conversation using the service function
+	if len(users) >= 4 {
+		participantIDs := []uint{users[0].ID, users[1].ID, users[2].ID, users[3].ID}
+		groupConv, err := services.CreateGroupConversation(users[0].ID, participantIDs, "Weekend Sports Group")
+		if err != nil {
+			return fmt.Errorf("failed to create group conversation: %w", err)
+		}
+
+		// Add some messages to the group
+		_, err = services.SendMessage(groupConv.ID, users[0].ID, "Hey everyone! Ready for this weekend?")
+		if err != nil {
+			return fmt.Errorf("failed to send message 1: %w", err)
+		}
+
+		time.Sleep(10 * time.Millisecond) // Small delay to ensure different timestamps
+
+		_, err = services.SendMessage(groupConv.ID, users[1].ID, "Absolutely! What time are we meeting?")
+		if err != nil {
+			return fmt.Errorf("failed to send message 2: %w", err)
+		}
+
+		time.Sleep(10 * time.Millisecond)
+
+		_, err = services.SendMessage(groupConv.ID, users[2].ID, "I'm thinking 10 AM at Fælledparken")
+		if err != nil {
+			return fmt.Errorf("failed to send message 3: %w", err)
+		}
+	}
+
+	// Create team conversations using SyncTeamConversationMembers
+	for i := range teams {
+		// Get all team members
+		var teamMembers []models.User
+		config.DB.Model(&teams[i]).Association("Users").Find(&teamMembers)
+
+		// Extract member IDs
+		memberIDs := make([]uint, len(teamMembers))
+		for j := range teamMembers {
+			memberIDs[j] = teamMembers[j].ID
+		}
+
+		// Sync team conversation (creates conversation and participants)
+		err := services.SyncTeamConversationMembers(teams[i].ID, memberIDs)
+		if err != nil {
+			return fmt.Errorf("failed to sync team conversation for team %d: %w", teams[i].ID, err)
+		}
+	}
+
+	// Add some messages to the first direct conversation using SendMessage
+	if len(directConversations) > 0 {
+		_, err := services.SendMessage(directConversations[0].ID, users[1].ID, "Hey! Want to play tennis this weekend?")
+		if err != nil {
+			return fmt.Errorf("failed to send message 1: %w", err)
+		}
+
+		time.Sleep(10 * time.Millisecond)
+
+		_, err = services.SendMessage(directConversations[0].ID, users[0].ID, "Sure! Saturday morning works for me")
+		if err != nil {
+			return fmt.Errorf("failed to send message 2: %w", err)
+		}
+
+		time.Sleep(10 * time.Millisecond)
+
+		_, err = services.SendMessage(directConversations[0].ID, users[1].ID, "Perfect! See you at 9 AM at Fælledparken?")
+		if err != nil {
+			return fmt.Errorf("failed to send message 3: %w", err)
+		}
+	}
+
+	log.Printf("✅ Created conversations with messages")
+	return nil
 }

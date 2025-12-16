@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"server/api/controllers/helpers"
-	"server/api/middleware"
 	"server/common/appError"
 	"server/common/dto"
+	"server/common/middleware"
 	"server/common/models"
 	"strconv"
 

@@ -3,10 +3,14 @@ package main
 import (
 	"log"
 	"net/http"
+	"server/chat/handlers"
 	"server/common/config"
+	commonMiddleware "server/common/middleware"
 	"server/common/models"
 	"time"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -14,34 +18,55 @@ func main() {
 	config.LoadConfig()
 	config.ConnectDatabase()
 
-	err := config.DB.AutoMigrate(&models.Message{}, &models.User{}, &models.Team{})
-	if err != nil {
-		log.Fatal(err)
-	}
+	// Note: Database migrations and PostGIS extension are handled by the API service
+	// The chat service only needs to connect to the database
+	log.Println("💬 Chat Service starting...")
 
 	hub := newHub()
 	go hub.run()
 
-	mux := http.NewServeMux()
+	// Setup Chi router
+	r := chi.NewRouter()
 
-	// WebSocket Endpoint
-	mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+	// Middleware
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.RequestID)
+
+	// WebSocket Endpoint (no auth middleware, uses query param token)
+	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
 		serveWs(hub, w, r)
 	})
 
-	// Message History API Endpoint
-	mux.HandleFunc("/api/messages", getMessages)
+	// Legacy Message History API Endpoint
+	r.Get("/api/messages", getMessages)
+
+	// New Conversation API Routes (with auth middleware)
+	r.Route("/api/conversations", func(r chi.Router) {
+		r.Use(commonMiddleware.AuthMiddleware)
+
+		r.Post("/direct", handlers.CreateDirectConversation)
+		r.Post("/group", handlers.CreateGroupConversation)
+		r.Get("/", handlers.ListConversations)
+		r.Get("/{id}", handlers.GetConversation)
+		r.Get("/{id}/messages", handlers.GetConversationMessages)
+		r.Post("/{id}/messages", handlers.SendMessage)
+		r.Post("/{id}/read", handlers.MarkConversationRead)
+	})
+
+	// Internal endpoint for team sync (no auth for internal service calls)
+	r.Post("/internal/teams/{teamId}/sync", handlers.SyncTeamMembers)
 
 	server := &http.Server{
 		Addr:         ":8002",
-		Handler:      mux,
+		Handler:      r,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  120 * time.Second,
 	}
 
 	log.Println("Chat Service started on :8002")
-	err = server.ListenAndServe()
+	err := server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		log.Fatal("ListenAndServe: ", err)
 	}

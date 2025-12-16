@@ -3,9 +3,9 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
-	"server/api/middleware"
 	"server/common/appError"
 	"server/common/dto"
+	"server/common/middleware"
 	"server/common/models"
 	"server/common/services"
 	"server/common/validator"

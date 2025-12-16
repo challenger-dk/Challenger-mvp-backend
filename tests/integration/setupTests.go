@@ -53,6 +53,8 @@ func setupTestDB() {
 			&models.Notification{},
 			&models.UserSettings{},
 			&models.Message{},
+			&models.Conversation{},
+			&models.ConversationParticipant{},
 			&models.Report{},
 			&models.EmergencyInfo{},
 		)

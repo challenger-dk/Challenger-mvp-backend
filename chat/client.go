@@ -5,7 +5,6 @@ import (
 	"log"
 	"server/common/config"
 	"server/common/dto"
-	"server/common/models"
 	"server/common/services"
 	"time"
 
@@ -69,36 +68,57 @@ func (c *Client) readPump() {
 			continue
 		}
 
-		if req.Content == "" || (req.TeamID == nil && req.RecipientID == nil) {
+		if req.Content == "" {
 			continue
 		}
 
-		// --- Blocking Check (Incoming DM) ---
-		// Prevent user from sending a DM to someone who has blocked them
-		if req.RecipientID != nil {
-			if services.IsBlocked(*req.RecipientID, c.userID) {
-				// User is blocked by recipient. Ignore message.
-				// Optionally send an error message back to client via c.send
+		// New conversation-based messaging
+		if req.ConversationID != nil {
+			// Use conversation service
+			msg, err := services.SendMessage(*req.ConversationID, c.userID, req.Content)
+			if err != nil {
+				log.Printf("Error sending message via conversation: %v", err)
 				continue
 			}
-		}
+			c.hub.broadcast <- dto.ToMessageResponseDto(*msg)
+		} else if req.TeamID != nil || req.RecipientID != nil {
+			// Legacy messaging (backward compatibility)
+			// --- Blocking Check (Incoming DM) ---
+			// Prevent user from sending a DM to someone who has blocked them
+			if req.RecipientID != nil {
+				if services.IsBlocked(*req.RecipientID, c.userID) {
+					// User is blocked by recipient. Ignore message.
+					continue
+				}
+			}
 
-		dbMsg := models.Message{
-			SenderID:    c.userID,
-			TeamID:      req.TeamID,
-			RecipientID: req.RecipientID,
-			Content:     req.Content,
-		}
+			// Direct DB write for legacy messages
+			if err := config.DB.Exec(
+				"INSERT INTO messages (sender_id, team_id, recipient_id, content, created_at) VALUES (?, ?, ?, ?, ?)",
+				c.userID, req.TeamID, req.RecipientID, req.Content, time.Now(),
+			).Error; err != nil {
+				log.Printf("Error saving message: %v", err)
+				continue
+			}
 
-		if err := config.DB.Create(&dbMsg).Error; err != nil {
-			log.Printf("Error saving message: %v", err)
+			// Fetch the message back with sender info
+			var msg dto.MessageResponseDto
+			config.DB.Raw(`
+				SELECT m.id, m.sender_id, m.team_id, m.recipient_id, m.content, m.created_at,
+					   u.id as "sender.id", u.email as "sender.email", u.first_name as "sender.first_name",
+					   u.last_name as "sender.last_name", u.profile_picture as "sender.profile_picture"
+				FROM messages m
+				JOIN users u ON m.sender_id = u.id
+				WHERE m.sender_id = ? AND m.created_at >= ?
+				ORDER BY m.created_at DESC
+				LIMIT 1
+			`, c.userID, time.Now().Add(-1*time.Second)).Scan(&msg)
+
+			c.hub.broadcast <- msg
+		} else {
+			// No valid target specified
 			continue
 		}
-
-		// Preload sender info
-		config.DB.Preload("Sender").First(&dbMsg, dbMsg.ID)
-
-		c.hub.broadcast <- dto.ToMessageResponseDto(dbMsg)
 	}
 }
 

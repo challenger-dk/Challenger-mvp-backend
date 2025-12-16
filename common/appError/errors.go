@@ -42,6 +42,16 @@ var (
 	ErrUnhandledInvitationStatus = errors.New("unhandled invitation status")
 )
 
+// Conversation Errors
+var (
+	ErrConversationNotFound     = errors.New("conversation not found")
+	ErrNotConversationMember    = errors.New("you are not a member of this conversation")
+	ErrCannotMessageSelf        = errors.New("cannot create conversation with yourself")
+	ErrInvalidConversationType  = errors.New("invalid conversation type")
+	ErrTeamConversationExists   = errors.New("team conversation already exists")
+	ErrInsufficientParticipants = errors.New("group conversation requires at least 2 participants")
+)
+
 var (
 	ErrMissingIdParam = errors.New("missing id parameter")
 	ErrIdBelowOne     = errors.New("id parameter must be greater than 0")
@@ -53,6 +63,7 @@ var errorMap = map[int][]error{
 	http.StatusNotFound: {
 		gorm.ErrRecordNotFound,
 		ErrSportNotFound,
+		ErrConversationNotFound,
 	},
 	http.StatusUnauthorized: {
 		ErrInvalidCredentials,
@@ -62,6 +73,7 @@ var errorMap = map[int][]error{
 	},
 	http.StatusForbidden: {
 		ErrUserBlocked,
+		ErrNotConversationMember,
 	},
 	http.StatusConflict: {
 		ErrUserExists,
@@ -70,6 +82,7 @@ var errorMap = map[int][]error{
 		ErrInvitationDeclined,
 		ErrInvitationProcessed,
 		ErrInviteSameUser,
+		ErrTeamConversationExists,
 	},
 	http.StatusBadRequest: {
 		ErrInvalidSport,
@@ -79,6 +92,9 @@ var errorMap = map[int][]error{
 		ErrIdBelowOne,
 		ErrInvalidFriendship,
 		ErrSameUser,
+		ErrCannotMessageSelf,
+		ErrInvalidConversationType,
+		ErrInsufficientParticipants,
 	},
 	http.StatusInternalServerError: {
 		ErrUnhandledInvitationStatus,

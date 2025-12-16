@@ -55,6 +55,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   chat:
     build:
@@ -73,6 +79,8 @@ services:
       - ./go.sum:/app/go.sum
     depends_on:
       postgres:
+        condition: service_healthy
+      api:
         condition: service_healthy
 
 volumes:
