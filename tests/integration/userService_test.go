@@ -108,31 +108,151 @@ func TestUserService_GetUsers(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	u1, _ := services.CreateUser(models.User{Email: "u1@test.com", FirstName: "U1", LastName: "L1"}, "pw")
-	u2, _ := services.CreateUser(models.User{Email: "u2@test.com", FirstName: "U2", LastName: "L2"}, "pw")
-	u3, _ := services.CreateUser(models.User{Email: "u3@test.com", FirstName: "U3", LastName: "L3"}, "pw")
+	u1, _ := services.CreateUser(models.User{Email: "u1@test.com", FirstName: "Alice", LastName: "Anderson"}, "pw")
+	u2, _ := services.CreateUser(models.User{Email: "u2@test.com", FirstName: "Bob", LastName: "Brown"}, "pw")
+	u3, _ := services.CreateUser(models.User{Email: "u3@test.com", FirstName: "Charlie", LastName: "Chen"}, "pw")
 
 	// 1. Get Users as u1 (Should see u2 and u3)
-	users, err := services.GetUsers(u1.ID)
+	users, nextCursor, err := services.GetUsers(u1.ID, "", 20, nil)
 	assert.NoError(t, err)
 	// Current impl excludes self, so should be 2
 	assert.Equal(t, 2, len(users))
+	assert.Nil(t, nextCursor) // No more pages
 
 	// 2. Block u2 (u1 blocks u2)
 	err = services.BlockUser(u1.ID, u2.ID)
 	assert.NoError(t, err)
 
 	// 3. Get Users as u1 (Should ONLY see u3)
-	usersAfterBlock, err := services.GetUsers(u1.ID)
+	usersAfterBlock, nextCursor, err := services.GetUsers(u1.ID, "", 20, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(usersAfterBlock))
 	assert.Equal(t, u3.ID, usersAfterBlock[0].ID)
+	assert.Nil(t, nextCursor)
 
 	// 4. Get Users as u2 (Should ONLY see u3, u1 is hidden due to block)
-	usersForBlocked, err := services.GetUsers(u2.ID)
+	usersForBlocked, nextCursor, err := services.GetUsers(u2.ID, "", 20, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(usersForBlocked))
 	assert.Equal(t, u3.ID, usersForBlocked[0].ID)
+	assert.Nil(t, nextCursor)
+}
+
+func TestUserService_GetUsers_Search(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	// Create users with searchable names
+	u1, _ := services.CreateUser(models.User{Email: "alice@test.com", FirstName: "Alice", LastName: "Anderson"}, "pw")
+	u2, _ := services.CreateUser(models.User{Email: "bob@test.com", FirstName: "Bob", LastName: "Brown"}, "pw")
+	u3, _ := services.CreateUser(models.User{Email: "charlie@test.com", FirstName: "Charlie", LastName: "Chen"}, "pw")
+	_, _ = services.CreateUser(models.User{Email: "david@test.com", FirstName: "David", LastName: "Smith"}, "pw")
+
+	// 1. Search by first name (case-insensitive)
+	users, nextCursor, err := services.GetUsers(u1.ID, "bob", 20, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(users))
+	assert.Equal(t, u2.ID, users[0].ID)
+	assert.Nil(t, nextCursor)
+
+	// 2. Search by last name
+	users, nextCursor, err = services.GetUsers(u1.ID, "chen", 20, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(users))
+	assert.Equal(t, u3.ID, users[0].ID)
+	assert.Nil(t, nextCursor)
+
+	// 3. Search by partial match (case-insensitive)
+	users, nextCursor, err = services.GetUsers(u1.ID, "CHAR", 20, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(users))
+	assert.Equal(t, u3.ID, users[0].ID) // Should find Charlie
+	assert.Nil(t, nextCursor)
+
+	// 4. Search by full name
+	users, nextCursor, err = services.GetUsers(u1.ID, "charlie chen", 20, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(users))
+	assert.Equal(t, u3.ID, users[0].ID)
+	assert.Nil(t, nextCursor)
+
+	// 5. Search with no results
+	users, nextCursor, err = services.GetUsers(u1.ID, "xyz123", 20, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(users))
+	assert.Nil(t, nextCursor)
+
+	// 6. Empty search query (should return all users except self)
+	users, nextCursor, err = services.GetUsers(u1.ID, "", 20, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, len(users)) // u2, u3, u4 (not u1)
+	assert.Nil(t, nextCursor)
+
+	// 7. Verify self is always excluded (search for different user to avoid this issue)
+	users, nextCursor, err = services.GetUsers(u2.ID, "alice", 20, nil)
+	assert.NoError(t, err)
+	// Searching as Bob (u2) for Alice (u1), should find Alice
+	assert.Equal(t, 1, len(users))
+	assert.Equal(t, u1.ID, users[0].ID)
+	assert.Nil(t, nextCursor)
+
+	// 8. Verify requester is excluded when searching for themselves
+	users, nextCursor, err = services.GetUsers(u1.ID, "anderson", 20, nil)
+	assert.NoError(t, err)
+	// Alice Anderson (u1) is the requester, should not appear
+	for _, user := range users {
+		assert.NotEqual(t, u1.ID, user.ID, "Requester should never appear in search results")
+	}
+	assert.Nil(t, nextCursor)
+}
+
+func TestUserService_GetUsers_Pagination(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	// Create requesting user
+	requester, _ := services.CreateUser(models.User{Email: "requester@test.com", FirstName: "Requester", LastName: "User"}, "pw")
+
+	// Create 5 users (ordered by last_name, first_name, id)
+	u1, _ := services.CreateUser(models.User{Email: "u1@test.com", FirstName: "Alice", LastName: "Anderson"}, "pw")
+	u2, _ := services.CreateUser(models.User{Email: "u2@test.com", FirstName: "Bob", LastName: "Brown"}, "pw")
+	u3, _ := services.CreateUser(models.User{Email: "u3@test.com", FirstName: "Charlie", LastName: "Chen"}, "pw")
+	u4, _ := services.CreateUser(models.User{Email: "u4@test.com", FirstName: "Diana", LastName: "Davis"}, "pw")
+	u5, _ := services.CreateUser(models.User{Email: "u5@test.com", FirstName: "Eve", LastName: "Evans"}, "pw")
+
+	// 1. Get first page (limit 2)
+	page1, nextCursor, err := services.GetUsers(requester.ID, "", 2, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(page1))
+	assert.NotNil(t, nextCursor)        // Should have next page
+	assert.Equal(t, u1.ID, page1[0].ID) // Alice Anderson
+	assert.Equal(t, u2.ID, page1[1].ID) // Bob Brown
+
+	// 2. Get second page using cursor
+	page2, nextCursor, err := services.GetUsers(requester.ID, "", 2, nextCursor)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(page2))
+	assert.NotNil(t, nextCursor)        // Should have next page
+	assert.Equal(t, u3.ID, page2[0].ID) // Charlie Chen
+	assert.Equal(t, u4.ID, page2[1].ID) // Diana Davis
+
+	// 3. Get third page (last page)
+	page3, nextCursor, err := services.GetUsers(requester.ID, "", 2, nextCursor)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(page3))
+	assert.Nil(t, nextCursor)           // No more pages
+	assert.Equal(t, u5.ID, page3[0].ID) // Eve Evans
+
+	// 4. Test pagination with search
+	page1, nextCursor, err = services.GetUsers(requester.ID, "e", 2, nil)
+	assert.NoError(t, err)
+	assert.GreaterOrEqual(t, len(page1), 1) // Should find users with 'e' in name
+
+	// 5. Test limit clamping (max 50)
+	users, nextCursor, err := services.GetUsers(requester.ID, "", 100, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, 5, len(users)) // All 5 users
+	assert.Nil(t, nextCursor)
 }
 
 func TestUserService_Blocking(t *testing.T) {

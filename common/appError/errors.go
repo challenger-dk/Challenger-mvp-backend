@@ -11,6 +11,7 @@ import (
 var (
 	ErrUnknownResource = errors.New("unknown resource")
 	ErrServerError     = errors.New("internal server error")
+	ErrBadRequest      = errors.New("bad request")
 )
 
 // Authentication and Authorization Errors
@@ -95,9 +96,10 @@ var errorMap = map[int][]error{
 		ErrCannotMessageSelf,
 		ErrInvalidConversationType,
 		ErrInsufficientParticipants,
+		ErrUnhandledInvitationStatus,
+		ErrBadRequest,
 	},
 	http.StatusInternalServerError: {
-		ErrUnhandledInvitationStatus,
 		ErrUnknownResource,
 		ErrServerError,
 	},

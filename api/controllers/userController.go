@@ -12,29 +12,74 @@ import (
 )
 
 func GetUsers(w http.ResponseWriter, r *http.Request) {
-	// Get authenticated user to filter out blocked users
-	user, ok := r.Context().
+	// Authenticated user
+	authUser, ok := r.Context().
 		Value(middleware.UserContextKey).(*models.User)
-
 	if !ok {
 		appError.HandleError(w, appError.ErrUnauthorized)
 		return
 	}
 
-	users, err := services.GetUsers(user.ID)
+	// Query params
+	searchQuery := helpers.GetQueryParamOptional(r, "q")
+	limit := helpers.GetQueryInt(r, "limit", 20)
+	cursorStr := helpers.GetQueryParamOptional(r, "cursor")
+
+	// Clamp limit (important for protection)
+	if limit < 1 {
+		limit = 1
+	}
+	if limit > 50 {
+		limit = 50
+	}
+
+	// Decode cursor (if provided)
+	var cursor *services.UserCursor
+	if cursorStr != "" {
+		var decoded services.UserCursor
+		if err := helpers.DecodeCursor(cursorStr, &decoded); err != nil {
+			appError.HandleError(w, appError.ErrBadRequest)
+			return
+		}
+		cursor = &decoded
+	}
+
+	// Fetch users (search + pagination)
+	users, nextCursor, err := services.GetUsers(
+		authUser.ID,
+		searchQuery,
+		limit,
+		cursor,
+	)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
 	}
 
-	// Convert to response DTOs
-	response := make([]dto.UserResponseDto, len(users))
-	for i, user := range users {
-		response[i] = dto.ToUserResponseDto(user)
+	// Convert to DTOs
+	out := make([]dto.UserResponseDto, len(users))
+	for i, u := range users {
+		out[i] = dto.ToUserResponseDto(u)
 	}
 
-	err = json.NewEncoder(w).Encode(response)
-	if err != nil {
+	// Encode next cursor (if any)
+	var nextCursorStr *string
+	if nextCursor != nil {
+		encoded, err := helpers.EncodeCursor(*nextCursor)
+		if err != nil {
+			appError.HandleError(w, err)
+			return
+		}
+		nextCursorStr = &encoded
+	}
+
+	// Final response
+	response := dto.UsersSearchResponse{
+		Users:      out,
+		NextCursor: nextCursorStr,
+	}
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		appError.HandleError(w, err)
 		return
 	}
@@ -134,6 +179,60 @@ func GetInCommonStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = json.NewEncoder(w).Encode(stats)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+}
+
+func GetFriends(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().
+		Value(middleware.UserContextKey).(*models.User)
+
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
+		return
+	}
+
+	friends, err := services.GetFriends(user.ID)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	response := make([]dto.UserResponseDto, len(friends))
+	for i, friend := range friends {
+		response[i] = dto.ToUserResponseDto(friend)
+	}
+
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+}
+
+func GetSuggestedFriends(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().
+		Value(middleware.UserContextKey).(*models.User)
+
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
+		return
+	}
+
+	suggestedFriends, err := services.GetSuggestedFriends(user.ID)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	response := make([]dto.PublicUserDtoResponse, len(suggestedFriends))
+	for i, friend := range suggestedFriends {
+		response[i] = dto.ToPublicUserDtoResponse(friend)
+	}
+
+	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		appError.HandleError(w, err)
 		return

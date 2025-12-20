@@ -189,6 +189,96 @@ func seedUsers() ([]models.User, error) {
 			BirthDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
 			Settings:  &models.UserSettings{},
 		},
+		{
+			Email:     "user6@challenger.dk",
+			Password:  string(hashedPassword),
+			FirstName: "Frank",
+			LastName:  "Hansen",
+			Bio:       "Badminton spiller og tennisfan",
+			BirthDate: time.Date(1998, 3, 15, 0, 0, 0, 0, time.UTC),
+			Settings:  &models.UserSettings{},
+		},
+		{
+			Email:     "user7@challenger.dk",
+			Password:  string(hashedPassword),
+			FirstName: "Grace",
+			LastName:  "Nielsen",
+			Bio:       "Svømning og vandpolo elsker",
+			BirthDate: time.Date(1994, 7, 22, 0, 0, 0, 0, time.UTC),
+			Settings:  &models.UserSettings{},
+		},
+		{
+			Email:     "user8@challenger.dk",
+			Password:  string(hashedPassword),
+			FirstName: "Henry",
+			LastName:  "Andersen",
+			Bio:       "Fodbold og basketball på weekenderne",
+			BirthDate: time.Date(1996, 11, 8, 0, 0, 0, 0, time.UTC),
+			Settings:  &models.UserSettings{},
+		},
+		{
+			Email:     "user9@challenger.dk",
+			Password:  string(hashedPassword),
+			FirstName: "Iris",
+			LastName:  "Petersen",
+			Bio:       "Yoga og pilates instruktør",
+			BirthDate: time.Date(1991, 5, 30, 0, 0, 0, 0, time.UTC),
+			Settings:  &models.UserSettings{},
+		},
+		{
+			Email:     "user10@challenger.dk",
+			Password:  string(hashedPassword),
+			FirstName: "Jack",
+			LastName:  "Larsen",
+			Bio:       "Håndbold spiller og fitness entusiast",
+			BirthDate: time.Date(1999, 9, 12, 0, 0, 0, 0, time.UTC),
+			Settings:  &models.UserSettings{},
+		},
+		{
+			Email:     "user11@challenger.dk",
+			Password:  string(hashedPassword),
+			FirstName: "Karen",
+			LastName:  "Christensen",
+			Bio:       "Tennis og padel tennis spiller",
+			BirthDate: time.Date(1993, 2, 18, 0, 0, 0, 0, time.UTC),
+			Settings:  &models.UserSettings{},
+		},
+		{
+			Email:     "user12@challenger.dk",
+			Password:  string(hashedPassword),
+			FirstName: "Lars",
+			LastName:  "Sørensen",
+			Bio:       "Fodbold træner og løbeentusiast",
+			BirthDate: time.Date(1988, 12, 5, 0, 0, 0, 0, time.UTC),
+			Settings:  &models.UserSettings{},
+		},
+		{
+			Email:     "user13@challenger.dk",
+			Password:  string(hashedPassword),
+			FirstName: "Maria",
+			LastName:  "Rasmussen",
+			Bio:       "Basketball og volleyball spiller",
+			BirthDate: time.Date(1997, 4, 25, 0, 0, 0, 0, time.UTC),
+			Settings:  &models.UserSettings{},
+		},
+		{
+			Email:     "user14@challenger.dk",
+			Password:  string(hashedPassword),
+			FirstName: "Niels",
+			LastName:  "Jørgensen",
+			Bio:       "Cykling og mountainbike kører",
+			BirthDate: time.Date(2001, 8, 14, 0, 0, 0, 0, time.UTC),
+			Settings:  &models.UserSettings{},
+		},
+		{
+			Email:     "user15@challenger.dk",
+			Password:  string(hashedPassword),
+			FirstName: "Olivia",
+			LastName:  "Madsen",
+			Bio:       "Tennis, badminton og squash spiller",
+			BirthDate: time.Date(1995, 6, 20, 0, 0, 0, 0, time.UTC),
+			Settings:  &models.UserSettings{},
+		},
 	}
 
 	// Create users
@@ -206,7 +296,12 @@ func seedUsers() ([]models.User, error) {
 	volleyballSport := findSportByName("Volleyball", config.DB)
 	runningSport := findSportByName("Running", config.DB)
 	bikingSport := findSportByName("Biking", config.DB)
+	badmintonSport := findSportByName("Badminton", config.DB)
+	swimmingSport := findSportByName("Swimming", config.DB)
+	handballSport := findSportByName("Handball", config.DB)
+	squashSport := findSportByName("Squash", config.DB)
 
+	// Original users (0-4)
 	if tennisSport != nil {
 		config.DB.Model(&users[0]).Association("FavoriteSports").Append(tennisSport)
 		config.DB.Model(&users[3]).Association("FavoriteSports").Append(tennisSport, padelSport)
@@ -222,6 +317,38 @@ func seedUsers() ([]models.User, error) {
 	}
 	if runningSport != nil && bikingSport != nil {
 		config.DB.Model(&users[4]).Association("FavoriteSports").Append(runningSport, bikingSport)
+	}
+
+	// New users (5-14)
+	if len(users) > 5 && badmintonSport != nil && tennisSport != nil {
+		config.DB.Model(&users[5]).Association("FavoriteSports").Append(badmintonSport, tennisSport)
+	}
+	if len(users) > 6 && swimmingSport != nil {
+		config.DB.Model(&users[6]).Association("FavoriteSports").Append(swimmingSport)
+	}
+	if len(users) > 7 && footballSport != nil && basketballSport != nil {
+		config.DB.Model(&users[7]).Association("FavoriteSports").Append(footballSport, basketballSport)
+	}
+	if len(users) > 8 {
+		// User 8 (Iris) - Yoga/Pilates (no specific sports in DB, skip)
+	}
+	if len(users) > 9 && handballSport != nil {
+		config.DB.Model(&users[9]).Association("FavoriteSports").Append(handballSport)
+	}
+	if len(users) > 10 && tennisSport != nil && padelSport != nil {
+		config.DB.Model(&users[10]).Association("FavoriteSports").Append(tennisSport, padelSport)
+	}
+	if len(users) > 11 && footballSport != nil && runningSport != nil {
+		config.DB.Model(&users[11]).Association("FavoriteSports").Append(footballSport, runningSport)
+	}
+	if len(users) > 12 && basketballSport != nil && volleyballSport != nil {
+		config.DB.Model(&users[12]).Association("FavoriteSports").Append(basketballSport, volleyballSport)
+	}
+	if len(users) > 13 && bikingSport != nil {
+		config.DB.Model(&users[13]).Association("FavoriteSports").Append(bikingSport)
+	}
+	if len(users) > 14 && tennisSport != nil && badmintonSport != nil && squashSport != nil {
+		config.DB.Model(&users[14]).Association("FavoriteSports").Append(tennisSport, badmintonSport, squashSport)
 	}
 
 	log.Printf("✅ Created %d users", len(users))
@@ -340,13 +467,37 @@ func seedTeams(users []models.User, sports []models.Sport, locations []models.Lo
 
 		// Add additional members
 		if i == 0 && len(users) > 3 {
+			// Ace Tennis Klub: Diana (3), Frank (5), Karen (10), Olivia (14)
 			config.DB.Model(&teams[i]).Association("Users").Append(&users[3])
+			if len(users) > 5 {
+				config.DB.Model(&teams[i]).Association("Users").Append(&users[5])
+			}
+			if len(users) > 10 {
+				config.DB.Model(&teams[i]).Association("Users").Append(&users[10])
+			}
+			if len(users) > 14 {
+				config.DB.Model(&teams[i]).Association("Users").Append(&users[14])
+			}
 		}
 		if i == 1 && len(users) > 2 {
+			// Nørrebro Ballers: Bob (1), Henry (7), Maria (12)
 			config.DB.Model(&teams[i]).Association("Users").Append(&users[1])
+			if len(users) > 7 {
+				config.DB.Model(&teams[i]).Association("Users").Append(&users[7])
+			}
+			if len(users) > 12 {
+				config.DB.Model(&teams[i]).Association("Users").Append(&users[12])
+			}
 		}
 		if i == 2 && len(users) > 4 {
+			// Weekend Warriors FC: Eve (4), Henry (7), Lars (11)
 			config.DB.Model(&teams[i]).Association("Users").Append(&users[4])
+			if len(users) > 7 {
+				config.DB.Model(&teams[i]).Association("Users").Append(&users[7])
+			}
+			if len(users) > 11 {
+				config.DB.Model(&teams[i]).Association("Users").Append(&users[11])
+			}
 		}
 	}
 
@@ -446,13 +597,31 @@ func seedChallenges(users []models.User, teams []models.Team, locations []models
 
 		// Add some additional participants
 		if i == 0 && len(users) > 3 {
+			// Weekend Tennis Match: Diana (3), Frank (5), Karen (10)
 			config.DB.Model(&challenges[i]).Association("Users").Append(&users[3])
+			if len(users) > 5 {
+				config.DB.Model(&challenges[i]).Association("Users").Append(&users[5])
+			}
+			if len(users) > 10 {
+				config.DB.Model(&challenges[i]).Association("Users").Append(&users[10])
+			}
 		}
 		if i == 1 && len(users) > 1 {
+			// Basketball Pickup Game: Bob (1), Henry (7), Maria (12)
 			config.DB.Model(&challenges[i]).Association("Users").Append(&users[1])
+			if len(users) > 7 {
+				config.DB.Model(&challenges[i]).Association("Users").Append(&users[7])
+			}
+			if len(users) > 12 {
+				config.DB.Model(&challenges[i]).Association("Users").Append(&users[12])
+			}
 		}
 		if i == 2 && len(teams) > 2 {
+			// 5v5 Football Tournament: Add team and individual users
 			config.DB.Model(&challenges[i]).Association("Teams").Append(&teams[2])
+			if len(users) > 11 {
+				config.DB.Model(&challenges[i]).Association("Users").Append(&users[11])
+			}
 		}
 	}
 
@@ -467,10 +636,47 @@ func seedFriendships(users []models.User) error {
 		return nil
 	}
 
-	// Create some friendships
+	// Create a network of friendships to enable friend suggestions
+	// Alice (0) is friends with Bob (1), Charlie (2), Frank (5)
 	config.DB.Model(&users[0]).Association("Friends").Append(&users[1], &users[2])
+	if len(users) > 5 {
+		config.DB.Model(&users[0]).Association("Friends").Append(&users[5])
+	}
+
+	// Bob (1) is friends with Alice (0), Charlie (2), Henry (7)
 	config.DB.Model(&users[1]).Association("Friends").Append(&users[2])
+	if len(users) > 7 {
+		config.DB.Model(&users[1]).Association("Friends").Append(&users[7])
+	}
+
+	// Diana (3) is friends with Eve (4), Karen (10)
 	config.DB.Model(&users[3]).Association("Friends").Append(&users[4])
+	if len(users) > 10 {
+		config.DB.Model(&users[3]).Association("Friends").Append(&users[10])
+	}
+
+	// Frank (5) is friends with Alice (0), Grace (6), Olivia (14)
+	if len(users) > 6 {
+		config.DB.Model(&users[5]).Association("Friends").Append(&users[6])
+	}
+	if len(users) > 14 {
+		config.DB.Model(&users[5]).Association("Friends").Append(&users[14])
+	}
+
+	// Henry (7) is friends with Bob (1), Maria (12)
+	if len(users) > 12 {
+		config.DB.Model(&users[7]).Association("Friends").Append(&users[12])
+	}
+
+	// Karen (10) is friends with Diana (3), Olivia (14)
+	if len(users) > 14 {
+		config.DB.Model(&users[10]).Association("Friends").Append(&users[14])
+	}
+
+	// Lars (11) is friends with Jack (9), Niels (13)
+	if len(users) > 13 {
+		config.DB.Model(&users[11]).Association("Friends").Append(&users[9], &users[13])
+	}
 
 	log.Println("✅ Created friendships")
 	return nil

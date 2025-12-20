@@ -48,3 +48,42 @@ func GetParamIdDynamic(r *http.Request, name string) (uint, error) {
 
 	return uint(id), nil
 }
+
+func GetQueryParam(r *http.Request, name string) (string, error) {
+	value := r.URL.Query().Get(name)
+	if value == "" {
+		return "", fmt.Errorf("missing query parameter %s", name)
+	}
+	return value, nil
+}
+
+// Returns the query parameter value, or empty string if missing.
+func GetQueryParamOptional(r *http.Request, name string) string {
+	return r.URL.Query().Get(name)
+}
+
+func GetQueryInt(r *http.Request, name string, defaultValue int) int {
+	value := r.URL.Query().Get(name)
+	if value == "" {
+		return defaultValue
+	}
+
+	if v, err := strconv.Atoi(value); err == nil {
+		return v
+	}
+
+	return defaultValue
+}
+
+func GetQueryUint(r *http.Request, name string, defaultValue uint) uint {
+	value := r.URL.Query().Get(name)
+	if value == "" {
+		return defaultValue
+	}
+
+	if v, err := strconv.ParseUint(value, 10, 32); err == nil {
+		return uint(v)
+	}
+
+	return defaultValue
+}

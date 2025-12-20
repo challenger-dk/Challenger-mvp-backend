@@ -5,31 +5,84 @@ import (
 	"server/common/config"
 	"server/common/dto"
 	"server/common/models"
+	"strings"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
-// GetUsers returns a list of users, excluding those blocked by or blocking the requesting user.
-func GetUsers(requestingUserID uint) ([]models.User, error) {
-	var users []models.User
+type UserCursor struct {
+	LastName  string
+	FirstName string
+	ID        uint
+}
 
-	// Subquery to find IDs that the requesting user has blocked (or is blocked by, due to symmetry)
-	blockedSubQuery := config.DB.Table("user_blocked_users").
+// GetUsers returns a paginated list of users, excluding those blocked by or blocking the requester.
+// Cursor pagination: results are ordered by last_name, first_name, id.
+// Pass cursor=nil for first page. Use returned nextCursor for subsequent pages.
+func GetUsers(requestingUserID uint, searchQuery string, limit int, cursor *UserCursor) ([]models.User, *UserCursor, error) {
+	if limit <= 0 || limit > 50 {
+		limit = 20
+	}
+
+	// Users that I have blocked
+	iBlockedSubQuery := config.DB.Table("user_blocked_users").
 		Select("blocked_user_id").
 		Where("user_id = ?", requestingUserID)
 
-	err := config.DB.Preload("FavoriteSports").
-		Where("id != ?", requestingUserID).      // Optional: Exclude self from list
-		Where("id NOT IN (?)", blockedSubQuery). // Exclude blocked users
-		Find(&users).
-		Error
+	// Users that have blocked me
+	blockedMeSubQuery := config.DB.Table("user_blocked_users").
+		Select("user_id").
+		Where("blocked_user_id = ?", requestingUserID)
 
-	if err != nil {
-		return nil, err
+	q := config.DB.
+		Model(&models.User{}).
+		Preload("FavoriteSports").
+		Where("id != ?", requestingUserID).
+		Where("id NOT IN (?)", iBlockedSubQuery).
+		Where("id NOT IN (?)", blockedMeSubQuery)
+
+	// Search (FB-like: match first, last, full name)
+	searchQuery = strings.TrimSpace(searchQuery)
+	if searchQuery != "" {
+		like := "%" + searchQuery + "%"
+		q = q.Where(`(
+			first_name ILIKE ? OR
+			last_name ILIKE ? OR
+			(first_name || ' ' || last_name) ILIKE ?
+		)`, like, like, like)
 	}
-	return users, nil
+
+	// Cursor pagination: fetch only rows "after" the cursor in the sort order
+	// (last_name, first_name, id) is a stable ordering.
+	if cursor != nil {
+		q = q.Where(`
+			(last_name, first_name, id) > (?, ?, ?)
+		`, cursor.LastName, cursor.FirstName, cursor.ID)
+	}
+
+	// IMPORTANT: consistent ordering (cursor relies on this)
+	q = q.Order("last_name ASC").Order("first_name ASC").Order("id ASC").Limit(limit + 1)
+
+	var users []models.User
+	if err := q.Find(&users).Error; err != nil {
+		return nil, nil, err
+	}
+
+	// Determine next cursor (limit+1 trick)
+	var nextCursor *UserCursor
+	if len(users) > limit {
+		last := users[limit-1]
+		nextCursor = &UserCursor{
+			LastName:  last.LastName,
+			FirstName: last.FirstName,
+			ID:        last.ID,
+		}
+		users = users[:limit]
+	}
+
+	return users, nextCursor, nil
 }
 
 // GetUserByID fetches a user by ID directly.
@@ -312,76 +365,4 @@ func DeleteUser(userID uint) error {
 
 		return nil
 	})
-}
-
-// DeleteFriendship removes both users from each other's friends list
-func RemoveFriend(userIdA uint, userIdB uint) error {
-	return config.DB.Transaction(func(tx *gorm.DB) error {
-
-		// Ids must be different
-		if userIdA == userIdB {
-			return appError.ErrInvalidFriendship
-		}
-
-		var userA, userB models.User
-
-		if err := tx.First(&userA, userIdA).Error; err != nil {
-			return err
-		}
-
-		if err := tx.First(&userB, userIdB).Error; err != nil {
-			return err
-		}
-
-		err := tx.Model(&userA).
-			Association("Friends").
-			Delete(&userB)
-
-		if err != nil {
-			return err
-		}
-
-		err = tx.Model(&userB).
-			Association("Friends").
-			Delete(&userA)
-
-		if err != nil {
-			return err
-		}
-
-		// No notifcation here
-
-		return nil
-	})
-}
-
-// Package private
-// createFriendship adds both users to each other's friends list
-func createFriendship(userIdA uint, userIdB uint, db *gorm.DB) error {
-	var userA, userB models.User
-
-	if err := db.First(&userA, userIdA).Error; err != nil {
-		return err
-	}
-	if err := db.First(&userB, userIdB).Error; err != nil {
-		return err
-	}
-
-	err := db.Model(&userA).
-		Association("Friends").
-		Append(&userB)
-
-	if err != nil {
-		return err
-	}
-
-	err = db.Model(&userB).
-		Association("Friends").
-		Append(&userA)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

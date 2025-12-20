@@ -61,7 +61,12 @@ type UserSettingsUpdateDto struct {
 	NotifyChallengeUpdate *bool `json:"notify_challenge_update"`
 }
 
-// Used for
+type UsersSearchResponse struct {
+	Users      []UserResponseDto `json:"users"`
+	NextCursor *string           `json:"next_cursor"`
+}
+
+// Used for anyone but the current user
 type PublicUserDtoResponse struct {
 	ID                  uint               `json:"id"`
 	FirstName           string             `json:"first_name"`

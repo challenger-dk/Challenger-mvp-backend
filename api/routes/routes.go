@@ -21,17 +21,31 @@ func RegisterRoutes(r chi.Router) {
 
 	r.Route("/users", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware)
+
+		// Search / list users (supports ?q=&limit=&cursor=)
 		r.Get("/", controllers.GetUsers)
+
+		// Current user
 		r.Get("/me", controllers.GetCurrentUser)
-		r.Get("/{id}", controllers.GetUserByID)
 		r.Get("/settings", controllers.GetCurrentUserSettings)
-		r.Get("/{id}/in-common", controllers.GetInCommonStats)
+
+		// Friends
+		r.Get("/friends", controllers.GetFriends)
+		r.Get("/suggested-friends", controllers.GetSuggestedFriends)
+
+		// Block / unblock
 		r.Post("/block/{id}", controllers.BlockUser)
 		r.Post("/unblock/{id}", controllers.UnblockUser)
+
+		// User by id (KEEP THESE LAST)
+		r.Get("/{id}/in-common", controllers.GetInCommonStats)
+		r.Get("/{id}", controllers.GetUserByID)
+
+		// Mutations
 		r.Put("/", controllers.UpdateUser)
 		r.Put("/settings", controllers.UpdateUserSettings)
-		r.Delete("/{id}", controllers.DeleteUser)
 		r.Delete("/{id}/remove", controllers.RemoveFriend)
+		r.Delete("/{id}", controllers.DeleteUser)
 	})
 
 	r.Route("/emergency-info", func(r chi.Router) {
