@@ -239,12 +239,18 @@ func IsConversationMember(conversationID, userID uint) (bool, error) {
 
 // ListConversations returns all conversations for a user with unread counts and last message
 func ListConversations(userID uint) ([]models.Conversation, []int64, []*models.Message, error) {
-	// Get all conversations where user is a participant
+	// Get all conversations where user is a participant AND conversation has at least one message
 	var participants []models.ConversationParticipant
 	err := config.DB.Where("user_id = ? AND left_at IS NULL", userID).
+		// Only include conversations that have messages
+		Joins("JOIN messages ON messages.conversation_id = conversation_participants.conversation_id").
 		Preload("Conversation.Team").
 		Preload("Conversation.Participants.User").
+		Preload("Conversation.Messages", func(db *gorm.DB) *gorm.DB {
+			return db.Order("created_at DESC")
+		}).
 		Order("conversation_id DESC").
+		Distinct(). // Avoid duplicates from the JOIN
 		Find(&participants).Error
 
 	if err != nil {
