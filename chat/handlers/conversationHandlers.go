@@ -259,6 +259,41 @@ func MarkConversationRead(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// GetTeamConversation returns the conversation for a team
+func GetTeamConversation(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().Value(middleware.UserContextKey).(*models.User)
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
+		return
+	}
+
+	teamID, err := strconv.ParseUint(chi.URLParam(r, "teamId"), 10, 32)
+	if err != nil {
+		appError.HandleError(w, appError.ErrMissingIdParam)
+		return
+	}
+
+	// Get or create team conversation
+	conversation, err := services.EnsureTeamConversation(uint(teamID))
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	// Check if user is a member of this conversation
+	isMember, err := services.IsConversationMember(conversation.ID, user.ID)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+	if !isMember {
+		appError.HandleError(w, appError.ErrNotConversationMember)
+		return
+	}
+
+	json.NewEncoder(w).Encode(dto.ToConversationResponseDto(*conversation))
+}
+
 // SyncTeamMembers is an internal endpoint to sync team conversation members
 func SyncTeamMembers(w http.ResponseWriter, r *http.Request) {
 	teamID, err := strconv.ParseUint(chi.URLParam(r, "teamId"), 10, 32)

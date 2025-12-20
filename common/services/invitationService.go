@@ -144,6 +144,9 @@ func SendInvitation(invitation *models.Invitation) error {
 }
 
 func AcceptInvitation(invitationId uint, currentUserId uint) error {
+	var teamID uint
+	var isTeamInvitation bool
+
 	err := config.DB.Transaction(func(tx *gorm.DB) error {
 		var invitation models.Invitation
 
@@ -182,6 +185,10 @@ func AcceptInvitation(invitationId uint, currentUserId uint) error {
 			if err != nil {
 				return err
 			}
+
+			// Store team ID for syncing conversation after transaction
+			teamID = team.ID
+			isTeamInvitation = true
 
 			// Send notification
 			CreateAcceptedInvitationNotification(tx, invitation)
@@ -231,7 +238,28 @@ func AcceptInvitation(invitationId uint, currentUserId uint) error {
 		return nil
 	})
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Sync team conversation members after successful transaction
+	if isTeamInvitation {
+		// Get all team members
+		var team models.Team
+		if err := config.DB.Preload("Users").First(&team, teamID).Error; err == nil {
+			memberIDs := make([]uint, len(team.Users))
+			for i, u := range team.Users {
+				memberIDs[i] = u.ID
+			}
+			// Sync conversation (don't fail if this errors)
+			if err := SyncTeamConversationMembers(teamID, memberIDs); err != nil {
+				// Log error but don't fail the request
+				fmt.Printf("Warning: Failed to sync team conversation for team %d: %v\n", teamID, err)
+			}
+		}
+	}
+
+	return nil
 }
 
 func DeclineInvitation(invitationId uint, currentUserId uint) error {

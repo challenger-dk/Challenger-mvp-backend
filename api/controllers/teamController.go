@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"server/api/controllers/helpers"
 	"server/common/appError"
@@ -138,6 +139,17 @@ func CreateTeam(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		appError.HandleError(w, err)
 		return
+	}
+
+	// Create team conversation with initial members
+	memberIDs := make([]uint, len(createdModel.Users))
+	for i, u := range createdModel.Users {
+		memberIDs[i] = u.ID
+	}
+	if err := services.SyncTeamConversationMembers(createdModel.ID, memberIDs); err != nil {
+		// Log error but don't fail the request
+		// Team conversation can be created later
+		fmt.Printf("Warning: Failed to create team conversation for team %d: %v\n", createdModel.ID, err)
 	}
 
 	createdDto := dto.ToTeamResponseDto(createdModel)

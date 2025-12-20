@@ -52,6 +52,7 @@ func main() {
 		r.Get("/{id}/messages", handlers.GetConversationMessages)
 		r.Post("/{id}/messages", handlers.SendMessage)
 		r.Post("/{id}/read", handlers.MarkConversationRead)
+		r.Get("/team/{teamId}", handlers.GetTeamConversation)
 	})
 
 	// Internal endpoint for team sync (no auth for internal service calls)

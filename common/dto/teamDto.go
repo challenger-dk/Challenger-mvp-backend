@@ -26,11 +26,12 @@ type TeamUpdateDto struct {
 }
 
 type TeamResponseDto struct {
-	ID       uint                `json:"id"`
-	Name     string              `json:"name"`
-	Creator  UserResponseDto     `json:"creator"`
-	Location LocationResponseDto `json:"location"`
-	Users    []UserResponseDto   `json:"users"`
+	ID       uint                    `json:"id"`
+	Name     string                  `json:"name"`
+	Creator  PublicUserDtoResponse   `json:"creator"`
+	Location LocationResponseDto     `json:"location"`
+	Users    []PublicUserDtoResponse `json:"users"`
+	Sports   []SportResponseDto      `json:"sports"`
 }
 
 func TeamCreateDtoToModel(t TeamCreateDto) models.Team {
@@ -53,9 +54,9 @@ func TeamUpdateDtoToModel(t TeamUpdateDto) models.Team {
 }
 
 func ToTeamResponseDto(t models.Team) TeamResponseDto {
-	var users []UserResponseDto
+	var users []PublicUserDtoResponse
 	for _, u := range t.Users {
-		users = append(users, ToUserResponseDto(u))
+		users = append(users, ToPublicUserDtoResponse(u))
 	}
 
 	var locationDto LocationResponseDto
@@ -67,7 +68,7 @@ func ToTeamResponseDto(t models.Team) TeamResponseDto {
 	return TeamResponseDto{
 		ID:       t.ID,
 		Name:     t.Name,
-		Creator:  ToUserResponseDto(t.Creator),
+		Creator:  ToPublicUserDtoResponse(t.Creator),
 		Users:    users,
 		Location: locationDto,
 	}
