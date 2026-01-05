@@ -16,6 +16,7 @@ type UserSettings struct {
 	NotifyChallengeInvite bool `gorm:"default:true"`
 	NotifyChallengeUpdate bool `gorm:"default:true"`
 
+	// Other
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 }
