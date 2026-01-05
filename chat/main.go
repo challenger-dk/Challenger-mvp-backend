@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 	"server/chat/handlers"
 	"server/common/config"
 	commonMiddleware "server/common/middleware"
@@ -58,8 +59,13 @@ func main() {
 	// Internal endpoint for team sync (no auth for internal service calls)
 	r.Post("/internal/teams/{teamId}/sync", handlers.SyncTeamMembers)
 
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8002"
+	}
+
 	server := &http.Server{
-		Addr:         ":8002",
+		Addr:         ":" + port,
 		Handler:      r,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
