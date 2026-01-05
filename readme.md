@@ -16,6 +16,7 @@ This is the Go backend service for the Challenger application. It is structured 
 
 ---
 
+
 ## Services Architecture
 
 The backend is architected as two distinct services that run concurrently. They share the same PostgreSQL database and common code modules (Models, DTOs, Config) located in the `/common` directory.
