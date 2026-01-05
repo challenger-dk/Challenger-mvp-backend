@@ -4,14 +4,29 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - '**.md'
+      - '.github/workflows/deploy-production.yml'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Don't deploy to Raspberry Pi if this is a merge back from production
+    if: "!contains(github.event.head_commit.message, 'Merge branch ''production''')"
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.4'
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Lint - Check sanitize validation tags
+        run: go run tools/validate-sanitize/main.go
 
       - name: Connect GitHub Actions runner to Tailscale
         uses: tailscale/github-action@v2

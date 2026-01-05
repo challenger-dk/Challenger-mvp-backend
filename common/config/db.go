@@ -6,8 +6,6 @@ import (
 	"os"
 	"time"
 
-	"server/common/models"
-
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -49,28 +47,4 @@ func ConnectDatabase() {
 
 	slog.Error("Failed to connect to database after retries", "error", err)
 	os.Exit(1)
-}
-
-func MigrateDB() {
-	err := DB.AutoMigrate(
-		&models.User{},
-		&models.Team{},
-		&models.Challenge{},
-		&models.Sport{},
-		&models.Invitation{},
-		&models.Location{},
-		&models.Notification{},
-		&models.UserSettings{},
-		&models.Message{},
-		&models.Conversation{},
-		&models.ConversationParticipant{},
-		&models.Report{},
-		&models.EmergencyInfo{},
-	)
-
-	if err != nil {
-		slog.Error("Failed to migrate database", "error", err)
-		os.Exit(1)
-	}
-	slog.Info("Database migrated successfully")
 }

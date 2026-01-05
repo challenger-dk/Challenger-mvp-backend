@@ -1,6 +1,6 @@
-.exe
+*.exe
 .env
-.out
+*.out
 /vendor/
 /dist/
 /Godeps/

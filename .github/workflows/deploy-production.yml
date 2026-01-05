@@ -1,0 +1,84 @@
+name: Build Production Migration Image
+
+on:
+  push:
+    branches:
+      - production
+    paths:
+      - 'Database/migrations/**'
+      - 'cmd/migrate/**'
+      - 'cmd/atlas/**'
+      - 'atlas.hcl'
+      - 'Dockerfile.migrate'
+      - 'common/models/**'
+
+env:
+  PROJECT_ID: challenger-app-479210
+  REGION: europe-west1
+  MIGRATION_IMAGE: gcr.io/challenger-app-479210/challenger-migrate:production
+
+jobs:
+  build-migration-image:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.4'
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Lint - Check sanitize validation tags
+        run: go run tools/validate-sanitize/main.go
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker
+
+      - name: Build migration Docker image
+        run: |
+          echo "🔨 Building migration Docker image..."
+          docker build -f Dockerfile.migrate -t ${{ env.MIGRATION_IMAGE }} .
+
+      - name: Push migration image to GCR
+        run: |
+          echo "📤 Pushing migration image to Google Container Registry..."
+          docker push ${{ env.MIGRATION_IMAGE }}
+
+      - name: Update Cloud Run Job (if exists)
+        run: |
+          echo "🔄 Updating Cloud Run Job with new image..."
+
+          # Check if migration job exists
+          if gcloud run jobs describe challenger-migrate-production --region=${{ env.REGION }} &>/dev/null; then
+            echo "✅ Migration job exists, updating image..."
+            gcloud run jobs update challenger-migrate-production \
+              --image=${{ env.MIGRATION_IMAGE }} \
+              --region=${{ env.REGION }}
+            echo "✅ Migration job updated successfully!"
+          else
+            echo "⚠️  Migration job doesn't exist yet. Create it manually or it will be created on first execution."
+          fi
+
+      - name: Summary
+        run: |
+          echo "✅ Migration image built and pushed successfully!"
+          echo "📦 Image: ${{ env.MIGRATION_IMAGE }}"
+          echo ""
+          echo "To run migrations manually:"
+          echo "  gcloud run jobs execute challenger-migrate-production --region=${{ env.REGION }} --wait"
+          echo ""
+          echo "Or use the Google Cloud Console:"
+          echo "  https://console.cloud.google.com/run/jobs/details/${{ env.REGION }}/challenger-migrate-production"
+
