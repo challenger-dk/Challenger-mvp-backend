@@ -72,7 +72,7 @@ func main() {
 		IdleTimeout:  120 * time.Second,
 	}
 
-	log.Println("Chat Service started on :8002")
+	log.Printf("Chat Service started on :%s", port)
 	err := server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		log.Fatal("ListenAndServe: ", err)
