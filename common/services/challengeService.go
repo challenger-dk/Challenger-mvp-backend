@@ -65,6 +65,16 @@ func CreateChallenge(c models.Challenge, invitedUserIds []uint) (models.Challeng
 		c.CreatorID = creator.ID
 		c.Creator = models.User{}
 
+		// Find or create the location first
+		location, err := FindOrCreateLocation(tx, c.Location)
+		if err != nil {
+			return err
+		}
+
+		// Set the LocationID and clear the Location object to avoid GORM trying to create it
+		c.LocationID = location.ID
+		c.Location = models.Location{}
+
 		err = tx.Create(&c).Error
 		if err != nil {
 			return err
