@@ -10,10 +10,11 @@ import (
 )
 
 func main() {
-	// 1. INJECT POSTGIS EXTENSION HERE
-	// This tells Atlas that the "postgis" extension is part of your schema.
-	// Atlas will execute this on the Dev DB before creating tables.
+	// 1. INJECT REQUIRED EXTENSIONS
+	// This tells Atlas that these extensions are part of your schema.
+	// Atlas will execute these on the Dev DB before creating tables.
 	fmt.Println(`CREATE EXTENSION IF NOT EXISTS "postgis";`)
+	fmt.Println(`CREATE EXTENSION IF NOT EXISTS "pg_trgm";`)
 
 	// 2. Load your GORM models
 	stmts, err := gormschema.New("postgres").Load(
@@ -29,6 +30,7 @@ func main() {
 		&models.Conversation{},
 		&models.ConversationParticipant{},
 		&models.EmergencyInfo{},
+		&models.Report{},
 	)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to load gorm schema: %v\n", err)

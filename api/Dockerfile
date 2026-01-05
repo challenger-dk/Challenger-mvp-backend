@@ -20,11 +20,21 @@ RUN go build -o /api-server ./api
 # =====================
 # 2. Runtime stage
 # =====================
-FROM busybox:1.36-glibc
+FROM alpine:latest
 
 WORKDIR /app
 
+# Install ca-certificates, curl, and bash for Atlas installation
+RUN apk --no-cache add ca-certificates curl bash
+
+# Install Atlas CLI
+RUN curl -sSf https://atlasgo.sh | sh
+
+# Copy the compiled binary
 COPY --from=builder /api-server /app/api-server
+
+# Copy migration files
+COPY Database/migrations /app/Database/migrations
 
 EXPOSE 8000
 
