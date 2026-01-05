@@ -1,11 +1,12 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"server/chat/handlers"
 	"server/common/config"
+	"server/common/logger"
 	commonMiddleware "server/common/middleware"
 	"server/common/models"
 	"time"
@@ -16,12 +17,16 @@ import (
 )
 
 func main() {
+	// 1. Initialize Global Logger first
+	logger.InitLogger()
+	slog.Info("💬 Chat Service starting...")
+
 	config.LoadConfig()
 	config.ConnectDatabase()
 
 	// Note: Database migrations and PostGIS extension are handled by the API service
 	// The chat service only needs to connect to the database
-	log.Println("💬 Chat Service starting...")
+	slog.Info("✅ Database connected")
 
 	hub := newHub()
 	go hub.run()
@@ -59,6 +64,7 @@ func main() {
 	// Internal endpoint for team sync (no auth for internal service calls)
 	r.Post("/internal/teams/{teamId}/sync", handlers.SyncTeamMembers)
 
+	// Port from Cloud Run environment variable
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8002"
@@ -69,13 +75,13 @@ func main() {
 		Handler:      r,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  120 * time.Second,
+		IdleTimeout:  15 * time.Second,
 	}
 
-	log.Printf("Chat Service started on :%s", port)
-	err := server.ListenAndServe()
-	if err != nil && err != http.ErrServerClosed {
-		log.Fatal("ListenAndServe: ", err)
+	slog.Info("Starting server on :" + port)
+	if err := server.ListenAndServe(); err != nil {
+		slog.Error("Server failed to start", "error", err)
+		os.Exit(1)
 	}
 }
 
@@ -119,7 +125,7 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println(err)
+		slog.Error("WebSocket upgrade failed", "error", err)
 		return
 	}
 
