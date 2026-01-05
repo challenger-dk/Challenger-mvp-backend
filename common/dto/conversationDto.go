@@ -12,12 +12,12 @@ type CreateDirectConversationDto struct {
 }
 
 type CreateGroupConversationDto struct {
-	Title          string `json:"title" validate:"required,min=1,max=255"`
+	Title          string `json:"title" validate:"sanitize,required,min=1,max=255"`
 	ParticipantIDs []uint `json:"participant_ids" validate:"required,min=1,dive,min=1"`
 }
 
 type SendMessageDto struct {
-	Content string `json:"content" validate:"required,min=1,max=2000"`
+	Content string `json:"content" validate:"sanitize,required,min=1,max=2000"`
 }
 
 type MarkReadDto struct {

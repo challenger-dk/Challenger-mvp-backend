@@ -334,6 +334,48 @@ make seed
 
 ---
 
+## 🔍 Code Quality & Linting
+
+### Sanitize Validation Linter
+
+All string fields in input DTOs (Create/Update DTOs) must have the `sanitize` validation tag to prevent XSS attacks and SQL injection.
+
+**Run the linter:**
+```bash
+make lint-sanitize
+```
+
+**What it checks:**
+- ✅ All `string` fields in `*CreateDto` structs have `validate:"sanitize,..."`
+- ✅ All `string` fields in `*UpdateDto` structs have `validate:"sanitize,..."`
+- ✅ All `string` fields in `Login` struct have `validate:"sanitize,..."`
+- ⏭️ Skips response DTOs (they contain already-sanitized data from the database)
+
+**Example:**
+```go
+// ✅ Good
+type TeamCreateDto struct {
+    Name string `json:"name" validate:"sanitize,required,min=3"`
+}
+
+// ❌ Bad - missing sanitize
+type TeamCreateDto struct {
+    Name string `json:"name" validate:"required,min=3"`
+}
+```
+
+**Run before committing:**
+```bash
+make lint-sanitize
+```
+
+**Automated Checks:**
+- ✅ Runs automatically in GitHub Actions on every push/PR
+- ✅ Runs before deployment to prevent insecure code from being deployed
+- ❌ Deployment will fail if any string fields are missing `sanitize` tag
+
+---
+
 ## 🧪 Testing
 
 ### Running Tests
@@ -408,26 +450,27 @@ psql -h localhost -p 5432 -U user -d challenger
 
 ## 🚢 Production Deployment
 
+### Google Cloud Migrations (Cloud Run Jobs)
+
+**One command to run migrations:**
+
+```bash
+# Staging
+gcloud run jobs execute challenger-migrate-staging --region=us-central1
+
+# Production
+gcloud run jobs execute challenger-migrate-production --region=us-central1
+```
+
+See **[GOOGLE_CLOUD_MIGRATIONS.md](GOOGLE_CLOUD_MIGRATIONS.md)** for setup instructions.
+
 ### Migration Strategy
 
 **Never use auto-migration in production.** Instead:
 
-1. **Run migrations manually** before deploying new code:
-   ```bash
-   make migrate-up
-   ```
-
-2. **Verify migration status**:
-   ```bash
-   make migrate-status
-   ```
-
+1. **Run migrations manually** before deploying new code
+2. **Verify migration status**
 3. **Deploy the application** after migrations are successful
-
-4. **If rollback is needed**:
-   ```bash
-   make migrate-down
-   ```
 
 ### Environment Variables
 

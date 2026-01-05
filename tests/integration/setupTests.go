@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"server/common/config"
-	"server/common/models"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -39,27 +38,32 @@ func setupTestDB() {
 			log.Fatalf("❌ Failed to connect to test database: %v", err)
 		}
 
-		// Ensure PostGIS extension exists
-		config.DB.Exec("CREATE EXTENSION IF NOT EXISTS postgis")
-
-		// Run Migrations
-		err = config.DB.AutoMigrate(
-			&models.User{},
-			&models.Team{},
-			&models.Challenge{},
-			&models.Sport{},
-			&models.Invitation{},
-			&models.Location{},
-			&models.Notification{},
-			&models.UserSettings{},
-			&models.Message{},
-			&models.Conversation{},
-			&models.ConversationParticipant{},
-			&models.Report{},
-			&models.EmergencyInfo{},
-		)
+		// Get raw SQL connection for Atlas migrations
+		sqlDB, err := config.DB.DB()
 		if err != nil {
-			log.Fatalf("❌ Failed to migrate test database: %v", err)
+			log.Fatalf("❌ Failed to get database connection: %v", err)
+		}
+
+		// Drop all schemas except system ones to start fresh
+		// This ensures a clean state for migrations
+		dropSchemas := []string{
+			"DROP SCHEMA IF EXISTS atlas_schema_revisions CASCADE", // Drop Atlas migration tracking
+			"DROP SCHEMA IF EXISTS public CASCADE",
+			"DROP SCHEMA IF EXISTS tiger CASCADE",
+			"DROP SCHEMA IF EXISTS tiger_data CASCADE",
+			"DROP SCHEMA IF EXISTS topology CASCADE",
+			"CREATE SCHEMA public",
+		}
+		for _, stmt := range dropSchemas {
+			if err := config.DB.Exec(stmt).Error; err != nil {
+				log.Fatalf("❌ Failed to execute: %s - %v", stmt, err)
+			}
+		}
+
+		// Run Atlas migrations
+		dbURL := "postgres://test_user:test_password@localhost:5433/challenger_test?sslmode=disable"
+		if err := config.RunAtlasMigrationsWithConnection(sqlDB, dbURL); err != nil {
+			log.Fatalf("❌ Failed to run Atlas migrations: %v", err)
 		}
 
 		// Seed basic data needed for tests
@@ -70,7 +74,7 @@ func setupTestDB() {
 }
 
 // setupTest prepares the DB for a specific test case (cleans it).
-func setupTest(t *testing.T) func() {
+func setupTest(_ *testing.T) func() {
 	// Ensure DB is set up even if TestMain didn't run (defensive coding)
 	if config.DB == nil {
 		setupTestDB()

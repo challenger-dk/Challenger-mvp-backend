@@ -14,14 +14,10 @@ func main() {
 	// Connect to database
 	config.ConnectDatabase()
 
-	// Ensure PostGIS extension is created
-	err := config.DB.Exec("CREATE EXTENSION IF NOT EXISTS postgis").Error
-	if err != nil {
-		log.Fatal("Failed to create PostGIS extension:", err)
+	// Run Atlas migrations
+	if err := config.RunAtlasMigrations(); err != nil {
+		log.Fatalf("Failed to run migrations: %v", err)
 	}
-
-	// Run migrations
-	config.MigrateDB()
 
 	// Seed the database
 	if err := seed.SeedDatabase(); err != nil {

@@ -3,19 +3,16 @@ FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
-# 1. Download dependencies
-# We copy go.mod/sum from the ROOT context
+# Download dependencies
 COPY go.mod go.sum ./
 RUN go mod download
 
-# 2. Copy source code
-# We copy the shared folder AND the specific service folder
+# Copy source code
 COPY common ./common
-COPY api ./api
+COPY cmd/migrate ./cmd/migrate
 
-# 3. Build the binary
-# We target the main file inside api/
-RUN CGO_ENABLED=0 GOOS=linux go build -o challenger-api ./api
+# Build the migration binary
+RUN CGO_ENABLED=0 GOOS=linux go build -o migrate-job ./cmd/migrate
 
 # Final Stage
 FROM alpine:latest
@@ -29,11 +26,10 @@ RUN apk --no-cache add ca-certificates curl bash
 RUN curl -sSf https://atlasgo.sh | sh
 
 # Copy the binary from the builder
-COPY --from=builder /app/challenger-api .
+COPY --from=builder /app/migrate-job .
 
 # Copy migration files
 COPY Database/migrations /app/Database/migrations
 
-EXPOSE 8080
+CMD ["./migrate-job"]
 
-CMD ["./challenger-api"]

@@ -68,17 +68,18 @@ type UsersSearchResponse struct {
 
 // Used for anyone but the current user
 type PublicUserDtoResponse struct {
-	ID                  uint               `json:"id"`
-	FirstName           string             `json:"first_name"`
-	LastName            string             `json:"last_name"`
-	ProfilePicture      string             `json:"profile_picture,omitempty"`
-	Bio                 string             `json:"bio,omitempty"`
-	BirthDate           time.Time          `json:"birth_date"`
-	City                string             `json:"city"`
-	FavoriteSports      []SportResponseDto `json:"favorite_sports,omitempty"`
-	FriendsCount        uint               `json:"friends_count,omitempty"`
-	TeamsCount          uint               `json:"teams_count,omitempty"`
-	CompletedChallenges uint               `json:"completed_challenges,omitempty"`
+	ID                  uint                   `json:"id"`
+	FirstName           string                 `json:"first_name"`
+	LastName            string                 `json:"last_name"`
+	ProfilePicture      string                 `json:"profile_picture,omitempty"`
+	Bio                 string                 `json:"bio,omitempty"`
+	BirthDate           time.Time              `json:"birth_date"`
+	City                string                 `json:"city"`
+	FavoriteSports      []SportResponseDto     `json:"favorite_sports,omitempty"`
+	FriendsCount        uint                   `json:"friends_count,omitempty"`
+	TeamsCount          uint                   `json:"teams_count,omitempty"`
+	CompletedChallenges uint                   `json:"completed_challenges,omitempty"`
+	NextChallenges      []ChallengeResponseDto `json:"next_challenges,omitempty"`
 }
 
 type Login struct {
@@ -109,6 +110,18 @@ func ToPublicUserDtoResponse(user models.User) PublicUserDtoResponse {
 		}
 	}
 
+	// Get next upcoming challenges (limited to UserNextChallengesCount)
+	nextChallenges := make([]ChallengeResponseDto, 0, UserNextChallengesCount)
+	for _, ch := range user.JoinedChallenges {
+		if ch.IsCompleted {
+			continue
+		}
+		if len(nextChallenges) >= int(UserNextChallengesCount) {
+			break
+		}
+		nextChallenges = append(nextChallenges, ToChallengeResponseDto(ch))
+	}
+
 	return PublicUserDtoResponse{
 		ID:                  user.ID,
 		FirstName:           user.FirstName,
@@ -121,6 +134,7 @@ func ToPublicUserDtoResponse(user models.User) PublicUserDtoResponse {
 		FriendsCount:        friendsCount,
 		TeamsCount:          teamsCount,
 		CompletedChallenges: completedChallengesCount,
+		NextChallenges:      nextChallenges,
 	}
 }
 

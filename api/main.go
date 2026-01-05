@@ -23,18 +23,19 @@ func main() {
 	config.LoadConfig()
 	config.ConnectDatabase()
 
-	// Ensure PostGIS extension is created
-	err := config.DB.Exec("CREATE EXTENSION IF NOT EXISTS postgis").Error
-	if err != nil {
-		slog.Error("Failed to create PostGIS extension", "error", err)
-		os.Exit(1)
-	}
-	slog.Info("✅ PostGIS extension ensured")
-
-	// Run migrations (for local development with Docker)
-	// In production, migrations are handled by Atlas
-	if config.AppConfig.AppEnv == "development" {
-		config.MigrateDB()
+	// Run Atlas migrations
+	// By default, migrations are NOT run automatically for better control
+	// Set AUTO_MIGRATE=true to enable auto-migration (useful for local development)
+	// In production, run migrations manually using: make migrate-up
+	autoMigrate := os.Getenv("AUTO_MIGRATE")
+	if autoMigrate == "true" {
+		slog.Info("🔄 Auto-migration enabled (AUTO_MIGRATE=true)")
+		if err := config.RunAtlasMigrations(); err != nil {
+			slog.Error("Failed to run migrations", "error", err)
+			os.Exit(1)
+		}
+	} else {
+		slog.Info("⏭️  Auto-migration disabled. Run 'make migrate-up' to apply migrations")
 	}
 
 	// Seed sports data if not already seeded

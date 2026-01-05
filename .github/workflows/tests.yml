@@ -12,7 +12,6 @@ jobs:
     
     services:
       postgres:
-        # Changed to PostGIS because main.go requires the extension
         image: postgis/postgis:16-3.4
         env:
           POSTGRES_USER: gouser
@@ -26,7 +25,6 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-      # Add the test database service for integration tests
       postgres-test:
         image: postgis/postgis:16-3.4
         env:
@@ -34,7 +32,7 @@ jobs:
           POSTGRES_PASSWORD: test_password
           POSTGRES_DB: challenger_test
         ports:
-          - 5433:5432 # Expose on 5433 to match integration test setup
+          - 5433:5432
         options: >-
           --health-cmd "pg_isready -U test_user -d challenger_test"
           --health-interval 10s
@@ -48,19 +46,19 @@ jobs:
         with:
           go-version: '1.24.4'
           cache: true
-          # Updated path (removed src/)
           cache-dependency-path: go.sum 
 
       - name: Install dependencies
         run: go mod download
+
+      - name: Lint - Check sanitize validation tags
+        run: go run tools/validate-sanitize/main.go
 
       - name: Run unit tests
         # Run only unit tests
         run: go test -v -coverprofile=unit_coverage.out ./tests/unit/...
 
       - name: Run integration tests
-        # Run integration tests specifically. 
-        # Note: We use -p 1 to run tests sequentially to avoid race conditions on the single test DB.
         run: go test -v -p 1 -coverprofile=integration_coverage.out ./tests/integration/...
 
       - name: Coverage summary (Unit)
@@ -72,7 +70,6 @@ jobs:
         run: go tool cover -func=integration_coverage.out || echo "No integration coverage generated"
 
       - name: Build Go server
-        # Updated build target to ./api
         run: |
           go build -o my-server ./api
 
@@ -83,7 +80,6 @@ jobs:
           DB_USER: gouser
           DB_PASSWORD: gopassword
           DB_NAME: godb
-          # Required by config/env.go
           JWT_SECRET: testing_secret_key
         run: ./my-server > server.log 2>&1 & 
 
@@ -108,7 +104,6 @@ jobs:
         run: curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
 
       - name: Run Postman API tests
-        # Only run if POSTMAN_API_KEY is available (optional safety check)
         if: ${{ env.POSTMAN_API_KEY != '' }}
         env: 
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}

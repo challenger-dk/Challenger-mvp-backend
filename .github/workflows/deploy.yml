@@ -13,6 +13,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.4'
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Lint - Check sanitize validation tags
+        run: go run tools/validate-sanitize/main.go
+
       - name: Connect GitHub Actions runner to Tailscale
         uses: tailscale/github-action@v2
         with:
