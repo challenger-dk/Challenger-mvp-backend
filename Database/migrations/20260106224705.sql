@@ -185,6 +185,19 @@ CREATE TABLE "notifications" (
 CREATE INDEX "idx_notifications_actor_id" ON "notifications" ("actor_id");
 -- Create index "idx_notifications_user_id" to table: "notifications"
 CREATE INDEX "idx_notifications_user_id" ON "notifications" ("user_id");
+-- Create "reports" table
+CREATE TABLE "reports" (
+  "id" bigserial NOT NULL,
+  "reporter_id" bigint NOT NULL,
+  "target_id" bigint NOT NULL,
+  "target_type" text NOT NULL,
+  "reason" text NOT NULL,
+  "comment" text NULL,
+  "status" text NULL DEFAULT 'PENDING',
+  "created_at" timestamptz NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "fk_reports_reporter" FOREIGN KEY ("reporter_id") REFERENCES "users" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
+);
 -- Create "sports" table
 CREATE TABLE "sports" (
   "id" bigserial NOT NULL,
