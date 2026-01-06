@@ -43,21 +43,6 @@ jobs:
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev
 
-      - name: Create Artifact Registry repository (if not exists)
-        run: |
-          # Check if repository exists, create if it doesn't
-          if ! gcloud artifacts repositories describe ${{ env.REPOSITORY }} \
-            --location=${{ env.ARTIFACT_REGISTRY_REGION }} &>/dev/null; then
-            echo "📦 Creating Artifact Registry repository..."
-            gcloud artifacts repositories create ${{ env.REPOSITORY }} \
-              --repository-format=docker \
-              --location=${{ env.ARTIFACT_REGISTRY_REGION }} \
-              --description="Docker images for Challenger app"
-            echo "✅ Repository created!"
-          else
-            echo "✅ Repository already exists"
-          fi
-
       - name: Build migration Docker image
         run: |
           echo "🔨 Building migration Docker image..."
