@@ -10,7 +10,9 @@ on:
 env:
   PROJECT_ID: challenger-app-479210
   REGION: europe-west1
-  MIGRATION_IMAGE: gcr.io/challenger-app-479210/challenger-migrate:production
+  ARTIFACT_REGISTRY_REGION: europe-west4
+  REPOSITORY: challenger-app
+  MIGRATION_IMAGE: europe-west4-docker.pkg.dev/challenger-app-479210/challenger-app/challenger-migrate:production
 
 jobs:
   build-migration-image:
@@ -38,17 +40,32 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Configure Docker for GCR
-        run: gcloud auth configure-docker
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev
+
+      - name: Create Artifact Registry repository (if not exists)
+        run: |
+          # Check if repository exists, create if it doesn't
+          if ! gcloud artifacts repositories describe ${{ env.REPOSITORY }} \
+            --location=${{ env.ARTIFACT_REGISTRY_REGION }} &>/dev/null; then
+            echo "📦 Creating Artifact Registry repository..."
+            gcloud artifacts repositories create ${{ env.REPOSITORY }} \
+              --repository-format=docker \
+              --location=${{ env.ARTIFACT_REGISTRY_REGION }} \
+              --description="Docker images for Challenger app"
+            echo "✅ Repository created!"
+          else
+            echo "✅ Repository already exists"
+          fi
 
       - name: Build migration Docker image
         run: |
           echo "🔨 Building migration Docker image..."
           docker build -f Dockerfile.migrate -t ${{ env.MIGRATION_IMAGE }} .
 
-      - name: Push migration image to GCR
+      - name: Push migration image to Artifact Registry
         run: |
-          echo "📤 Pushing migration image to Google Container Registry..."
+          echo "📤 Pushing migration image to Artifact Registry..."
           docker push ${{ env.MIGRATION_IMAGE }}
 
       - name: Update Cloud Run Job (if exists)
