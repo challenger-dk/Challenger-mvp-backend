@@ -4,13 +4,8 @@ on:
   push:
     branches:
       - production
-    paths:
-      - 'Database/migrations/**'
-      - 'cmd/migrate/**'
-      - 'cmd/atlas/**'
-      - 'atlas.hcl'
-      - 'Dockerfile.migrate'
-      - 'common/models/**'
+  # Removed paths filter - now runs on every push to production
+  # This ensures the migration image is always built when merging main to production
 
 env:
   PROJECT_ID: challenger-app-479210
