@@ -74,8 +74,9 @@ func RunAtlasMigrations() error {
 		return fmt.Errorf("failed to create atlas client: %w", err)
 	}
 
-	// Apply migrations
 	ctx := context.Background()
+
+	// Apply migrations
 	result, err := client.MigrateApply(ctx, &atlasexec.MigrateApplyParams{
 		URL:    dsn,
 		DirURL: migrationsDirURL,
