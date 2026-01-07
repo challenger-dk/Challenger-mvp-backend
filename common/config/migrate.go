@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -49,9 +50,10 @@ func RunAtlasMigrations() error {
 	// Note: In production, Atlas uses database locks to prevent concurrent migrations
 	// Only the first instance to acquire the lock will run migrations
 	// Other instances will wait and then skip if migrations are already applied
+	// URL-encode the password to handle special characters
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		AppConfig.DBUser,
-		AppConfig.DBPassword,
+		url.QueryEscape(AppConfig.DBUser),
+		url.QueryEscape(AppConfig.DBPassword),
 		AppConfig.DBHost,
 		AppConfig.DBPort,
 		AppConfig.DBName,
