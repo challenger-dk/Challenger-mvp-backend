@@ -19,8 +19,8 @@ FROM alpine:latest
 
 WORKDIR /app
 
-# Install certificates, curl, and bash for Atlas installation
-RUN apk --no-cache add ca-certificates curl bash
+# Install certificates, curl, bash, and dos2unix for Atlas installation
+RUN apk --no-cache add ca-certificates curl bash dos2unix
 
 # Install Atlas CLI
 RUN curl -sSf https://atlasgo.sh | sh
@@ -31,5 +31,11 @@ COPY --from=builder /app/migrate-job .
 # Copy migration files
 COPY Database/migrations /app/Database/migrations
 
-CMD ["./migrate-job"]
+# Convert line endings from Windows to Unix (in case files were edited on Windows)
+RUN find /app/Database/migrations -type f -name "*.sql" -exec dos2unix {} \;
+RUN find /app/Database/migrations -type f -name "atlas.sum" -exec dos2unix {} \;
 
+# Re-hash migrations to ensure checksums match after line ending conversion
+RUN atlas migrate hash --dir file:///app/Database/migrations
+
+CMD ["./migrate-job"]
