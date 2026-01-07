@@ -103,8 +103,9 @@ func RunAtlasMigrations() error {
 
 	// Apply migrations
 	result, err := client.MigrateApply(ctx, &atlasexec.MigrateApplyParams{
-		URL:    dsn,
-		DirURL: migrationsDirURL,
+		URL:        dsn,
+		DirURL:     migrationsDirURL,
+		AllowDirty: true, // Allow running migrations on existing database
 	})
 
 	if err != nil {
