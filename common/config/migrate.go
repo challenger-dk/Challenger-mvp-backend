@@ -50,13 +50,36 @@ func RunAtlasMigrations() error {
 	// Note: In production, Atlas uses database locks to prevent concurrent migrations
 	// Only the first instance to acquire the lock will run migrations
 	// Other instances will wait and then skip if migrations are already applied
-	// URL-encode the password to handle special characters
-	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		url.QueryEscape(AppConfig.DBUser),
-		url.QueryEscape(AppConfig.DBPassword),
-		AppConfig.DBHost,
-		AppConfig.DBPort,
-		AppConfig.DBName,
+
+	var dsn string
+
+	// Check if using Unix socket (Cloud SQL) or TCP connection
+	if len(AppConfig.DBHost) > 0 && AppConfig.DBHost[0] == '/' {
+		// Unix socket connection (Cloud SQL)
+		// Format: postgres://user:password@/dbname?host=/cloudsql/instance-connection-name
+		dsn = fmt.Sprintf("postgres://%s:%s@/%s?host=%s&sslmode=disable",
+			url.QueryEscape(AppConfig.DBUser),
+			url.QueryEscape(AppConfig.DBPassword),
+			AppConfig.DBName,
+			url.QueryEscape(AppConfig.DBHost),
+		)
+		slog.Info("🔍 Using Unix socket connection", "socket", AppConfig.DBHost)
+	} else {
+		// TCP connection
+		dsn = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+			url.QueryEscape(AppConfig.DBUser),
+			url.QueryEscape(AppConfig.DBPassword),
+			AppConfig.DBHost,
+			AppConfig.DBPort,
+			AppConfig.DBName,
+		)
+		slog.Info("🔍 Using TCP connection", "host", AppConfig.DBHost, "port", AppConfig.DBPort)
+	}
+
+	// Debug: Log connection details (without password)
+	slog.Info("🔍 Migration DSN details",
+		"user", AppConfig.DBUser,
+		"database", AppConfig.DBName,
 	)
 
 	// Ensure extensions exist before running migrations
