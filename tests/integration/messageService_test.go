@@ -15,9 +15,10 @@ func TestSendMessage_PermissionCheck(t *testing.T) {
 	setupTest(t)
 
 	// Create test users
-	user1 := models.User{Email: "user1@test.com", Password: "hash", FirstName: "User", LastName: "One"}
-	user2 := models.User{Email: "user2@test.com", Password: "hash", FirstName: "User", LastName: "Two"}
-	user3 := models.User{Email: "user3@test.com", Password: "hash", FirstName: "User", LastName: "Three"}
+	password := "hash"
+	user1 := models.User{Email: "user1@test.com", Password: &password, FirstName: "User", LastName: "One"}
+	user2 := models.User{Email: "user2@test.com", Password: &password, FirstName: "User", LastName: "Two"}
+	user3 := models.User{Email: "user3@test.com", Password: &password, FirstName: "User", LastName: "Three"}
 	config.DB.Create(&user1)
 	config.DB.Create(&user2)
 	config.DB.Create(&user3)
@@ -46,8 +47,9 @@ func TestMarkConversationRead_UnreadCount(t *testing.T) {
 	setupTest(t)
 
 	// Create test users
-	user1 := models.User{Email: "user1@test.com", Password: "hash", FirstName: "User", LastName: "One"}
-	user2 := models.User{Email: "user2@test.com", Password: "hash", FirstName: "User", LastName: "Two"}
+	password := "hash"
+	user1 := models.User{Email: "user1@test.com", Password: &password, FirstName: "User", LastName: "One"}
+	user2 := models.User{Email: "user2@test.com", Password: &password, FirstName: "User", LastName: "Two"}
 	config.DB.Create(&user1)
 	config.DB.Create(&user2)
 
@@ -100,8 +102,9 @@ func TestGetMessages_Pagination(t *testing.T) {
 	setupTest(t)
 
 	// Create test users
-	user1 := models.User{Email: "user1@test.com", Password: "hash", FirstName: "User", LastName: "One"}
-	user2 := models.User{Email: "user2@test.com", Password: "hash", FirstName: "User", LastName: "Two"}
+	password := "hash"
+	user1 := models.User{Email: "user1@test.com", Password: &password, FirstName: "User", LastName: "One"}
+	user2 := models.User{Email: "user2@test.com", Password: &password, FirstName: "User", LastName: "Two"}
 	config.DB.Create(&user1)
 	config.DB.Create(&user2)
 
@@ -133,9 +136,10 @@ func TestGetMessages_NonMemberDenied(t *testing.T) {
 	setupTest(t)
 
 	// Create test users
-	user1 := models.User{Email: "user1@test.com", Password: "hash", FirstName: "User", LastName: "One"}
-	user2 := models.User{Email: "user2@test.com", Password: "hash", FirstName: "User", LastName: "Two"}
-	user3 := models.User{Email: "user3@test.com", Password: "hash", FirstName: "User", LastName: "Three"}
+	password := "hash"
+	user1 := models.User{Email: "user1@test.com", Password: &password, FirstName: "User", LastName: "One"}
+	user2 := models.User{Email: "user2@test.com", Password: &password, FirstName: "User", LastName: "Two"}
+	user3 := models.User{Email: "user3@test.com", Password: &password, FirstName: "User", LastName: "Three"}
 	config.DB.Create(&user1)
 	config.DB.Create(&user2)
 	config.DB.Create(&user3)
@@ -156,8 +160,9 @@ func TestGetMessageByID(t *testing.T) {
 	setupTest(t)
 
 	// Create test users
-	user1 := models.User{Email: "getmsg1@test.com", Password: "hash", FirstName: "User", LastName: "One"}
-	user2 := models.User{Email: "getmsg2@test.com", Password: "hash", FirstName: "User", LastName: "Two"}
+	password := "password12"
+	user1 := models.User{Email: "getmsg1@test.com", Password: &password, FirstName: "User", LastName: "One"}
+	user2 := models.User{Email: "getmsg2@test.com", Password: &password, FirstName: "User", LastName: "Two"}
 	config.DB.Create(&user1)
 	config.DB.Create(&user2)
 
@@ -204,7 +209,8 @@ func TestGetMessageByID(t *testing.T) {
 	assert.Contains(t, err.Error(), "not found") // ErrConversationNotFound is reused
 
 	// 5. Create another conversation and message
-	user3 := models.User{Email: "getmsg3@test.com", Password: "hash", FirstName: "User", LastName: "Three"}
+	hashPassword := "hash"
+	user3 := models.User{Email: "getmsg3@test.com", Password: &hashPassword, FirstName: "User", LastName: "Three"}
 	config.DB.Create(&user3)
 	conv2, _ := services.CreateDirectConversation(user1.ID, user3.ID)
 	message3, err := services.SendMessage(conv2.ID, user3.ID, "Message in different conversation")

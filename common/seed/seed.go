@@ -142,11 +142,12 @@ func seedUsers() ([]models.User, error) {
 	if err != nil {
 		return nil, err
 	}
+	hashedPasswordStr := string(hashedPassword)
 
 	users := []models.User{
 		{
 			Email:     "user1@challenger.dk",
-			Password:  string(hashedPassword),
+			Password:  &hashedPasswordStr,
 			FirstName: "Alice",
 			LastName:  "Johnson",
 			Bio:       "Tennisentusiast og weekendkriger",
@@ -155,7 +156,7 @@ func seedUsers() ([]models.User, error) {
 		},
 		{
 			Email:     "user2@challenger.dk",
-			Password:  string(hashedPassword),
+			Password:  &hashedPasswordStr,
 			FirstName: "Bob",
 			LastName:  "Smith",
 			Bio:       "Fodboldspiller på jagt efter konkurrencedygtige kampe",
@@ -164,7 +165,7 @@ func seedUsers() ([]models.User, error) {
 		},
 		{
 			Email:     "user3@challenger.dk",
-			Password:  string(hashedPassword),
+			Password:  &hashedPasswordStr,
 			FirstName: "Charlie",
 			LastName:  "Brown",
 			Bio:       "Basketballfanatiker",
@@ -173,7 +174,7 @@ func seedUsers() ([]models.User, error) {
 		},
 		{
 			Email:     "user4@challenger.dk",
-			Password:  string(hashedPassword),
+			Password:  &hashedPasswordStr,
 			FirstName: "Diana",
 			LastName:  "Williams",
 			Bio:       "Elsker at spille padel tennis og volleyball",
@@ -182,7 +183,7 @@ func seedUsers() ([]models.User, error) {
 		},
 		{
 			Email:     "user5@challenger.dk",
-			Password:  string(hashedPassword),
+			Password:  &hashedPasswordStr,
 			FirstName: "Eve",
 			LastName:  "Davis",
 			Bio:       "Løbe- og cykelentusiast",
@@ -191,7 +192,7 @@ func seedUsers() ([]models.User, error) {
 		},
 		{
 			Email:     "user6@challenger.dk",
-			Password:  string(hashedPassword),
+			Password:  &hashedPasswordStr,
 			FirstName: "Frank",
 			LastName:  "Hansen",
 			Bio:       "Badminton spiller og tennisfan",
@@ -200,7 +201,7 @@ func seedUsers() ([]models.User, error) {
 		},
 		{
 			Email:     "user7@challenger.dk",
-			Password:  string(hashedPassword),
+			Password:  &hashedPasswordStr,
 			FirstName: "Grace",
 			LastName:  "Nielsen",
 			Bio:       "Svømning og vandpolo elsker",
@@ -209,7 +210,7 @@ func seedUsers() ([]models.User, error) {
 		},
 		{
 			Email:     "user8@challenger.dk",
-			Password:  string(hashedPassword),
+			Password:  &hashedPasswordStr,
 			FirstName: "Henry",
 			LastName:  "Andersen",
 			Bio:       "Fodbold og basketball på weekenderne",
@@ -218,7 +219,7 @@ func seedUsers() ([]models.User, error) {
 		},
 		{
 			Email:     "user9@challenger.dk",
-			Password:  string(hashedPassword),
+			Password:  &hashedPasswordStr,
 			FirstName: "Iris",
 			LastName:  "Petersen",
 			Bio:       "Yoga og pilates instruktør",
@@ -227,7 +228,7 @@ func seedUsers() ([]models.User, error) {
 		},
 		{
 			Email:     "user10@challenger.dk",
-			Password:  string(hashedPassword),
+			Password:  &hashedPasswordStr,
 			FirstName: "Jack",
 			LastName:  "Larsen",
 			Bio:       "Håndbold spiller og fitness entusiast",
@@ -236,7 +237,7 @@ func seedUsers() ([]models.User, error) {
 		},
 		{
 			Email:     "user11@challenger.dk",
-			Password:  string(hashedPassword),
+			Password:  &hashedPasswordStr,
 			FirstName: "Karen",
 			LastName:  "Christensen",
 			Bio:       "Tennis og padel tennis spiller",
@@ -245,7 +246,7 @@ func seedUsers() ([]models.User, error) {
 		},
 		{
 			Email:     "user12@challenger.dk",
-			Password:  string(hashedPassword),
+			Password:  &hashedPasswordStr,
 			FirstName: "Lars",
 			LastName:  "Sørensen",
 			Bio:       "Fodbold træner og løbeentusiast",
@@ -254,7 +255,7 @@ func seedUsers() ([]models.User, error) {
 		},
 		{
 			Email:     "user13@challenger.dk",
-			Password:  string(hashedPassword),
+			Password:  &hashedPasswordStr,
 			FirstName: "Maria",
 			LastName:  "Rasmussen",
 			Bio:       "Basketball og volleyball spiller",
@@ -263,7 +264,7 @@ func seedUsers() ([]models.User, error) {
 		},
 		{
 			Email:     "user14@challenger.dk",
-			Password:  string(hashedPassword),
+			Password:  &hashedPasswordStr,
 			FirstName: "Niels",
 			LastName:  "Jørgensen",
 			Bio:       "Cykling og mountainbike kører",
@@ -272,7 +273,7 @@ func seedUsers() ([]models.User, error) {
 		},
 		{
 			Email:     "user15@challenger.dk",
-			Password:  string(hashedPassword),
+			Password:  &hashedPasswordStr,
 			FirstName: "Olivia",
 			LastName:  "Madsen",
 			Bio:       "Tennis, badminton og squash spiller",

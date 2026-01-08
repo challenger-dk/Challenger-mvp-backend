@@ -7,10 +7,11 @@ import (
 )
 
 type User struct {
-	ID             uint   `gorm:"primaryKey"`
-	Email          string `gorm:"not null;unique"`
-	Password       string `gorm:"not null"`
-	FirstName      string `gorm:"not null"`
+	ID             uint    `gorm:"primaryKey"`
+	Email          string  `gorm:"not null;unique"`
+	Password       *string `gorm:"default:null"` // Nullable for OAuth users
+	AuthProvider   string  `gorm:"default:''"`   // "google", "apple", or empty for regular users
+	FirstName      string  `gorm:"not null"`
 	LastName       string
 	ProfilePicture string
 	Bio            string

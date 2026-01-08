@@ -145,3 +145,67 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func GoogleAuth(w http.ResponseWriter, r *http.Request) {
+	var req dto.GoogleAuthDto
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	// Validate
+	if err := validator.V.Struct(req); err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	user, token, err := services.AuthenticateWithGoogle(req.IDToken)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(map[string]any{
+		"user":  dto.ToUserResponseDto(*user),
+		"token": token,
+	})
+
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+}
+
+func AppleAuth(w http.ResponseWriter, r *http.Request) {
+	var req dto.AppleAuthDto
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	// Validate
+	if err := validator.V.Struct(req); err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	user, token, err := services.AuthenticateWithApple(req.IDToken, req.Email, req.FirstName, req.LastName)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(map[string]any{
+		"user":  dto.ToUserResponseDto(*user),
+		"token": token,
+	})
+
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+}

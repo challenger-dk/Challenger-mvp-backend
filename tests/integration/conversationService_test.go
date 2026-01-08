@@ -14,8 +14,9 @@ func TestCreateDirectConversation_Idempotent(t *testing.T) {
 	setupTest(t)
 
 	// Create test users
-	user1 := models.User{Email: "user1@test.com", Password: "hash", FirstName: "User", LastName: "One"}
-	user2 := models.User{Email: "user2@test.com", Password: "hash", FirstName: "User", LastName: "Two"}
+	password := "hash"
+	user1 := models.User{Email: "user1@test.com", Password: &password, FirstName: "User", LastName: "One"}
+	user2 := models.User{Email: "user2@test.com", Password: &password, FirstName: "User", LastName: "Two"}
 	config.DB.Create(&user1)
 	config.DB.Create(&user2)
 
@@ -41,7 +42,8 @@ func TestCreateDirectConversation_Idempotent(t *testing.T) {
 func TestCreateDirectConversation_CannotMessageSelf(t *testing.T) {
 	setupTest(t)
 
-	user := models.User{Email: "user@test.com", Password: "hash", FirstName: "User", LastName: "One"}
+	password := "hash"
+	user := models.User{Email: "user@test.com", Password: &password, FirstName: "User", LastName: "One"}
 	config.DB.Create(&user)
 
 	_, err := services.CreateDirectConversation(user.ID, user.ID)
@@ -53,9 +55,10 @@ func TestIsConversationMember(t *testing.T) {
 	setupTest(t)
 
 	// Create test users
-	user1 := models.User{Email: "user1@test.com", Password: "hash", FirstName: "User", LastName: "One"}
-	user2 := models.User{Email: "user2@test.com", Password: "hash", FirstName: "User", LastName: "Two"}
-	user3 := models.User{Email: "user3@test.com", Password: "hash", FirstName: "User", LastName: "Three"}
+	password := "hash"
+	user1 := models.User{Email: "user1@test.com", Password: &password, FirstName: "User", LastName: "One"}
+	user2 := models.User{Email: "user2@test.com", Password: &password, FirstName: "User", LastName: "Two"}
+	user3 := models.User{Email: "user3@test.com", Password: &password, FirstName: "User", LastName: "Three"}
 	config.DB.Create(&user1)
 	config.DB.Create(&user2)
 	config.DB.Create(&user3)
@@ -81,9 +84,10 @@ func TestSyncTeamConversationMembers(t *testing.T) {
 	setupTest(t)
 
 	// Create test users
-	user1 := models.User{Email: "user1@test.com", Password: "hash", FirstName: "User", LastName: "One"}
-	user2 := models.User{Email: "user2@test.com", Password: "hash", FirstName: "User", LastName: "Two"}
-	user3 := models.User{Email: "user3@test.com", Password: "hash", FirstName: "User", LastName: "Three"}
+	password := "hash"
+	user1 := models.User{Email: "user1@test.com", Password: &password, FirstName: "User", LastName: "One"}
+	user2 := models.User{Email: "user2@test.com", Password: &password, FirstName: "User", LastName: "Two"}
+	user3 := models.User{Email: "user3@test.com", Password: &password, FirstName: "User", LastName: "Three"}
 	config.DB.Create(&user1)
 	config.DB.Create(&user2)
 	config.DB.Create(&user3)
@@ -128,9 +132,10 @@ func TestCreateGroupConversation_Success(t *testing.T) {
 	setupTest(t)
 
 	// Create test users
-	user1 := models.User{Email: "user1@test.com", Password: "hash", FirstName: "User", LastName: "One"}
-	user2 := models.User{Email: "user2@test.com", Password: "hash", FirstName: "User", LastName: "Two"}
-	user3 := models.User{Email: "user3@test.com", Password: "hash", FirstName: "User", LastName: "Three"}
+	password := "hash"
+	user1 := models.User{Email: "user1@test.com", Password: &password, FirstName: "User", LastName: "One"}
+	user2 := models.User{Email: "user2@test.com", Password: &password, FirstName: "User", LastName: "Two"}
+	user3 := models.User{Email: "user3@test.com", Password: &password, FirstName: "User", LastName: "Three"}
 	config.DB.Create(&user1)
 	config.DB.Create(&user2)
 	config.DB.Create(&user3)
@@ -163,9 +168,10 @@ func TestCreateGroupConversation_CurrentUserAutoAdded(t *testing.T) {
 	setupTest(t)
 
 	// Create test users
-	user1 := models.User{Email: "user1@test.com", Password: "hash", FirstName: "User", LastName: "One"}
-	user2 := models.User{Email: "user2@test.com", Password: "hash", FirstName: "User", LastName: "Two"}
-	user3 := models.User{Email: "user3@test.com", Password: "hash", FirstName: "User", LastName: "Three"}
+	password := "hash"
+	user1 := models.User{Email: "user1@test.com", Password: &password, FirstName: "User", LastName: "One"}
+	user2 := models.User{Email: "user2@test.com", Password: &password, FirstName: "User", LastName: "Two"}
+	user3 := models.User{Email: "user3@test.com", Password: &password, FirstName: "User", LastName: "Three"}
 	config.DB.Create(&user1)
 	config.DB.Create(&user2)
 	config.DB.Create(&user3)
@@ -191,7 +197,8 @@ func TestCreateGroupConversation_CurrentUserAutoAdded(t *testing.T) {
 func TestCreateGroupConversation_InsufficientParticipants(t *testing.T) {
 	setupTest(t)
 
-	user1 := models.User{Email: "user1@test.com", Password: "hash", FirstName: "User", LastName: "One"}
+	password := "hash"
+	user1 := models.User{Email: "user1@test.com", Password: &password, FirstName: "User", LastName: "One"}
 	config.DB.Create(&user1)
 
 	// Try to create group conversation with empty participant list
@@ -204,8 +211,9 @@ func TestGetConversationByID_Success(t *testing.T) {
 	setupTest(t)
 
 	// Create test users
-	user1 := models.User{Email: "user1@test.com", Password: "hash", FirstName: "User", LastName: "One"}
-	user2 := models.User{Email: "user2@test.com", Password: "hash", FirstName: "User", LastName: "Two"}
+	password := "hash"
+	user1 := models.User{Email: "user1@test.com", Password: &password, FirstName: "User", LastName: "One"}
+	user2 := models.User{Email: "user2@test.com", Password: &password, FirstName: "User", LastName: "Two"}
 	config.DB.Create(&user1)
 	config.DB.Create(&user2)
 
@@ -233,9 +241,10 @@ func TestGetConversationByID_GroupConversation(t *testing.T) {
 	setupTest(t)
 
 	// Create test users
-	user1 := models.User{Email: "user1@test.com", Password: "hash", FirstName: "User", LastName: "One"}
-	user2 := models.User{Email: "user2@test.com", Password: "hash", FirstName: "User", LastName: "Two"}
-	user3 := models.User{Email: "user3@test.com", Password: "hash", FirstName: "User", LastName: "Three"}
+	password := "hash"
+	user1 := models.User{Email: "user1@test.com", Password: &password, FirstName: "User", LastName: "One"}
+	user2 := models.User{Email: "user2@test.com", Password: &password, FirstName: "User", LastName: "Two"}
+	user3 := models.User{Email: "user3@test.com", Password: &password, FirstName: "User", LastName: "Three"}
 	config.DB.Create(&user1)
 	config.DB.Create(&user2)
 	config.DB.Create(&user3)
@@ -272,7 +281,8 @@ func TestGetConversationByID_NotFound(t *testing.T) {
 func TestListConversations_EmptyList(t *testing.T) {
 	setupTest(t)
 
-	user1 := models.User{Email: "user1@test.com", Password: "hash", FirstName: "User", LastName: "One"}
+	password := "hash"
+	user1 := models.User{Email: "user1@test.com", Password: &password, FirstName: "User", LastName: "One"}
 	config.DB.Create(&user1)
 
 	// List conversations for user with no conversations
@@ -290,9 +300,10 @@ func TestListConversations_WithMessages(t *testing.T) {
 	setupTest(t)
 
 	// Create test users
-	user1 := models.User{Email: "user1@test.com", Password: "hash", FirstName: "User", LastName: "One"}
-	user2 := models.User{Email: "user2@test.com", Password: "hash", FirstName: "User", LastName: "Two"}
-	user3 := models.User{Email: "user3@test.com", Password: "hash", FirstName: "User", LastName: "Three"}
+	password := "hash"
+	user1 := models.User{Email: "user1@test.com", Password: &password, FirstName: "User", LastName: "One"}
+	user2 := models.User{Email: "user2@test.com", Password: &password, FirstName: "User", LastName: "Two"}
+	user3 := models.User{Email: "user3@test.com", Password: &password, FirstName: "User", LastName: "Three"}
 	config.DB.Create(&user1)
 	config.DB.Create(&user2)
 	config.DB.Create(&user3)
@@ -335,8 +346,9 @@ func TestListConversations_UnreadCounts(t *testing.T) {
 	setupTest(t)
 
 	// Create test users
-	user1 := models.User{Email: "user1@test.com", Password: "hash", FirstName: "User", LastName: "One"}
-	user2 := models.User{Email: "user2@test.com", Password: "hash", FirstName: "User", LastName: "Two"}
+	password := "hash"
+	user1 := models.User{Email: "user1@test.com", Password: &password, FirstName: "User", LastName: "One"}
+	user2 := models.User{Email: "user2@test.com", Password: &password, FirstName: "User", LastName: "Two"}
 	config.DB.Create(&user1)
 	config.DB.Create(&user2)
 
@@ -368,9 +380,10 @@ func TestListConversations_OnlyConversationsWithMessages(t *testing.T) {
 	setupTest(t)
 
 	// Create test users
-	user1 := models.User{Email: "user1@test.com", Password: "hash", FirstName: "User", LastName: "One"}
-	user2 := models.User{Email: "user2@test.com", Password: "hash", FirstName: "User", LastName: "Two"}
-	user3 := models.User{Email: "user3@test.com", Password: "hash", FirstName: "User", LastName: "Three"}
+	password := "hash"
+	user1 := models.User{Email: "user1@test.com", Password: &password, FirstName: "User", LastName: "One"}
+	user2 := models.User{Email: "user2@test.com", Password: &password, FirstName: "User", LastName: "Two"}
+	user3 := models.User{Email: "user3@test.com", Password: &password, FirstName: "User", LastName: "Three"}
 	config.DB.Create(&user1)
 	config.DB.Create(&user2)
 	config.DB.Create(&user3)

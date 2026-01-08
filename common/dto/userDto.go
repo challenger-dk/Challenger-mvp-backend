@@ -97,6 +97,17 @@ type ResetPasswordDto struct {
 	NewPassword string `json:"new_password" validate:"sanitize,required,min=8"`
 }
 
+type GoogleAuthDto struct {
+	IDToken string `json:"idToken" validate:"sanitize,required"`
+}
+
+type AppleAuthDto struct {
+	IDToken   string  `json:"idToken" validate:"sanitize,required"`
+	Email     *string `json:"email,omitempty"`
+	FirstName *string `json:"firstName,omitempty"`
+	LastName  *string `json:"lastName,omitempty"`
+}
+
 type CommonStatsDto struct {
 	CommonFriendsCount int64      `json:"common_friends_count"`
 	CommonTeamsCount   int64      `json:"common_teams_count"`
@@ -239,9 +250,14 @@ func UserCreateDtoToModel(u UserCreateDto) models.User {
 		favoriteSports[i] = models.Sport{Name: sportName}
 	}
 
+	var passwordPtr *string
+	if u.Password != "" {
+		passwordPtr = &u.Password
+	}
+
 	return models.User{
 		Email:          u.Email,
-		Password:       u.Password,
+		Password:       passwordPtr,
 		FirstName:      u.FirstName,
 		LastName:       u.LastName,
 		ProfilePicture: u.ProfilePicture,

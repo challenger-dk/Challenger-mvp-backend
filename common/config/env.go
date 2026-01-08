@@ -30,6 +30,9 @@ type Config struct {
 
 	// Postmark From Email
 	PostmarkFromEmail string `env:"POSTMARK_FROM_EMAIL,required"`
+
+	// Firebase Project ID (for OAuth token verification)
+	FirebaseProjectID string `env:"FIREBASE_PROJECT_ID,required"`
 }
 
 var AppConfig Config
