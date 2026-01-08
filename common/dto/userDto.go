@@ -87,6 +87,16 @@ type Login struct {
 	Password string `json:"password" validate:"sanitize,required,min=8"`
 }
 
+type RequestPasswordResetDto struct {
+	Email string `json:"email" validate:"sanitize,required,email"`
+}
+
+type ResetPasswordDto struct {
+	Email       string `json:"email"        validate:"sanitize,required,email"`
+	ResetCode   string `json:"reset_code"   validate:"sanitize,required,len=6"`
+	NewPassword string `json:"new_password" validate:"sanitize,required,min=8"`
+}
+
 type CommonStatsDto struct {
 	CommonFriendsCount int64      `json:"common_friends_count"`
 	CommonTeamsCount   int64      `json:"common_teams_count"`

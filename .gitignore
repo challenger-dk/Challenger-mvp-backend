@@ -1,6 +1,7 @@
 *.exe
 .env
 *.out
+coverage.html
 /vendor/
 /dist/
 /Godeps/

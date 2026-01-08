@@ -17,6 +17,10 @@ type User struct {
 	BirthDate      time.Time
 	City           string
 
+	// Password Reset
+	PasswordResetCode          string     `gorm:"index"`
+	PasswordResetCodeExpiresAt *time.Time `gorm:"index"`
+
 	// Relationships
 	FavoriteSports    []Sport     `gorm:"many2many:user_favorite_sports;"`
 	Teams             []Team      `gorm:"many2many:user_teams;"`

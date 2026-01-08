@@ -24,6 +24,12 @@ type Config struct {
 
 	// Cron Settings
 	EnableCron bool `env:"ENABLE_CRON" envDefault:"true"`
+
+	// Postmark API Key
+	PostmarkAPIKey string `env:"POSTMARK_API_KEY,required"`
+
+	// Postmark From Email
+	PostmarkFromEmail string `env:"POSTMARK_FROM_EMAIL,required"`
 }
 
 var AppConfig Config

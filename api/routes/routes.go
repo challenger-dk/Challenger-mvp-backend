@@ -15,6 +15,10 @@ func RegisterRoutes(r chi.Router) {
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/register", controllers.Register)
 		r.Post("/login", controllers.Login)
+		r.Route("/password-reset", func(r chi.Router) {
+			r.Post("/request", controllers.RequestPasswordReset)
+			r.Post("/reset", controllers.ResetPassword)
+		})
 	})
 
 	r.Get("/sports", controllers.GetSports)
