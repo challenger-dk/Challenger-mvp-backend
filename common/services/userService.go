@@ -224,12 +224,14 @@ func CreateUser(newUser models.User, password string) (*models.User, error) {
 			return appError.ErrUserExists
 		}
 
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-		if err != nil {
-			return err
+		if password != "" {
+			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+			if err != nil {
+				return err
+			}
+			hashedPasswordStr := string(hashedPassword)
+			newUser.Password = &hashedPasswordStr
 		}
-
-		newUser.Password = string(hashedPassword)
 
 		err = tx.Omit("FavoriteSports").Create(&newUser).Error
 		if err != nil {

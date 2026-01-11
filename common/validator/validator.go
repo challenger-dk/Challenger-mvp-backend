@@ -2,6 +2,7 @@ package validator
 
 import (
 	"html"
+	"log/slog"
 	"reflect"
 	"server/common/config"
 	"strings"
@@ -43,10 +44,38 @@ func validateSport(fl validator.FieldLevel) bool {
 	// Get the string value from the field
 	sportName := fl.Field().String()
 
-	// Check if the name exists in the cache map
-	// The 'ok' bool will be 'true' if it's found, 'false' otherwise
-	_, ok := config.SportsCache[sportName]
-	return ok
+	// Check if the name exists in the cache map (case-insensitive)
+	// First try exact match
+	if _, ok := config.SportsCache[sportName]; ok {
+		slog.Info("Sport validation passed (exact match)", "sport", sportName)
+		return true
+	}
+
+	// If not found, try case-insensitive match
+	for cachedSport := range config.SportsCache {
+		if strings.EqualFold(sportName, cachedSport) {
+			slog.Info("Sport validation passed (case-insensitive match)",
+				"input", sportName,
+				"matched", cachedSport,
+			)
+			return true
+		}
+	}
+
+	slog.Warn("Sport validation failed",
+		"sport", sportName,
+		"available_sports", getAvailableSports(),
+	)
+	return false
+}
+
+// getAvailableSports returns a slice of all available sports in the cache
+func getAvailableSports() []string {
+	sports := make([]string, 0, len(config.SportsCache))
+	for sport := range config.SportsCache {
+		sports = append(sports, sport)
+	}
+	return sports
 }
 
 func sanitizeAndValidate(fl validator.FieldLevel) bool {

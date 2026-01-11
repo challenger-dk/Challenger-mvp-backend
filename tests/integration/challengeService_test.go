@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"server/common/config"
 	"server/common/dto"
 	"server/common/models"
 	"server/common/services"
@@ -141,4 +142,210 @@ func TestChallengeService_CreateWithComplexInvites(t *testing.T) {
 	// Verify creator (should not have invite)
 	invCreator, _ := services.GetInvitationsByUserId(creator.ID)
 	assert.Len(t, invCreator, 0)
+}
+
+func TestChallengeService_UpdateChallengeStatusIfExpired(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	creator, _ := services.CreateUser(models.User{Email: "expire@test.com", FirstName: "Expire", LastName: "User"}, "pw")
+
+	// 1. Create challenge with EndTime in the past (should be marked as completed)
+	pastTime := time.Now().Add(-1 * time.Hour)
+	chalPast := models.Challenge{
+		Name:      "Expired Challenge",
+		CreatorID: creator.ID,
+		Date:      time.Now(),
+		StartTime: time.Now(),
+		EndTime:   &pastTime,
+		Status:    models.ChallengeStatusOpen,
+		Location:  models.Location{Address: "L", Coordinates: models.Point{Lat: 0, Lon: 0}, PostalCode: "1", City: "C", Country: "C"},
+	}
+	createdPast, _ := services.CreateChallenge(chalPast, nil)
+
+	// Get challenge - should automatically update status to completed
+	fetchedPast, err := services.GetChallengeByID(createdPast.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, models.ChallengeStatusCompleted, fetchedPast.Status, "Challenge with past EndTime should be marked as completed")
+
+	// 2. Create challenge with EndTime in the future (should remain open)
+	futureTime := time.Now().Add(1 * time.Hour)
+	chalFuture := models.Challenge{
+		Name:      "Future Challenge",
+		CreatorID: creator.ID,
+		Date:      time.Now(),
+		StartTime: time.Now(),
+		EndTime:   &futureTime,
+		Status:    models.ChallengeStatusOpen,
+		Location:  models.Location{Address: "L", Coordinates: models.Point{Lat: 0, Lon: 0}, PostalCode: "1", City: "C", Country: "C"},
+	}
+	createdFuture, _ := services.CreateChallenge(chalFuture, nil)
+
+	// Get challenge - should remain open
+	fetchedFuture, err := services.GetChallengeByID(createdFuture.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, models.ChallengeStatusOpen, fetchedFuture.Status, "Challenge with future EndTime should remain open")
+
+	// 3. Create challenge with no EndTime (should not change status)
+	chalNoEnd := models.Challenge{
+		Name:      "No End Challenge",
+		CreatorID: creator.ID,
+		Date:      time.Now(),
+		StartTime: time.Now(),
+		EndTime:   nil,
+		Status:    models.ChallengeStatusOpen,
+		Location:  models.Location{Address: "L", Coordinates: models.Point{Lat: 0, Lon: 0}, PostalCode: "1", City: "C", Country: "C"},
+	}
+	createdNoEnd, _ := services.CreateChallenge(chalNoEnd, nil)
+
+	// Get challenge - should remain open
+	fetchedNoEnd, err := services.GetChallengeByID(createdNoEnd.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, models.ChallengeStatusOpen, fetchedNoEnd.Status, "Challenge with no EndTime should remain unchanged")
+
+	// 4. Create challenge already marked as completed (should not change)
+	pastTime2 := time.Now().Add(-2 * time.Hour)
+	chalCompleted := models.Challenge{
+		Name:      "Already Completed",
+		CreatorID: creator.ID,
+		Date:      time.Now(),
+		StartTime: time.Now(),
+		EndTime:   &pastTime2,
+		Status:    models.ChallengeStatusCompleted,
+		Location:  models.Location{Address: "L", Coordinates: models.Point{Lat: 0, Lon: 0}, PostalCode: "1", City: "C", Country: "C"},
+	}
+	createdCompleted, _ := services.CreateChallenge(chalCompleted, nil)
+
+	// Get challenge - should remain completed
+	fetchedCompleted, err := services.GetChallengeByID(createdCompleted.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, models.ChallengeStatusCompleted, fetchedCompleted.Status, "Already completed challenge should remain completed")
+
+	// 5. Test GetChallenges also updates expired challenges
+	pastTime3 := time.Now().Add(-30 * time.Minute)
+	chalExpired := models.Challenge{
+		Name:      "Expired in List",
+		CreatorID: creator.ID,
+		Date:      time.Now(),
+		StartTime: time.Now(),
+		EndTime:   &pastTime3,
+		Status:    models.ChallengeStatusReady,
+		Location:  models.Location{Address: "L", Coordinates: models.Point{Lat: 0, Lon: 0}, PostalCode: "1", City: "C", Country: "C"},
+	}
+	createdExpired, _ := services.CreateChallenge(chalExpired, nil)
+
+	// Get all challenges - expired one should be updated
+	allChallenges, err := services.GetChallenges()
+	assert.NoError(t, err)
+
+	var foundExpired *models.Challenge
+	for i := range allChallenges {
+		if allChallenges[i].ID == createdExpired.ID {
+			foundExpired = &allChallenges[i]
+			break
+		}
+	}
+	assert.NotNil(t, foundExpired, "Expired challenge should be in the list")
+	assert.Equal(t, models.ChallengeStatusCompleted, foundExpired.Status, "Expired challenge should be marked as completed in GetChallenges")
+}
+
+func TestChallengeService_AddUserToChallenge(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	creator, _ := services.CreateUser(models.User{Email: "adduser@test.com", FirstName: "Add", LastName: "User"}, "pw")
+	user1, _ := services.CreateUser(models.User{Email: "user1add@test.com", FirstName: "User", LastName: "One"}, "pw")
+	user2, _ := services.CreateUser(models.User{Email: "user2add@test.com", FirstName: "User", LastName: "Two"}, "pw")
+
+	// Create a challenge
+	chal := models.Challenge{
+		Name:      "Add User Test",
+		CreatorID: creator.ID,
+		Date:      time.Now(),
+		StartTime: time.Now(),
+		Location:  models.Location{Address: "L", Coordinates: models.Point{Lat: 0, Lon: 0}, PostalCode: "1", City: "C", Country: "C"},
+	}
+	created, _ := services.CreateChallenge(chal, nil)
+
+	// Verify creator is already in challenge
+	fetched, _ := services.GetChallengeByID(created.ID)
+	assert.Len(t, fetched.Users, 1, "Creator should be in challenge")
+	assert.Equal(t, creator.ID, fetched.Users[0].ID)
+
+	// Test addUserToChallenge indirectly through invitation acceptance
+	// 1. Create invitation for user1
+	invitation := models.Invitation{
+		InviterId:    creator.ID,
+		InviteeId:    user1.ID,
+		ResourceType: models.ResourceTypeChallenge,
+		ResourceID:   created.ID,
+		Status:       models.StatusPending,
+	}
+	config.DB.Create(&invitation)
+
+	// 2. Accept invitation (this calls addUserToChallenge internally)
+	err := services.AcceptInvitation(invitation.ID, user1.ID)
+	assert.NoError(t, err)
+
+	// 3. Verify user1 was added to challenge
+	fetched, _ = services.GetChallengeByID(created.ID)
+	assert.Len(t, fetched.Users, 2, "Challenge should have 2 users (creator + user1)")
+
+	userIDs := make(map[uint]bool)
+	for _, u := range fetched.Users {
+		userIDs[u.ID] = true
+	}
+	assert.True(t, userIDs[creator.ID], "Creator should be in challenge")
+	assert.True(t, userIDs[user1.ID], "User1 should be in challenge after accepting invitation")
+
+	// 4. Create another invitation for user2 and accept it
+	invitation2 := models.Invitation{
+		InviterId:    creator.ID,
+		InviteeId:    user2.ID,
+		ResourceType: models.ResourceTypeChallenge,
+		ResourceID:   created.ID,
+		Status:       models.StatusPending,
+	}
+	config.DB.Create(&invitation2)
+
+	err = services.AcceptInvitation(invitation2.ID, user2.ID)
+	assert.NoError(t, err)
+
+	// 5. Verify both users are in challenge
+	fetched, _ = services.GetChallengeByID(created.ID)
+	assert.Len(t, fetched.Users, 3, "Challenge should have 3 users")
+
+	userIDs = make(map[uint]bool)
+	for _, u := range fetched.Users {
+		userIDs[u.ID] = true
+	}
+	assert.True(t, userIDs[creator.ID])
+	assert.True(t, userIDs[user1.ID])
+	assert.True(t, userIDs[user2.ID])
+
+	// 6. Test error case: Try to accept invitation for non-existent challenge
+	nonExistentInvitation := models.Invitation{
+		InviterId:    creator.ID,
+		InviteeId:    user1.ID,
+		ResourceType: models.ResourceTypeChallenge,
+		ResourceID:   99999, // Non-existent challenge
+		Status:       models.StatusPending,
+	}
+	config.DB.Create(&nonExistentInvitation)
+
+	err = services.AcceptInvitation(nonExistentInvitation.ID, user1.ID)
+	assert.Error(t, err, "Should error when challenge doesn't exist")
+
+	// 7. Test error case: Try to accept invitation for non-existent user
+	nonExistentUserInvitation := models.Invitation{
+		InviterId:    creator.ID,
+		InviteeId:    99999, // Non-existent user
+		ResourceType: models.ResourceTypeChallenge,
+		ResourceID:   created.ID,
+		Status:       models.StatusPending,
+	}
+	config.DB.Create(&nonExistentUserInvitation)
+
+	err = services.AcceptInvitation(nonExistentUserInvitation.ID, 99999)
+	assert.Error(t, err, "Should error when user doesn't exist")
 }

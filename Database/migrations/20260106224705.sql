@@ -211,6 +211,32 @@ CREATE TABLE IF NOT EXISTS "sports" (
   PRIMARY KEY ("id"),
   CONSTRAINT "uni_sports_name" UNIQUE ("name")
 );
+-- Seed sports data
+INSERT INTO "sports" ("name", "created_at", "updated_at")
+VALUES
+  ('Tennis', NOW(), NOW()),
+  ('Football', NOW(), NOW()),
+  ('Basketball', NOW(), NOW()),
+  ('PadelTennis', NOW(), NOW()),
+  ('TableTennis', NOW(), NOW()),
+  ('Golf', NOW(), NOW()),
+  ('Volleyball', NOW(), NOW()),
+  ('Badminton', NOW(), NOW()),
+  ('Boxing', NOW(), NOW()),
+  ('Squash', NOW(), NOW()),
+  ('Petanque', NOW(), NOW()),
+  ('Hockey', NOW(), NOW()),
+  ('Handball', NOW(), NOW()),
+  ('Running', NOW(), NOW()),
+  ('Biking', NOW(), NOW()),
+  ('Minigolf', NOW(), NOW()),
+  ('Climbing', NOW(), NOW()),
+  ('Skateboarding', NOW(), NOW()),
+  ('Surfing', NOW(), NOW()),
+  ('Hiking', NOW(), NOW()),
+  ('UltimateFrisbee', NOW(), NOW()),
+  ('Floorball', NOW(), NOW())
+ON CONFLICT ("name") DO NOTHING;
 -- Create "team_sports" table
 CREATE TABLE IF NOT EXISTS "team_sports" (
   "team_id" bigint NOT NULL,

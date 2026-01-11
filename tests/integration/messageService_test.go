@@ -15,9 +15,10 @@ func TestSendMessage_PermissionCheck(t *testing.T) {
 	setupTest(t)
 
 	// Create test users
-	user1 := models.User{Email: "user1@test.com", Password: "hash", FirstName: "User", LastName: "One"}
-	user2 := models.User{Email: "user2@test.com", Password: "hash", FirstName: "User", LastName: "Two"}
-	user3 := models.User{Email: "user3@test.com", Password: "hash", FirstName: "User", LastName: "Three"}
+	password := "hash"
+	user1 := models.User{Email: "user1@test.com", Password: &password, FirstName: "User", LastName: "One"}
+	user2 := models.User{Email: "user2@test.com", Password: &password, FirstName: "User", LastName: "Two"}
+	user3 := models.User{Email: "user3@test.com", Password: &password, FirstName: "User", LastName: "Three"}
 	config.DB.Create(&user1)
 	config.DB.Create(&user2)
 	config.DB.Create(&user3)
@@ -46,8 +47,9 @@ func TestMarkConversationRead_UnreadCount(t *testing.T) {
 	setupTest(t)
 
 	// Create test users
-	user1 := models.User{Email: "user1@test.com", Password: "hash", FirstName: "User", LastName: "One"}
-	user2 := models.User{Email: "user2@test.com", Password: "hash", FirstName: "User", LastName: "Two"}
+	password := "hash"
+	user1 := models.User{Email: "user1@test.com", Password: &password, FirstName: "User", LastName: "One"}
+	user2 := models.User{Email: "user2@test.com", Password: &password, FirstName: "User", LastName: "Two"}
 	config.DB.Create(&user1)
 	config.DB.Create(&user2)
 
@@ -100,8 +102,9 @@ func TestGetMessages_Pagination(t *testing.T) {
 	setupTest(t)
 
 	// Create test users
-	user1 := models.User{Email: "user1@test.com", Password: "hash", FirstName: "User", LastName: "One"}
-	user2 := models.User{Email: "user2@test.com", Password: "hash", FirstName: "User", LastName: "Two"}
+	password := "hash"
+	user1 := models.User{Email: "user1@test.com", Password: &password, FirstName: "User", LastName: "One"}
+	user2 := models.User{Email: "user2@test.com", Password: &password, FirstName: "User", LastName: "Two"}
 	config.DB.Create(&user1)
 	config.DB.Create(&user2)
 
@@ -133,9 +136,10 @@ func TestGetMessages_NonMemberDenied(t *testing.T) {
 	setupTest(t)
 
 	// Create test users
-	user1 := models.User{Email: "user1@test.com", Password: "hash", FirstName: "User", LastName: "One"}
-	user2 := models.User{Email: "user2@test.com", Password: "hash", FirstName: "User", LastName: "Two"}
-	user3 := models.User{Email: "user3@test.com", Password: "hash", FirstName: "User", LastName: "Three"}
+	password := "hash"
+	user1 := models.User{Email: "user1@test.com", Password: &password, FirstName: "User", LastName: "One"}
+	user2 := models.User{Email: "user2@test.com", Password: &password, FirstName: "User", LastName: "Two"}
+	user3 := models.User{Email: "user3@test.com", Password: &password, FirstName: "User", LastName: "Three"}
 	config.DB.Create(&user1)
 	config.DB.Create(&user2)
 	config.DB.Create(&user3)
@@ -150,4 +154,74 @@ func TestGetMessages_NonMemberDenied(t *testing.T) {
 	_, _, _, err := services.GetMessages(conv.ID, user3.ID, 10, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "not a member")
+}
+
+func TestGetMessageByID(t *testing.T) {
+	setupTest(t)
+
+	// Create test users
+	password := "password12"
+	user1 := models.User{Email: "getmsg1@test.com", Password: &password, FirstName: "User", LastName: "One"}
+	user2 := models.User{Email: "getmsg2@test.com", Password: &password, FirstName: "User", LastName: "Two"}
+	config.DB.Create(&user1)
+	config.DB.Create(&user2)
+
+	// Create conversation
+	conv, _ := services.CreateDirectConversation(user1.ID, user2.ID)
+
+	// Send a message
+	message, err := services.SendMessage(conv.ID, user1.ID, "Test message for GetMessageByID")
+	assert.NoError(t, err)
+	assert.NotNil(t, message)
+	messageID := message.ID
+
+	// 1. Get message by ID successfully
+	retrievedMessage, err := services.GetMessageByID(messageID)
+	assert.NoError(t, err)
+	assert.NotNil(t, retrievedMessage)
+	assert.Equal(t, messageID, retrievedMessage.ID)
+	assert.Equal(t, "Test message for GetMessageByID", retrievedMessage.Content)
+	assert.Equal(t, user1.ID, retrievedMessage.SenderID)
+	assert.Equal(t, conv.ID, *retrievedMessage.ConversationID)
+
+	// 2. Verify sender is preloaded
+	assert.NotNil(t, retrievedMessage.Sender)
+	assert.Equal(t, user1.ID, retrievedMessage.Sender.ID)
+	assert.Equal(t, "getmsg1@test.com", retrievedMessage.Sender.Email)
+	assert.Equal(t, "User", retrievedMessage.Sender.FirstName)
+	assert.Equal(t, "One", retrievedMessage.Sender.LastName)
+
+	// 3. Send another message and retrieve it
+	message2, err := services.SendMessage(conv.ID, user2.ID, "Second message")
+	assert.NoError(t, err)
+	retrievedMessage2, err := services.GetMessageByID(message2.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, message2.ID, retrievedMessage2.ID)
+	assert.Equal(t, "Second message", retrievedMessage2.Content)
+	assert.Equal(t, user2.ID, retrievedMessage2.SenderID)
+	assert.NotNil(t, retrievedMessage2.Sender)
+	assert.Equal(t, user2.ID, retrievedMessage2.Sender.ID)
+
+	// 4. Try to get non-existent message
+	nonExistentMessage, err := services.GetMessageByID(99999)
+	assert.Error(t, err)
+	assert.Nil(t, nonExistentMessage)
+	assert.Contains(t, err.Error(), "not found") // ErrConversationNotFound is reused
+
+	// 5. Create another conversation and message
+	hashPassword := "hash"
+	user3 := models.User{Email: "getmsg3@test.com", Password: &hashPassword, FirstName: "User", LastName: "Three"}
+	config.DB.Create(&user3)
+	conv2, _ := services.CreateDirectConversation(user1.ID, user3.ID)
+	message3, err := services.SendMessage(conv2.ID, user3.ID, "Message in different conversation")
+	assert.NoError(t, err)
+
+	// 6. Retrieve message from different conversation
+	retrievedMessage3, err := services.GetMessageByID(message3.ID)
+	assert.NoError(t, err)
+	assert.Equal(t, message3.ID, retrievedMessage3.ID)
+	assert.Equal(t, conv2.ID, *retrievedMessage3.ConversationID)
+	assert.Equal(t, user3.ID, retrievedMessage3.SenderID)
+	assert.NotNil(t, retrievedMessage3.Sender)
+	assert.Equal(t, user3.ID, retrievedMessage3.Sender.ID)
 }

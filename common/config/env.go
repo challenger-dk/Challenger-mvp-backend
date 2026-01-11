@@ -22,8 +22,20 @@ type Config struct {
 	// JWT Secret
 	JWTSecret string `env:"JWT_SECRET,required"`
 
+	// JWT Token Expiration (in hours, default 30 days = 720 hours)
+	JWTExpirationHours int `env:"JWT_EXPIRATION_HOURS" envDefault:"720"`
+
 	// Cron Settings
 	EnableCron bool `env:"ENABLE_CRON" envDefault:"true"`
+
+	// Postmark API Key
+	PostmarkAPIKey string `env:"POSTMARK_API_KEY,required"`
+
+	// Postmark From Email
+	PostmarkFromEmail string `env:"POSTMARK_FROM_EMAIL,required"`
+
+	// Firebase Project ID (for OAuth token verification)
+	FirebaseProjectID string `env:"FIREBASE_PROJECT_ID,required"`
 }
 
 var AppConfig Config

@@ -202,6 +202,14 @@ func UpdateChallenge(id uint, ch models.Challenge) error {
 			c.TeamSize = ch.TeamSize
 		}
 
+		if ch.Distance != nil {
+			c.Distance = ch.Distance
+		}
+
+		if ch.Participants != nil {
+			c.Participants = ch.Participants
+		}
+
 		if ch.Status != "" {
 			c.Status = ch.Status
 		}

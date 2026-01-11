@@ -168,3 +168,154 @@ func TestFriendService_GetSuggestedFriends_MaxTenResults(t *testing.T) {
 	// Should return max 10 suggestions
 	assert.LessOrEqual(t, len(suggestions), 10, "Should return maximum 10 suggestions")
 }
+
+func TestFriendService_GetFriends(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	// 1. Create users
+	user1, _ := services.CreateUser(models.User{
+		Email:     "getfriends1@test.com",
+		FirstName: "User",
+		LastName:  "One",
+	}, "pw")
+
+	user2, _ := services.CreateUser(models.User{
+		Email:     "getfriends2@test.com",
+		FirstName: "User",
+		LastName:  "Two",
+	}, "pw")
+
+	user3, _ := services.CreateUser(models.User{
+		Email:     "getfriends3@test.com",
+		FirstName: "User",
+		LastName:  "Three",
+	}, "pw")
+
+	user4, _ := services.CreateUser(models.User{
+		Email:     "getfriends4@test.com",
+		FirstName: "User",
+		LastName:  "Four",
+	}, "pw")
+
+	// 2. Get friends for user with no friends
+	friends, err := services.GetFriends(user1.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, friends)
+	assert.Empty(t, friends, "User with no friends should return empty slice")
+
+	// 3. Create friendships: user1 <-> user2, user1 <-> user3
+	config.DB.Model(user1).Association("Friends").Append(user2)
+	config.DB.Model(user2).Association("Friends").Append(user1)
+
+	config.DB.Model(user1).Association("Friends").Append(user3)
+	config.DB.Model(user3).Association("Friends").Append(user1)
+
+	// 4. Get friends for user1
+	friends, err = services.GetFriends(user1.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, friends)
+	assert.Len(t, friends, 2, "User1 should have 2 friends")
+
+	// Verify friends are correct
+	friendIDs := make(map[uint]bool)
+	for _, friend := range friends {
+		friendIDs[friend.ID] = true
+	}
+	assert.True(t, friendIDs[user2.ID], "user2 should be in friends list")
+	assert.True(t, friendIDs[user3.ID], "user3 should be in friends list")
+	assert.False(t, friendIDs[user4.ID], "user4 should not be in friends list")
+
+	// 5. Get friends for user2 (should have user1)
+	friends2, err := services.GetFriends(user2.ID)
+	assert.NoError(t, err)
+	assert.Len(t, friends2, 1, "User2 should have 1 friend")
+	assert.Equal(t, user1.ID, friends2[0].ID)
+
+	// 6. Get friends for user4 (should have none)
+	friends4, err := services.GetFriends(user4.ID)
+	assert.NoError(t, err)
+	assert.Empty(t, friends4, "User4 should have no friends")
+
+	// 7. Add more friends to user1
+	config.DB.Model(user1).Association("Friends").Append(user4)
+	config.DB.Model(user4).Association("Friends").Append(user1)
+
+	// 8. Get friends again - should now have 3
+	friends, err = services.GetFriends(user1.ID)
+	assert.NoError(t, err)
+	assert.Len(t, friends, 3, "User1 should now have 3 friends")
+
+	// Verify all friends are present
+	friendIDs = make(map[uint]bool)
+	for _, friend := range friends {
+		friendIDs[friend.ID] = true
+	}
+	assert.True(t, friendIDs[user2.ID])
+	assert.True(t, friendIDs[user3.ID])
+	assert.True(t, friendIDs[user4.ID])
+
+	// 9. Verify friend data is loaded correctly
+	for _, friend := range friends {
+		assert.NotZero(t, friend.ID)
+		assert.NotEmpty(t, friend.Email)
+		assert.NotEmpty(t, friend.FirstName)
+	}
+
+	// 10. Try to get friends for non-existent user
+	nonExistentUser := models.User{ID: 99999}
+	friends, err = services.GetFriends(nonExistentUser.ID)
+	assert.Error(t, err)
+	assert.Nil(t, friends)
+}
+
+func TestFriendService_GetFriends_AfterRemovingFriend(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	// Create users
+	user1, _ := services.CreateUser(models.User{
+		Email:     "removefriend1@test.com",
+		FirstName: "User",
+		LastName:  "One",
+	}, "pw")
+
+	user2, _ := services.CreateUser(models.User{
+		Email:     "removefriend2@test.com",
+		FirstName: "User",
+		LastName:  "Two",
+	}, "pw")
+
+	user3, _ := services.CreateUser(models.User{
+		Email:     "removefriend3@test.com",
+		FirstName: "User",
+		LastName:  "Three",
+	}, "pw")
+
+	// Create friendships
+	config.DB.Model(user1).Association("Friends").Append(user2)
+	config.DB.Model(user2).Association("Friends").Append(user1)
+
+	config.DB.Model(user1).Association("Friends").Append(user3)
+	config.DB.Model(user3).Association("Friends").Append(user1)
+
+	// Verify user1 has 2 friends
+	friends, err := services.GetFriends(user1.ID)
+	assert.NoError(t, err)
+	assert.Len(t, friends, 2)
+
+	// Remove user2 as friend
+	err = services.RemoveFriend(user1.ID, user2.ID)
+	assert.NoError(t, err)
+
+	// Verify user1 now has 1 friend
+	friends, err = services.GetFriends(user1.ID)
+	assert.NoError(t, err)
+	assert.Len(t, friends, 1)
+	assert.Equal(t, user3.ID, friends[0].ID)
+
+	// Verify user2 has no friends
+	friends2, err := services.GetFriends(user2.ID)
+	assert.NoError(t, err)
+	assert.Empty(t, friends2)
+}

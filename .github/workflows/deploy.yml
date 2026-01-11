@@ -35,6 +35,35 @@ jobs:
           oauth-secret: ${{ secrets.TAILSCALE_CLIENT_SECRET }}
           tags: tag:ci
 
+      - name: Prepare deployment directory on Raspberry Pi
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PI_HOST }}
+          username: ${{ secrets.PI_USER }}
+          key: ${{ secrets.PI_SSH_KEY }}
+          port: ${{ secrets.PI_SSH_PORT || 22 }}
+          script: |
+            # Create target directory if it doesn't exist
+            mkdir -p /home/${{ secrets.PI_USER }}/challenger-app
+            
+            # Ensure the directory is owned by the deployment user
+            chown -R ${{ secrets.PI_USER }}:${{ secrets.PI_USER }} /home/${{ secrets.PI_USER }}/challenger-app
+            
+            # Set proper permissions (755 for directories, 644 for files)
+            chmod -R 755 /home/${{ secrets.PI_USER }}/challenger-app
+            
+            # Remove Database/migrations if it exists with wrong permissions
+            if [ -d /home/${{ secrets.PI_USER }}/challenger-app/Database/migrations ]; then
+              rm -rf /home/${{ secrets.PI_USER }}/challenger-app/Database/migrations
+            fi
+            
+            # Create Database/migrations directory with proper permissions
+            mkdir -p /home/${{ secrets.PI_USER }}/challenger-app/Database/migrations
+            chown -R ${{ secrets.PI_USER }}:${{ secrets.PI_USER }} /home/${{ secrets.PI_USER }}/challenger-app/Database
+            chmod -R 755 /home/${{ secrets.PI_USER }}/challenger-app/Database
+            
+            echo "✅ Deployment directory prepared with proper permissions"
+
       - name: Copy project files to Raspberry Pi
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -44,6 +73,28 @@ jobs:
           port: ${{ secrets.PI_SSH_PORT || 22 }}
           source: "api/**,chat/**,common/**,Database/**,go.mod,go.sum,docker-compose.prod.yml"
           target: "/home/${{ secrets.PI_USER }}/challenger-app"
+          overwrite: true
+
+      - name: Fix permissions after file copy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PI_HOST }}
+          username: ${{ secrets.PI_USER }}
+          key: ${{ secrets.PI_SSH_KEY }}
+          port: ${{ secrets.PI_SSH_PORT || 22 }}
+          script: |
+            # Ensure all files and directories have proper ownership
+            chown -R ${{ secrets.PI_USER }}:${{ secrets.PI_USER }} /home/${{ secrets.PI_USER }}/challenger-app
+            
+            # Set proper permissions (755 for directories, 644 for files)
+            find /home/${{ secrets.PI_USER }}/challenger-app -type d -exec chmod 755 {} \;
+            find /home/${{ secrets.PI_USER }}/challenger-app -type f -exec chmod 644 {} \;
+            
+            # Ensure Database/migrations directory exists and has correct permissions
+            mkdir -p /home/${{ secrets.PI_USER }}/challenger-app/Database/migrations
+            chmod 755 /home/${{ secrets.PI_USER }}/challenger-app/Database/migrations
+            
+            echo "✅ File permissions fixed"
 
       - name: Create .env file on Raspberry Pi
         uses: appleboy/ssh-action@v1.0.3
