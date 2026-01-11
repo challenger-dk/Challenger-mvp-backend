@@ -94,6 +94,7 @@ jobs:
           JWT_SECRET: testing_secret_key
           POSTMARK_API_KEY: ${{ secrets.POSTMARK_API_KEY }}
           POSTMARK_FROM_EMAIL: ${{ secrets.POSTMARK_FROM_EMAIL }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
         run: ./my-server > server.log 2>&1 & 
 
       - name: Wait for server to start (Health Check)
