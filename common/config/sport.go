@@ -2,7 +2,6 @@ package config
 
 import (
 	"log/slog"
-	"os"
 	"server/common/models"
 )
 
@@ -23,11 +22,15 @@ func SeedSports() error {
 		}
 	}
 
-	loadSportsCache()
+	if err := LoadSportsCache(); err != nil {
+		return err
+	}
 	return nil
 }
 
-func loadSportsCache() {
+// LoadSportsCache loads sports from the database into the cache
+// Falls back to hardcoded list if database table doesn't exist yet
+func LoadSportsCache() error {
 	var sports []models.Sport
 
 	err := DB.Model(&models.Sport{}).
@@ -36,8 +39,17 @@ func loadSportsCache() {
 		Error
 
 	if err != nil {
-		slog.Error("Failed to load sports cache", "error", err)
-		os.Exit(1)
+		// If the table doesn't exist yet (migrations haven't run), use hardcoded list
+		slog.Warn("Sports table not found, using hardcoded sports list", "error", err)
+		allowedSports := models.GetAllowedSports()
+
+		SportsCache = make(map[string]bool)
+		for _, sportName := range allowedSports {
+			SportsCache[sportName] = true
+		}
+
+		slog.Info("✅ Loaded sports into cache from hardcoded list", "count", len(allowedSports))
+		return nil
 	}
 
 	SportsCache = make(map[string]bool)
@@ -45,5 +57,6 @@ func loadSportsCache() {
 		SportsCache[sport.Name] = true
 	}
 
-	slog.Info("✅ Loaded sports into cache", "count", len(sports))
+	slog.Info("✅ Loaded sports into cache from database", "count", len(sports))
+	return nil
 }

@@ -27,18 +27,24 @@ func CreateDirectConversation(currentUserID, otherUserID uint) (*models.Conversa
 
 	var conversation models.Conversation
 
-	// Try to find existing conversation
-	err := config.DB.Where("direct_key = ?", directKey).
-		Preload("Participants.User").
-		First(&conversation).Error
-
-	if err == nil {
-		// Conversation exists
-		return &conversation, nil
+	// Check if conversation exists using count to avoid logging errors
+	var count int64
+	err := config.DB.Model(&models.Conversation{}).
+		Where("direct_key = ?", directKey).
+		Count(&count).Error
+	if err != nil {
+		return nil, err
 	}
 
-	if err != gorm.ErrRecordNotFound {
-		return nil, err
+	// If conversation exists, load it with participants
+	if count > 0 {
+		err := config.DB.Where("direct_key = ?", directKey).
+			Preload("Participants.User").
+			First(&conversation).Error
+		if err != nil {
+			return nil, err
+		}
+		return &conversation, nil
 	}
 
 	// Create new conversation
@@ -135,17 +141,24 @@ func CreateGroupConversation(currentUserID uint, participantIDs []uint, title st
 func EnsureTeamConversation(teamID uint) (*models.Conversation, error) {
 	var conversation models.Conversation
 
-	// Try to find existing team conversation
-	err := config.DB.Where("team_id = ?", teamID).
-		Preload("Participants.User").
-		First(&conversation).Error
-
-	if err == nil {
-		return &conversation, nil
+	// Check if conversation exists using count to avoid logging errors
+	var count int64
+	err := config.DB.Model(&models.Conversation{}).
+		Where("team_id = ?", teamID).
+		Count(&count).Error
+	if err != nil {
+		return nil, err
 	}
 
-	if err != gorm.ErrRecordNotFound {
-		return nil, err
+	// If conversation exists, load it with participants
+	if count > 0 {
+		err := config.DB.Where("team_id = ?", teamID).
+			Preload("Participants.User").
+			First(&conversation).Error
+		if err != nil {
+			return nil, err
+		}
+		return &conversation, nil
 	}
 
 	// Create new team conversation

@@ -61,7 +61,7 @@ func Login(email, password string) (*models.User, string, error) {
 }
 
 func GenerateJWTToken(user *models.User) (string, error) {
-	expirationTime := time.Now().Add(24 * time.Hour)
+	expirationTime := time.Now().Add(time.Duration(config.AppConfig.JWTExpirationHours) * time.Hour)
 	claims := &Claims{
 		UserID: user.ID,
 		Email:  user.Email,

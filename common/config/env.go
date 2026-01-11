@@ -22,6 +22,9 @@ type Config struct {
 	// JWT Secret
 	JWTSecret string `env:"JWT_SECRET,required"`
 
+	// JWT Token Expiration (in hours, default 30 days = 720 hours)
+	JWTExpirationHours int `env:"JWT_EXPIRATION_HOURS" envDefault:"720"`
+
 	// Cron Settings
 	EnableCron bool `env:"ENABLE_CRON" envDefault:"true"`
 

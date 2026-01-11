@@ -298,7 +298,6 @@ func seedUsers() ([]models.User, error) {
 	runningSport := findSportByName("Running", config.DB)
 	bikingSport := findSportByName("Biking", config.DB)
 	badmintonSport := findSportByName("Badminton", config.DB)
-	swimmingSport := findSportByName("Swimming", config.DB)
 	handballSport := findSportByName("Handball", config.DB)
 	squashSport := findSportByName("Squash", config.DB)
 
@@ -324,9 +323,7 @@ func seedUsers() ([]models.User, error) {
 	if len(users) > 5 && badmintonSport != nil && tennisSport != nil {
 		config.DB.Model(&users[5]).Association("FavoriteSports").Append(badmintonSport, tennisSport)
 	}
-	if len(users) > 6 && swimmingSport != nil {
-		config.DB.Model(&users[6]).Association("FavoriteSports").Append(swimmingSport)
-	}
+	// User 6 (Grace) - Swimming/Water Polo mentioned in bio but not in allowed sports, skip favorite sport assignment
 	if len(users) > 7 && footballSport != nil && basketballSport != nil {
 		config.DB.Model(&users[7]).Association("FavoriteSports").Append(footballSport, basketballSport)
 	}
@@ -522,6 +519,13 @@ func seedChallenges(users []models.User, teams []models.Team, locations []models
 	}
 
 	now := time.Now()
+
+	// Helper function to create a time for today at a specific hour
+	todayAtHour := func(hour int) time.Time {
+		year, month, day := now.Date()
+		return time.Date(year, month, day, hour, 0, 0, 0, now.Location())
+	}
+
 	challenges := []models.Challenge{
 		{
 			Name:        "Weekend Tennis Match",
@@ -533,6 +537,7 @@ func seedChallenges(users []models.User, teams []models.Team, locations []models
 			IsPublic:    true,
 			IsCompleted: false,
 			Status:      models.ChallengeStatusOpen,
+			Type:        models.ChallengeTypeOpenForAll,
 			Date:        now.AddDate(0, 0, 7), // Next week
 			StartTime:   now.AddDate(0, 0, 7),
 			EndTime:     timePtr(now.AddDate(0, 0, 7).Add(2 * time.Hour)),
@@ -548,6 +553,7 @@ func seedChallenges(users []models.User, teams []models.Team, locations []models
 			IsPublic:    true,
 			IsCompleted: false,
 			Status:      models.ChallengeStatusOpen,
+			Type:        models.ChallengeTypeOpenForAll,
 			Date:        now, // Today
 			StartTime:   now,
 			EndTime:     timePtr(now.Add(2 * time.Hour)),
@@ -563,6 +569,7 @@ func seedChallenges(users []models.User, teams []models.Team, locations []models
 			IsPublic:    false,
 			IsCompleted: false,
 			Status:      models.ChallengeStatusOpen,
+			Type:        models.ChallengeTypeTeamVsTeam,
 			Date:        now, // Today
 			StartTime:   now,
 			EndTime:     timePtr(now.Add(2 * time.Hour)),
@@ -578,11 +585,223 @@ func seedChallenges(users []models.User, teams []models.Team, locations []models
 			IsPublic:    true,
 			IsCompleted: false,
 			Status:      models.ChallengeStatusOpen,
+			Type:        models.ChallengeTypeOpenForAll,
 			Date:        now.AddDate(0, 0, 10), // In 10 days
 			StartTime:   now,
 			EndTime:     timePtr(now.AddDate(0, 0, 10).Add(2 * time.Hour)),
 			HasCost:     true,
 			PlayFor:     stringPtr("Sjov"),
+		},
+		// Today's evening challenges
+		{
+			Name:        "Aften Tennis Session",
+			Description: "Aften tennis match efter arbejde",
+			Sport:       "Tennis",
+			LocationID:  locations[0].ID,
+			CreatorID:   users[5].ID,
+			IsIndoor:    false,
+			IsPublic:    true,
+			IsCompleted: false,
+			Status:      models.ChallengeStatusOpen,
+			Type:        models.ChallengeTypeOpenForAll,
+			Date:        todayAtHour(20),
+			StartTime:   todayAtHour(20),
+			EndTime:     timePtr(todayAtHour(20).Add(2 * time.Hour)),
+			TeamSize:    intPtr(4),
+		},
+		{
+			Name:        "Sen Aften Basketball",
+			Description: "Basketball under belysning",
+			Sport:       "Basketball",
+			LocationID:  locations[2].ID,
+			CreatorID:   users[7].ID,
+			IsIndoor:    false,
+			IsPublic:    true,
+			IsCompleted: false,
+			Status:      models.ChallengeStatusOpen,
+			Type:        models.ChallengeTypeOpenForAll,
+			Date:        todayAtHour(21),
+			StartTime:   todayAtHour(21),
+			EndTime:     timePtr(todayAtHour(21).Add(2 * time.Hour)),
+			TeamSize:    intPtr(10),
+		},
+		{
+			Name:        "Natlig Fodbold",
+			Description: "Fodbold match sent om aftenen",
+			Sport:       "Football",
+			LocationID:  locations[1].ID,
+			CreatorID:   users[11].ID,
+			IsIndoor:    false,
+			IsPublic:    true,
+			IsCompleted: false,
+			Status:      models.ChallengeStatusOpen,
+			Type:        models.ChallengeTypeTeamVsTeam,
+			Date:        todayAtHour(22),
+			StartTime:   todayAtHour(22),
+			EndTime:     timePtr(todayAtHour(22).Add(2 * time.Hour)),
+			Comment:     stringPtr("Belysning på banen"),
+		},
+		// Past challenges
+		{
+			Name:        "Gårsdagens Tennis Match",
+			Description: "Tennis match fra i går",
+			Sport:       "Tennis",
+			LocationID:  locations[0].ID,
+			CreatorID:   users[10].ID,
+			IsIndoor:    false,
+			IsPublic:    true,
+			IsCompleted: true,
+			Status:      models.ChallengeStatusCompleted,
+			Type:        models.ChallengeTypeOpenForAll,
+			Date:        now.AddDate(0, 0, -1),
+			StartTime:   now.AddDate(0, 0, -1).Add(10 * time.Hour),
+			EndTime:     timePtr(now.AddDate(0, 0, -1).Add(12 * time.Hour)),
+			TeamSize:    intPtr(4),
+		},
+		{
+			Name:        "Sidste Uges Basketball",
+			Description: "Basketball match fra sidste uge",
+			Sport:       "Basketball",
+			LocationID:  locations[2].ID,
+			CreatorID:   users[12].ID,
+			IsIndoor:    false,
+			IsPublic:    true,
+			IsCompleted: true,
+			Status:      models.ChallengeStatusCompleted,
+			Type:        models.ChallengeTypeOpenForAll,
+			Date:        now.AddDate(0, 0, -7),
+			StartTime:   now.AddDate(0, 0, -7).Add(14 * time.Hour),
+			EndTime:     timePtr(now.AddDate(0, 0, -7).Add(16 * time.Hour)),
+			TeamSize:    intPtr(10),
+		},
+		// Tomorrow's challenges
+		{
+			Name:        "I Morgen Tennis",
+			Description: "Tennis match i morgen formiddag",
+			Sport:       "Tennis",
+			LocationID:  locations[0].ID,
+			CreatorID:   users[14].ID,
+			IsIndoor:    false,
+			IsPublic:    true,
+			IsCompleted: false,
+			Status:      models.ChallengeStatusOpen,
+			Type:        models.ChallengeTypeOpenForAll,
+			Date:        now.AddDate(0, 0, 1),
+			StartTime:   now.AddDate(0, 0, 1).Add(9 * time.Hour),
+			EndTime:     timePtr(now.AddDate(0, 0, 1).Add(11 * time.Hour)),
+			TeamSize:    intPtr(4),
+		},
+		{
+			Name:        "I Morgen Fodbold",
+			Description: "Fodbold træning i morgen eftermiddag",
+			Sport:       "Football",
+			LocationID:  locations[1].ID,
+			CreatorID:   users[4].ID,
+			IsIndoor:    false,
+			IsPublic:    true,
+			IsCompleted: false,
+			Status:      models.ChallengeStatusOpen,
+			Type:        models.ChallengeTypeTeamVsTeam,
+			Date:        now.AddDate(0, 0, 1),
+			StartTime:   now.AddDate(0, 0, 1).Add(15 * time.Hour),
+			EndTime:     timePtr(now.AddDate(0, 0, 1).Add(17 * time.Hour)),
+		},
+		// Future challenges with different dates
+		{
+			Name:        "Padel Tennis Weekend",
+			Description: "Padel tennis turnering om 3 dage",
+			Sport:       "PadelTennis",
+			LocationID:  locations[4].ID,
+			CreatorID:   users[3].ID,
+			IsIndoor:    false,
+			IsPublic:    true,
+			IsCompleted: false,
+			Status:      models.ChallengeStatusOpen,
+			Type:        models.ChallengeTypeOpenForAll,
+			Date:        now.AddDate(0, 0, 3),
+			StartTime:   now.AddDate(0, 0, 3).Add(10 * time.Hour),
+			EndTime:     timePtr(now.AddDate(0, 0, 3).Add(13 * time.Hour)),
+			TeamSize:    intPtr(4),
+			HasCost:     true,
+			PlayFor:     stringPtr("Trofæ"),
+		},
+		{
+			Name:        "Badminton Turnering",
+			Description: "Badminton match om 5 dage",
+			Sport:       "Badminton",
+			LocationID:  locations[4].ID,
+			CreatorID:   users[5].ID,
+			IsIndoor:    true,
+			IsPublic:    true,
+			IsCompleted: false,
+			Status:      models.ChallengeStatusOpen,
+			Type:        models.ChallengeTypeOpenForAll,
+			Date:        now.AddDate(0, 0, 5),
+			StartTime:   now.AddDate(0, 0, 5).Add(18 * time.Hour),
+			EndTime:     timePtr(now.AddDate(0, 0, 5).Add(20 * time.Hour)),
+			TeamSize:    intPtr(4),
+		},
+		{
+			Name:        "Håndbold Kamp",
+			Description: "Håndbold match om 2 uger",
+			Sport:       "Handball",
+			LocationID:  locations[4].ID,
+			CreatorID:   users[9].ID,
+			IsIndoor:    true,
+			IsPublic:    true,
+			IsCompleted: false,
+			Status:      models.ChallengeStatusOpen,
+			Type:        models.ChallengeTypeTeamVsTeam,
+			Date:        now.AddDate(0, 0, 14),
+			StartTime:   now.AddDate(0, 0, 14).Add(19 * time.Hour),
+			EndTime:     timePtr(now.AddDate(0, 0, 14).Add(21 * time.Hour)),
+			TeamSize:    intPtr(14),
+		},
+		{
+			Name:        "Løbetur",
+			Description: "Gruppe løbetur om 2 dage",
+			Sport:       "Running",
+			LocationID:  locations[0].ID,
+			CreatorID:   users[4].ID,
+			IsIndoor:    false,
+			IsPublic:    true,
+			IsCompleted: false,
+			Status:      models.ChallengeStatusOpen,
+			Type:        models.ChallengeTypeRunCycling,
+			Date:        now.AddDate(0, 0, 2),
+			StartTime:   now.AddDate(0, 0, 2).Add(7 * time.Hour),
+			EndTime:     timePtr(now.AddDate(0, 0, 2).Add(9 * time.Hour)),
+		},
+		{
+			Name:        "Cykel Tur",
+			Description: "Mountainbike tur om 6 dage",
+			Sport:       "Biking",
+			LocationID:  locations[0].ID,
+			CreatorID:   users[13].ID,
+			IsIndoor:    false,
+			IsPublic:    true,
+			IsCompleted: false,
+			Status:      models.ChallengeStatusOpen,
+			Type:        models.ChallengeTypeRunCycling,
+			Date:        now.AddDate(0, 0, 6),
+			StartTime:   now.AddDate(0, 0, 6).Add(8 * time.Hour),
+			EndTime:     timePtr(now.AddDate(0, 0, 6).Add(12 * time.Hour)),
+		},
+		{
+			Name:        "Squash Match",
+			Description: "Squash match om 4 dage",
+			Sport:       "Squash",
+			LocationID:  locations[4].ID,
+			CreatorID:   users[14].ID,
+			IsIndoor:    true,
+			IsPublic:    true,
+			IsCompleted: false,
+			Status:      models.ChallengeStatusOpen,
+			Type:        models.ChallengeTypeOpenForAll,
+			Date:        now.AddDate(0, 0, 4),
+			StartTime:   now.AddDate(0, 0, 4).Add(17 * time.Hour),
+			EndTime:     timePtr(now.AddDate(0, 0, 4).Add(18 * time.Hour)),
+			TeamSize:    intPtr(2),
 		},
 	}
 
@@ -622,6 +841,76 @@ func seedChallenges(users []models.User, teams []models.Team, locations []models
 			config.DB.Model(&challenges[i]).Association("Teams").Append(&teams[2])
 			if len(users) > 11 {
 				config.DB.Model(&challenges[i]).Association("Users").Append(&users[11])
+			}
+		}
+		if i == 4 && len(users) > 0 {
+			// Aften Tennis Session: Alice (0), Frank (5), Olivia (14)
+			config.DB.Model(&challenges[i]).Association("Users").Append(&users[0])
+			if len(users) > 14 {
+				config.DB.Model(&challenges[i]).Association("Users").Append(&users[14])
+			}
+		}
+		if i == 5 && len(users) > 2 {
+			// Sen Aften Basketball: Charlie (2), Maria (12)
+			config.DB.Model(&challenges[i]).Association("Users").Append(&users[2])
+			if len(users) > 12 {
+				config.DB.Model(&challenges[i]).Association("Users").Append(&users[12])
+			}
+		}
+		if i == 6 && len(users) > 1 {
+			// Natlig Fodbold: Bob (1), Lars (11)
+			config.DB.Model(&challenges[i]).Association("Users").Append(&users[1])
+			if len(users) > 11 {
+				config.DB.Model(&challenges[i]).Association("Users").Append(&users[11])
+			}
+		}
+		if i == 8 && len(users) > 0 {
+			// I Morgen Tennis: Alice (0), Karen (10)
+			config.DB.Model(&challenges[i]).Association("Users").Append(&users[0])
+			if len(users) > 10 {
+				config.DB.Model(&challenges[i]).Association("Users").Append(&users[10])
+			}
+		}
+		if i == 9 && len(users) > 1 {
+			// I Morgen Fodbold: Bob (1), Henry (7)
+			config.DB.Model(&challenges[i]).Association("Users").Append(&users[1])
+			if len(users) > 7 {
+				config.DB.Model(&challenges[i]).Association("Users").Append(&users[7])
+			}
+		}
+		if i == 10 && len(users) > 3 {
+			// Padel Tennis Weekend: Diana (3), Karen (10)
+			config.DB.Model(&challenges[i]).Association("Users").Append(&users[3])
+			if len(users) > 10 {
+				config.DB.Model(&challenges[i]).Association("Users").Append(&users[10])
+			}
+		}
+		if i == 11 && len(users) > 5 {
+			// Badminton Turnering: Frank (5), Olivia (14)
+			if len(users) > 14 {
+				config.DB.Model(&challenges[i]).Association("Users").Append(&users[14])
+			}
+		}
+		if i == 12 && len(users) > 9 {
+			// Håndbold Kamp: Jack (9), Lars (11)
+			if len(users) > 11 {
+				config.DB.Model(&challenges[i]).Association("Users").Append(&users[11])
+			}
+		}
+		if i == 13 && len(users) > 4 {
+			// Løbetur: Eve (4), Niels (13)
+			if len(users) > 13 {
+				config.DB.Model(&challenges[i]).Association("Users").Append(&users[13])
+			}
+		}
+		if i == 14 && len(users) > 13 {
+			// Cykel Tur: Niels (13), Eve (4)
+			config.DB.Model(&challenges[i]).Association("Users").Append(&users[4])
+		}
+		if i == 15 && len(users) > 14 {
+			// Squash Match: Olivia (14), Frank (5)
+			if len(users) > 5 {
+				config.DB.Model(&challenges[i]).Association("Users").Append(&users[5])
 			}
 		}
 	}
@@ -729,7 +1018,14 @@ func seedInvitations(users []models.User, teams []models.Team, challenges []mode
 // Helper functions
 func findSportByName(name string, db *gorm.DB) *models.Sport {
 	var sport models.Sport
-	if err := db.Where("name = ?", name).First(&sport).Error; err != nil {
+	err := db.Where("name = ?", name).First(&sport).Error
+	if err != nil {
+		// Record not found is expected for sports that don't exist
+		if err == gorm.ErrRecordNotFound {
+			return nil
+		}
+		// For other errors, log and return nil
+		log.Printf("Warning: error finding sport %s: %v", name, err)
 		return nil
 	}
 	return &sport
