@@ -21,8 +21,8 @@ type ChallengeCreateDto struct {
 	Location         LocationCreateDto `json:"location"`
 	IsIndoor         bool              `json:"is_indoor"`
 	IsPublic         bool              `json:"is_public"`
-	Status           string            `json:"status"`
-	Type             string            `json:"type"`
+	Status           string            `json:"status" validate:"sanitize"`
+	Type             string            `json:"type" validate:"sanitize"`
 	PlayFor          string            `json:"play_for"    validate:"sanitize"`
 	HasCost          bool              `json:"has_cost"`
 	Comment          string            `json:"comment"     validate:"sanitize"`
@@ -49,8 +49,8 @@ type ChallengeResponseDto struct {
 	IsIndoor     bool                    `json:"is_indoor"`
 	IsPublic     bool                    `json:"is_public"`
 	IsCompleted  bool                    `json:"is_completed"`
-	Status       string                  `json:"status"`
-	Type         string                  `json:"type"`
+	Status       string                  `json:"status" validate:"sanitize"`
+	Type         string                  `json:"type" validate:"sanitize"`
 	PlayFor      string                  `json:"play_for"`
 	HasCost      bool                    `json:"has_cost"`
 	Comment      string                  `json:"comment"`
