@@ -16,6 +16,7 @@ func TestAuthService_FullFlow(t *testing.T) {
 	defer teardown()
 
 	config.AppConfig.JWTSecret = "test_secret_key_12345"
+	config.AppConfig.JWTExpirationHours = 24 // Set expiration to 24 hours for tests
 
 	email := "auth_full@test.com"
 	password := "strongPassword"

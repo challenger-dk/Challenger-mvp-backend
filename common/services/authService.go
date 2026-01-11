@@ -85,7 +85,7 @@ func ValidateJWTToken(tokenString string) (*Claims, error) {
 		return nil, err
 	}
 
-	if !token.Valid {
+	if token == nil || !token.Valid {
 		return nil, appError.ErrInvalidToken
 	}
 
