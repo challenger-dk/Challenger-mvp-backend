@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"server/common/appError"
 	"server/common/config"
 	"server/common/dto"
 	"server/common/models"
@@ -102,6 +103,60 @@ func TestChallengeService_Participation(t *testing.T) {
 
 	fetched, _ = services.GetChallengeByID(created.ID)
 	assert.Len(t, fetched.Users, 1)
+}
+
+func TestChallengeService_FullParticipation(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	creator, _ := services.CreateUser(models.User{Email: "creatorFull@test.com", FirstName: "C", LastName: "C"}, "pw")
+	user1, _ := services.CreateUser(models.User{Email: "user1full@test.com", FirstName: "U1", LastName: "One"}, "pw")
+	user2, _ := services.CreateUser(models.User{Email: "user2full@test.com", FirstName: "U2", LastName: "Two"}, "pw")
+
+	t.Logf("created users: creator=%d user1=%d user2=%d", creator.ID, user1.ID, user2.ID)
+
+	participants := func() *int { i := 2; return &i }()
+
+	chal := models.Challenge{
+		Name:         "Full Test",
+		CreatorID:    creator.ID,
+		Date:         time.Now(),
+		StartTime:    time.Now(),
+		Location:     models.Location{Address: "L", Coordinates: models.Point{Lat: 0, Lon: 0}, PostalCode: "1", City: "C", Country: "C"},
+		Participants: participants,
+	}
+
+	created, _ := services.CreateChallenge(chal, nil)
+
+	fetchedBeforeJoin, _ := services.GetChallengeByID(created.ID)
+	idsBefore := make([]uint, len(fetchedBeforeJoin.Users))
+	for i, u := range fetchedBeforeJoin.Users {
+		idsBefore[i] = u.ID
+	}
+	t.Logf("users before join: %v", idsBefore)
+
+	// user1 joins - should fill challenge (creator + user1 = 2)
+	err := services.JoinChallenge(created.ID, user1.ID)
+	assert.NoError(t, err)
+
+	fetched, _ := services.GetChallengeByID(created.ID)
+	assert.Len(t, fetched.Users, 2)
+	assert.Equal(t, models.ChallengeStatusReady, fetched.Status)
+
+	// creator should get full participation notification
+	var notif models.Notification
+	err = config.DB.Where("user_id = ? AND type = ?", creator.ID, models.NotifTypeChallengeFullParticipation).First(&notif).Error
+	assert.NoError(t, err)
+
+	// user1 should have a joined notification
+	var notif2 models.Notification
+	err = config.DB.Where("user_id = ? AND type = ?", user1.ID, models.NotifTypeChallengeJoin).First(&notif2).Error
+	assert.NoError(t, err)
+
+	// user2 trying to join should error
+	err = services.JoinChallenge(created.ID, user2.ID)
+	assert.Error(t, err)
+	assert.EqualError(t, err, appError.ErrChallengeFullParticipation.Error())
 }
 
 func TestChallengeService_CreateWithComplexInvites(t *testing.T) {

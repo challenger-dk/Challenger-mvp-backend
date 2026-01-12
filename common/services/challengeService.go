@@ -2,11 +2,13 @@ package services
 
 import (
 	"errors"
+	"server/common/appError"
 	"server/common/config"
 	"server/common/models"
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func GetChallengeByID(id uint) (models.Challenge, error) {
@@ -228,32 +230,7 @@ func UpdateChallenge(id uint, ch models.Challenge) error {
 
 func JoinChallenge(id uint, userId uint) error {
 	return config.DB.Transaction(func(tx *gorm.DB) error {
-		var c models.Challenge
-		var u models.User
-
-		err := tx.First(&c, id).Error
-		if err != nil {
-			return err
-		}
-
-		err = tx.First(&u, userId).Error
-		if err != nil {
-			return err
-		}
-
-		err = tx.Model(&c).
-			Association("Users").
-			Append(&u)
-
-		if err != nil {
-			return err
-		}
-		// Notifi creator
-		CreateUserJoinedChallengeNotificationToCreator(tx, u, c)
-		// Notifi user
-		CreateUserJoinedChallengeNotification(tx, u, c)
-
-		return nil
+		return addUserToChallenge(id, userId, tx)
 	})
 }
 
@@ -315,22 +292,81 @@ func addUserToChallenge(challengeId uint, userId uint, db *gorm.DB) error {
 	var c models.Challenge
 	var u models.User
 
-	err := db.First(&c, challengeId).Error
-	if err != nil {
+	// Lock the challenge row up-front to prevent race conditions
+	if err := db.Clauses(clause.Locking{Strength: "UPDATE"}).
+		First(&c, challengeId).Error; err != nil {
 		return err
 	}
 
-	err = db.First(&u, userId).Error
-	if err != nil {
+	// Load the user
+	if err := db.First(&u, userId).Error; err != nil {
 		return err
 	}
 
-	err = db.Model(&c).
+	// Check if user is already in the challenge
+	var alreadyMember int64
+	if err := db.Table("user_challenges").
+		Where("user_id = ? AND challenge_id = ?", userId, challengeId).
+		Count(&alreadyMember).Error; err != nil {
+		return err
+	}
+	if alreadyMember > 0 {
+		return appError.ErrUserAlreadyInChallenge
+	}
+
+	// Check capacity
+	if c.Participants != nil {
+		var currentCount int64
+		if err := db.Table("user_challenges").
+			Where("challenge_id = ?", challengeId).
+			Count(&currentCount).Error; err != nil {
+			return err
+		}
+		if currentCount >= int64(*c.Participants) {
+			return appError.ErrChallengeFullParticipation
+		}
+	}
+
+	// Append membership
+	if err := db.Model(&c).
 		Association("Users").
-		Append(&u)
-
-	if err != nil {
+		Append(&u); err != nil {
 		return err
+	}
+
+	// Re-count after insert
+	var newCount int64
+	if err := db.Table("user_challenges").
+		Where("challenge_id = ?", challengeId).
+		Count(&newCount).Error; err != nil {
+		return err
+	}
+
+	isFull := c.Participants != nil && newCount == int64(*c.Participants)
+
+	// If full, update challenge status to READY
+	if isFull && c.Status != models.ChallengeStatusReady && c.Status != models.ChallengeStatusCompleted {
+		if err := db.Model(&c).
+			Update("status", models.ChallengeStatusReady).Error; err != nil {
+			return err
+		}
+		c.Status = models.ChallengeStatusReady
+	}
+
+	// Load creator for notification
+	var creator models.User
+	if err := db.First(&creator, c.CreatorID).Error; err != nil {
+		return err
+	}
+
+	// Notify the joining user
+	CreateUserJoinedChallengeNotification(db, u, c)
+
+	// Notify creator: either challenge became full, or someone joined
+	if isFull {
+		CreateNotificationChallengeFullParticipation(db, creator, c)
+	} else {
+		CreateUserJoinedChallengeNotificationToCreator(db, u, c)
 	}
 
 	return nil

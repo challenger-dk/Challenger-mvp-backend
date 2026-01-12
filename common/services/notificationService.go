@@ -340,11 +340,26 @@ func CreateUserLeftChallengeNotification(db *gorm.DB, user models.User, challeng
 
 func CreateNotificationUpcomingChallenge(db *gorm.DB, user models.User, challenge models.Challenge, notifType models.NotificationType) {
 	title := "Din udfordring starter snart!"
-	content := fmt.Sprintf("Din udfordring kl. '%s' starter snart", challenge.StartTime.Format("15:04"))
+	content := fmt.Sprintf("Din udfordring starter kl. '%s'", challenge.StartTime.Format("15:04"))
 	rType := "challenge"
 	CreateNotification(db, NotificationParams{
 		RecipientID:  user.ID,
 		Type:         notifType,
+		Title:        title,
+		Content:      content,
+		ResourceID:   &challenge.ID,
+		ResourceType: &rType,
+	})
+}
+
+func CreateNotificationChallengeFullParticipation(db *gorm.DB, user models.User, challenge models.Challenge) {
+	title := "Din udfordring har fuld deltagelse!"
+	content := "Alle deltagere er nu klar"
+
+	rType := "challenge"
+	CreateNotification(db, NotificationParams{
+		RecipientID:  user.ID,
+		Type:         models.NotifTypeChallengeFullParticipation,
 		Title:        title,
 		Content:      content,
 		ResourceID:   &challenge.ID,

@@ -53,6 +53,12 @@ var (
 	ErrInsufficientParticipants = errors.New("group conversation requires at least 2 participants")
 )
 
+// Challenge Errors
+var (
+	ErrChallengeFullParticipation = errors.New("challenge is full")
+	ErrUserAlreadyInChallenge     = errors.New("user is already in challenge")
+)
+
 var (
 	ErrMissingIdParam = errors.New("missing id parameter")
 	ErrIdBelowOne     = errors.New("id parameter must be greater than 0")
@@ -84,6 +90,8 @@ var errorMap = map[int][]error{
 		ErrInvitationProcessed,
 		ErrInviteSameUser,
 		ErrTeamConversationExists,
+		ErrChallengeFullParticipation,
+		ErrUserAlreadyInChallenge,
 	},
 	http.StatusBadRequest: {
 		ErrInvalidSport,
