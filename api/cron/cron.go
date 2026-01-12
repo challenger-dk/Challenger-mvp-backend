@@ -79,4 +79,11 @@ func addTasks(c *cron.Cron) {
 		slog.Error("Error scheduling NotifiUserInvitedToChallengeNotAnswered24H", "error", err)
 		os.Exit(1)
 	}
+
+	// Notifi users 12 hours before challenge start if participants are missing
+	_, err = c.AddFunc("@every 10m", tasks.RunNotifiUserMissingParticipantsInChallenges12H)
+	if err != nil {
+		slog.Error("Error scheduling NotifiUserMissingParticipantsInChallenges12H", "error", err)
+		os.Exit(1)
+	}
 }

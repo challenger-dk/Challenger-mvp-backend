@@ -137,3 +137,91 @@ func TestNotifiUserInvitedToChallengeNotAnswered24H(t *testing.T) {
 	config.DB.Model(&models.Notification{}).Where("user_id = ? AND resource_id = ? AND type = ?", invitee.ID, created.ID, models.NotifTypeChallengeNotAnswered24H).Count(&count)
 	assert.Equal(t, int64(1), count)
 }
+
+func TestNotifiUserMissingParticipants12H(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	// Freeze time
+	fixed := time.Date(2026, 1, 11, 10, 0, 0, 0, time.UTC)
+	oldNow := tasks.NowFunc
+	tasks.NowFunc = func() time.Time { return fixed }
+	defer func() { tasks.NowFunc = oldNow }()
+
+	creator, _ := services.CreateUser(models.User{Email: "creatorMiss@test.com", FirstName: "C", LastName: "Creator"}, "pwd1")
+	participant, _ := services.CreateUser(models.User{Email: "participantMiss@test.com", FirstName: "P", LastName: "Participant"}, "pwd1")
+	other, _ := services.CreateUser(models.User{Email: "otherMiss@test.com", FirstName: "O", LastName: "Other"}, "pwd1")
+
+	// Case A: participants=3, creator + participant = 2 -> missing 1 => should notify
+	p := func() *int { i := 3; return &i }()
+	chA := models.Challenge{
+		CreatorID: creator.ID,
+		Date:      fixed,
+		StartTime: fixed.Add(12 * time.Hour).Add(2 * time.Minute),
+		Participants: p,
+	}
+	createdA, err := services.CreateChallenge(chA, nil)
+	assert.NoError(t, err)
+
+	// Add one participant (creator is already auto-added)
+	err = services.JoinChallenge(createdA.ID, participant.ID)
+	assert.NoError(t, err)
+
+	// Run cron
+	tasks.RunNotifiUserMissingParticipantsInChallenges12H()
+
+	// Assert notification exists for creator
+	var notf models.Notification
+	err = config.DB.Where("user_id = ? AND resource_id = ? AND type = ?", creator.ID, createdA.ID, models.NotifTypeChallengeMissingParticipants).First(&notf).Error
+	assert.NoError(t, err)
+
+	// Dedup: run again
+	tasks.RunNotifiUserMissingParticipantsInChallenges12H()
+	var cnt int64
+	config.DB.Model(&models.Notification{}).Where("user_id = ? AND resource_id = ? AND type = ?", creator.ID, createdA.ID, models.NotifTypeChallengeMissingParticipants).Count(&cnt)
+	assert.Equal(t, int64(1), cnt)
+
+	// Case B: participants=5, only 2 members present -> missing 3 => DO NOT notify
+	p2 := func() *int { i := 5; return &i }()
+	chB := models.Challenge{
+		CreatorID: creator.ID,
+		Date:      fixed,
+		StartTime: fixed.Add(12 * time.Hour).Add(2 * time.Minute),
+		Participants: p2,
+	}
+	createdB, err := services.CreateChallenge(chB, nil)
+	assert.NoError(t, err)
+
+	// Add one participant (creator auto-added)
+	err = services.JoinChallenge(createdB.ID, other.ID)
+	assert.NoError(t, err)
+
+	// Run cron
+	tasks.RunNotifiUserMissingParticipantsInChallenges12H()
+
+	var cntB int64
+	config.DB.Model(&models.Notification{}).Where("user_id = ? AND resource_id = ? AND type = ?", creator.ID, createdB.ID, models.NotifTypeChallengeMissingParticipants).Count(&cntB)
+	// Any missing participants (not just 1-2) should trigger notification
+	assert.Equal(t, int64(1), cntB)
+
+	// Case C: participants=nil => should be skipped
+	chC := models.Challenge{
+		CreatorID: creator.ID,
+		Date:      fixed,
+		StartTime: fixed.Add(12 * time.Hour).Add(2 * time.Minute),
+		Participants: nil,
+	}
+	createdC, err := services.CreateChallenge(chC, nil)
+	assert.NoError(t, err)
+
+	// Add a participant so it's technically not full but there is no limit
+	err = services.JoinChallenge(createdC.ID, participant.ID)
+	assert.NoError(t, err)
+
+	// Run cron
+	tasks.RunNotifiUserMissingParticipantsInChallenges12H()
+
+	var cntC int64
+	config.DB.Model(&models.Notification{}).Where("user_id = ? AND resource_id = ? AND type = ?", creator.ID, createdC.ID, models.NotifTypeChallengeMissingParticipants).Count(&cntC)
+	assert.Equal(t, int64(0), cntC)
+}

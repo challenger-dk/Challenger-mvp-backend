@@ -34,6 +34,8 @@ func RunNotifiMissingParticipantsInChallenges() {
 }
 */
 
+// ------- RUNNERS ------- \\
+
 func RunNotifiUserUpcommingChallenges24H() {
 	slog.Info("⏰ Cron: Starting upcomming challenges notification 24h...")
 	err := notifiUserUpcommingChallenges24H()
@@ -63,6 +65,18 @@ func RunNotifiUserInvitedToChallengeNotAnswered24H() {
 		slog.Info("✅ Cron: Pending invitation reminder completed successfully")
 	}
 }
+
+func RunNotifiUserMissingParticipantsInChallenges12H() {
+	slog.Info("⏰ Cron: Starting missing participants notification (12h before start)...")
+	err := notifiUserMissingParticipantsInChallenges12H()
+	if err != nil {
+		slog.Error("❌ Cron: Error notifying users about missing participants", "error", err)
+	} else {
+		slog.Info("✅ Cron: Missing participants notification completed successfully")
+	}
+}
+
+// ------- IMPLEMENTATION ------- \\
 
 func notifiUserUpcommingChallenges24H() error {
 	return config.DB.Transaction(func(tx *gorm.DB) error {
@@ -211,6 +225,55 @@ func updateExpiredChallenges() error {
 
 		if result.RowsAffected > 0 {
 			slog.Info("✅ Cron: Updated expired challenges", "count", result.RowsAffected)
+		}
+
+		return nil
+	})
+}
+
+// Notify creators of challenges starting in 12 hours with 1-2 participants missing
+func notifiUserMissingParticipantsInChallenges12H() error {
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+		now := NowFunc()
+		windowStart := now.Add(12*time.Hour - 5*time.Minute)
+		windowEnd := now.Add(12*time.Hour + 5*time.Minute)
+
+		var challenges []models.Challenge
+		if err := tx.Preload("Users").
+			Where("start_time BETWEEN ? AND ?", windowStart, windowEnd).
+			Find(&challenges).Error; err != nil {
+			return err
+		}
+
+		for _, ch := range challenges {
+			// Must have a participants limit to evaluate missing participants
+			if ch.Participants == nil {
+				continue
+			}
+
+			participantCount := len(ch.Users)
+			totalNeeded := int(*ch.Participants)
+
+			// Already full or over-capacity -> skip
+			if participantCount >= totalNeeded {
+				continue
+			}
+
+			// Notify creator if exists (any missing participants)
+			var creator models.User
+			if err := tx.First(&creator, ch.CreatorID).Error; err != nil {
+				continue
+			}
+
+			// Skip if notification already exists
+			var existing models.Notification
+			if err := tx.Where("user_id = ? AND resource_id = ? AND type = ?",
+				creator.ID, ch.ID, models.NotifTypeChallengeMissingParticipants).First(&existing).Error; err == nil {
+				continue
+			}
+
+			// Send notification
+			services.CreateNotificationChallengeMissingParticipants(tx, creator, ch)
 		}
 
 		return nil

@@ -381,6 +381,20 @@ func CreateNotificationChallengeNotAnswered24H(db *gorm.DB, user models.User, ch
 	})
 }
 
+func CreateNotificationChallengeMissingParticipants(db *gorm.DB, user models.User, challenge models.Challenge) {
+	title := "Din udfordring mangler deltagere"
+	content := "Din udfordring mangler deltagere – husk at invitere flere."
+	rType := "challenge"
+	CreateNotification(db, NotificationParams{
+		RecipientID:  user.ID,
+		Type:         models.NotifTypeChallengeMissingParticipants,
+		Title:        title,
+		Content:      content,
+		ResourceID:   &challenge.ID,
+		ResourceType: &rType,
+	})
+}
+
 // -------------- Private -------------- \\
 func shouldNotify(db *gorm.DB, userID uint, notifType models.NotificationType) bool {
 	var settings models.UserSettings
