@@ -129,9 +129,6 @@ func GetUserByIDWithSettings(userID uint) (*models.User, error) {
 		Preload("FavoriteSports").
 		Preload("Friends").
 		Preload("Teams").
-		Preload("Teams.Users").
-		Preload("Teams.Creator").
-		Preload("Teams.Location").
 		Preload("Settings").
 		Preload("JoinedChallenges", func(db *gorm.DB) *gorm.DB {
 			return db.Order("date ASC").Order("start_time ASC")
