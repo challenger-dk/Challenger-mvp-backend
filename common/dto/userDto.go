@@ -132,9 +132,12 @@ func ToPublicUserDtoResponse(user models.User) PublicUserDtoResponse {
 		}
 	}
 
-	// Get next upcoming challenges (limited to UserNextChallengesCount)
+	// Get next upcoming challenges, not including completed or past
 	nextChallenges := make([]ChallengeResponseDto, 0, UserNextChallengesCount)
 	for _, ch := range user.JoinedChallenges {
+		if ch.Date.Before(time.Now()) {
+			continue
+		}
 		if ch.IsCompleted {
 			continue
 		}
@@ -192,9 +195,12 @@ func ToUserResponseDto(user models.User) UserResponseDto {
 		}
 	}
 
-	// Get next upcoming challenges (limited to UserNextChallengesCount)
+	// Get next upcoming challenges, not including completed or past
 	nextChallenges := make([]ChallengeResponseDto, 0, UserNextChallengesCount)
 	for _, ch := range user.JoinedChallenges {
+		if ch.Date.Before(time.Now()) {
+			continue
+		}
 		if ch.IsCompleted {
 			continue
 		}
