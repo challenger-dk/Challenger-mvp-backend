@@ -9,6 +9,7 @@ package services
 
 import (
 	"fmt"
+	"log/slog"
 	"server/common/config"
 	"server/common/models"
 
@@ -106,7 +107,10 @@ func HideNotificationByInvitationID(invitationID uint) {
 		Error
 
 	if err != nil {
-		fmt.Printf("⚠️ Failed to hide notification for invitation %d: %v\n", invitationID, err)
+		slog.Warn("Failed to hide notification for invitation",
+			slog.Int("invitation_id", int(invitationID)),
+			slog.Any("error", err),
+		)
 	}
 }
 
@@ -118,24 +122,38 @@ func CreateInvitationNotification(db *gorm.DB, inv models.Invitation) {
 	var title, content string
 	var notifType models.NotificationType
 
+	var resource, err = getResource(inv, db)
+	if err != nil {
+		slog.Error("Failed to get resource for invitation notification",
+			slog.Int("invitation_id", int(inv.ID)),
+			slog.Any("error", err),
+		)
+		return
+	}
+
+	var resourceName string
+	if team, ok := resource.(models.Team); ok {
+		resourceName = team.Name
+	}
+
 	switch inv.ResourceType {
 	case models.ResourceTypeTeam:
-		title = "Holdinvitation"
-		content = "Du er blevet inviteret til at deltage i et hold."
+		title = "Ny klubinvitation"
+		content = fmt.Sprintf("Du er blevet inviteret til at blive en del af: %s", resourceName)
 		notifType = models.NotifTypeTeamInvite
 
 	case models.ResourceTypeFriend:
-		title = "Venneanmodning"
-		content = "Du har en ny venneanmodning."
+		title = "Ny venneanmodning"
+		content = "Du har modtaget en ny venneanmodning."
 		notifType = models.NotifTypeFriendReq
 
 	case models.ResourceTypeChallenge:
-		title = "Challenge invitation"
-		content = "Du er blevet inviteret til at deltage i en challenge."
+		title = "Du er inviteret til en udfordring"
+		content = "Du er blevet inviteret – vil du være med?"
 		notifType = models.NotifTypeChallengeReq
 
 	default:
-		fmt.Printf("⚠️ Notification skipped: Unknown resource type %s\n", inv.ResourceType)
+		slog.Warn("Notification skipped: unknown resource type", slog.String("resource_type", string(inv.ResourceType)))
 		return
 	}
 
@@ -175,7 +193,7 @@ func CreateAcceptedInvitationNotification(db *gorm.DB, inv models.Invitation) {
 		notifType = models.NotifTypeChallengeAccept
 
 	default:
-		fmt.Printf("⚠️ Notification skipped: Unknown resource type %s\n", inv.ResourceType)
+		slog.Warn("Notification skipped: unknown resource type", slog.String("resource_type", string(inv.ResourceType)))
 		return
 	}
 
@@ -215,7 +233,7 @@ func CreateDeclinedInvitationNotification(db *gorm.DB, inv models.Invitation) {
 		notifType = models.NotifTypeChallengeDecline
 
 	default:
-		fmt.Printf("⚠️ Notification skipped: Unknown resource type %s\n", inv.ResourceType)
+		slog.Warn("Notification skipped: unknown resource type", slog.String("resource_type", string(inv.ResourceType)))
 		return
 	}
 
@@ -280,6 +298,60 @@ func CreateTeamDeletedNotification(db *gorm.DB, user models.User, team models.Te
 	})
 }
 
+// ------ CHALLENGES ----- \\
+func CreateUserJoinedChallengeNotificationToCreator(db *gorm.DB, user models.User, challenge models.Challenge) {
+	var title, content string
+	title = "Ny deltager har tilmeldt sig din udfordring"
+	content = fmt.Sprintf("%s har tilmeldt sig '%s'", user.FirstName, challenge.Name)
+
+	CreateNotification(db, NotificationParams{
+		RecipientID: challenge.CreatorID,
+		Type:        models.NotifTypeChallengeReq,
+		Title:       title,
+		Content:     content,
+	})
+}
+
+func CreateUserJoinedChallengeNotification(db *gorm.DB, user models.User, challenge models.Challenge) {
+	var title, content string
+	title = "Du har tilmeldt dig en udfordring"
+	content = fmt.Sprintf("Du har tilmeldt dig '%s'", challenge.Name)
+
+	CreateNotification(db, NotificationParams{
+		RecipientID: user.ID,
+		Type:        models.NotifTypeChallengeJoin,
+		Title:       title,
+		Content:     content,
+	})
+}
+
+func CreateUserLeftChallengeNotification(db *gorm.DB, user models.User, challenge models.Challenge) {
+	var title, content string
+	title = "En deltager har forladt udfordringen"
+	content = fmt.Sprintf("%s har forladt '%s'", user.FirstName, challenge.Name)
+
+	CreateNotification(db, NotificationParams{
+		RecipientID: challenge.CreatorID,
+		Type:        models.NotifTypeChallengeUserLeft,
+		Title:       title,
+		Content:     content,
+	})
+}
+
+func CreateNotificationUpcomingChallenge(db *gorm.DB, user models.User, challenge models.Challenge, notifType models.NotificationType) {
+	title := "Din udfordring starter snart!"
+	content := fmt.Sprintf("Din udfordring kl. '%s' starter snart", challenge.StartTime.Format("15:04"))
+	rType := "challenge"
+	CreateNotification(db, NotificationParams{
+		RecipientID:  user.ID,
+		Type:         notifType,
+		Title:        title,
+		Content:      content,
+		ResourceID:   &challenge.ID,
+		ResourceType: &rType,
+	})
+}
+
 // -------------- Private -------------- \\
 func shouldNotify(db *gorm.DB, userID uint, notifType models.NotificationType) bool {
 	var settings models.UserSettings
@@ -327,6 +399,6 @@ func persistNotification(db *gorm.DB, params NotificationParams) {
 	})
 
 	if err != nil {
-		fmt.Printf("⚠️ Notification DB Error (swallowed): %v\n", err)
+		slog.Error("Notification DB error (swallowed)", slog.Any("error", err))
 	}
 }

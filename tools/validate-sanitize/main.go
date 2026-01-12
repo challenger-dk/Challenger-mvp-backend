@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"log/slog"
 )
 
 func main() {
@@ -93,9 +94,9 @@ func main() {
 	if len(errors) > 0 {
 		fmt.Println("\n⚠️  Found validation issues:\n")
 		for _, e := range errors {
-			fmt.Println(e)
+			slog.Error(e)
 		}
-		fmt.Printf("\n❌ Failed: %d string fields missing 'sanitize' tag\n", len(errors))
+		slog.Error("Failed: missing sanitize tags", slog.Int("missing_count", len(errors)))
 		os.Exit(1)
 	}
 

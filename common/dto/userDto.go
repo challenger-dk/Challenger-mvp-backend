@@ -45,6 +45,7 @@ type UserResponseDto struct {
 	NextChallenges      []ChallengeResponseDto     `json:"next_challenges,omitempty"`
 	Settings            UserSettingsResponseDto    `json:"settings"`
 	EmergencyContacts   []EmergencyInfoResponseDto `json:"emergency_contacts,omitempty"`
+	Teams               []TeamResponseDto          `json:"teams,omitempty"`
 }
 
 type UserSettingsResponseDto struct {
@@ -208,6 +209,11 @@ func ToUserResponseDto(user models.User) UserResponseDto {
 		emergencyContacts[i] = ToEmergencyInfoResponseDto(contact)
 	}
 
+	teams := make([]TeamResponseDto, len(user.Teams))
+	for i, team := range user.Teams {
+		teams[i] = ToTeamResponseDto(team)
+	}
+
 	return UserResponseDto{
 		ID:                  user.ID,
 		Email:               user.Email,
@@ -223,6 +229,7 @@ func ToUserResponseDto(user models.User) UserResponseDto {
 		CompletedChallenges: completedChallengesCount,
 		NextChallenges:      nextChallenges,
 		EmergencyContacts:   emergencyContacts,
+		Teams:               teams,
 	}
 }
 

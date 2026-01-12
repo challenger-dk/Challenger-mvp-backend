@@ -23,10 +23,14 @@ func InitLogger() {
 		// JSON for production tools (Datadog/CloudWatch)
 		handler = slog.NewJSONHandler(os.Stdout, opts)
 	} else {
-		// Pretty text for local development
-		handler = NewConsoleHandler(os.Stdout)
+		// Use slog's built-in text handler in dev so HandlerOptions (levels, time formatting)
+		// are respected by default and reliably printed to stdout.
+		handler = slog.NewTextHandler(os.Stdout, opts)
 	}
 
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
+
+	// Quick health-check log to confirm logger is active
+	slog.Info("Logger initialized", "env", env)
 }

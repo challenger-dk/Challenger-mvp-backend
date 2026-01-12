@@ -29,33 +29,3 @@ func deleteOldIrrelevantNotifications(daysOld int) error {
 			Delete(&models.Notification{}).Error
 	})
 }
-
-func RunUpdateExpiredChallenges() {
-	slog.Info("⏰ Cron: Starting expired challenges update...")
-
-	err := updateExpiredChallenges()
-	if err != nil {
-		slog.Error("❌ Cron: Error updating expired challenges", "error", err)
-	} else {
-		slog.Info("✅ Cron: Expired challenges update completed successfully")
-	}
-}
-
-func updateExpiredChallenges() error {
-	return config.DB.Transaction(func(tx *gorm.DB) error {
-		now := time.Now()
-		result := tx.Model(&models.Challenge{}).
-			Where("end_time IS NOT NULL AND end_time < ? AND status != ?", now, models.ChallengeStatusCompleted).
-			Update("status", models.ChallengeStatusCompleted)
-
-		if result.Error != nil {
-			return result.Error
-		}
-
-		if result.RowsAffected > 0 {
-			slog.Info("✅ Cron: Updated expired challenges", "count", result.RowsAffected)
-		}
-
-		return nil
-	})
-}

@@ -43,6 +43,8 @@ func Start() {
 }
 
 func addTasks(c *cron.Cron) {
+
+	// ------- CLEANUP TASKS ------- \\
 	_, err := c.AddFunc("0 0 * * *", tasks.RunCleanupNotifications)
 	if err != nil {
 		slog.Error("Error scheduling CleanupNotifications", "error", err)
@@ -53,6 +55,21 @@ func addTasks(c *cron.Cron) {
 	_, err = c.AddFunc("0 * * * *", tasks.RunUpdateExpiredChallenges)
 	if err != nil {
 		slog.Error("Error scheduling UpdateExpiredChallenges", "error", err)
+		os.Exit(1)
+	}
+
+	// ------- NOTIFI USER TASKS ------- \\
+	// Notifi users 24 hours before challenge start
+	_, err = c.AddFunc("@every 10m", tasks.RunNotifiUserUpcommingChallenges24H)
+	if err != nil {
+		slog.Error("Error scheduling NotifiUserUpcommingChallenges24H", "error", err)
+		os.Exit(1)
+	}
+
+	// Notifi users 1 hour before challenge start
+	_, err = c.AddFunc("@every 10m", tasks.RunNotifiUserUpcommingChallenges1H)
+	if err != nil {
+		slog.Error("Error scheduling NotifiUserUpcommingChallenges1H", "error", err)
 		os.Exit(1)
 	}
 }

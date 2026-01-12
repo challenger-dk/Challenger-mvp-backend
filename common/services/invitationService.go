@@ -2,7 +2,7 @@ package services
 
 import (
 	"errors"
-	"fmt"
+	"log/slog"
 	"server/common/appError"
 	"server/common/config"
 	"server/common/models"
@@ -254,7 +254,10 @@ func AcceptInvitation(invitationId uint, currentUserId uint) error {
 			// Sync conversation (don't fail if this errors)
 			if err := SyncTeamConversationMembers(teamID, memberIDs); err != nil {
 				// Log error but don't fail the request
-				fmt.Printf("Warning: Failed to sync team conversation for team %d: %v\n", teamID, err)
+				slog.Warn("Failed to sync team conversation for team",
+					slog.Int("team_id", int(teamID)),
+					slog.Any("error", err),
+				)
 			}
 		}
 	}
@@ -307,8 +310,10 @@ func DeclineInvitation(invitationId uint, currentUserId uint) error {
 
 // getResource fetches the resource associated with an invitation
 func getResource(invitation models.Invitation, db *gorm.DB) (any, error) {
-	fmt.Println("ResourceType:", invitation.ResourceType)
-	fmt.Println("ResourceID:", invitation.ResourceID)
+	slog.Debug("getResource",
+		slog.String("resource_type", string(invitation.ResourceType)),
+		slog.Any("resource_id", invitation.ResourceID),
+	)
 	switch invitation.ResourceType {
 	case models.ResourceTypeTeam:
 		var team models.Team

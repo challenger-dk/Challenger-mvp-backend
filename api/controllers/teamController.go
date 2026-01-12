@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
+	"log/slog"
 	"net/http"
 	"server/api/controllers/helpers"
 	"server/common/appError"
@@ -140,7 +140,7 @@ func CreateTeam(w http.ResponseWriter, r *http.Request) {
 		appError.HandleError(w, err)
 		return
 	}
-
+	createdDto := dto.ToTeamResponseDto(createdModel)
 	// Create team conversation with initial members
 	memberIDs := make([]uint, len(createdModel.Users))
 	for i, u := range createdModel.Users {
@@ -149,16 +149,17 @@ func CreateTeam(w http.ResponseWriter, r *http.Request) {
 	if err := services.SyncTeamConversationMembers(createdModel.ID, memberIDs); err != nil {
 		// Log error but don't fail the request
 		// Team conversation can be created later
-		fmt.Printf("Warning: Failed to create team conversation for team %d: %v\n", createdModel.ID, err)
-	}
+		slog.Warn("Failed to create team conversation for team",
+			slog.Int("team_id", int(createdModel.ID)),
+			slog.Any("error", err),
+		)
 
-	createdDto := dto.ToTeamResponseDto(createdModel)
-
-	w.WriteHeader(http.StatusCreated)
-	err = json.NewEncoder(w).Encode(createdDto)
-	if err != nil {
-		appError.HandleError(w, err)
-		return
+		w.WriteHeader(http.StatusCreated)
+		err = json.NewEncoder(w).Encode(createdDto)
+		if err != nil {
+			appError.HandleError(w, err)
+			return
+		}
 	}
 }
 

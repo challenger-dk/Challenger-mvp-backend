@@ -170,6 +170,14 @@ func CreateChallenge(c models.Challenge, invitedUserIds []uint) (models.Challeng
 		return models.Challenge{}, err
 	}
 
+	// Successfully created challenge, notify creator
+	CreateNotification(config.DB, NotificationParams{
+		RecipientID: c.CreatorID,
+		Type:        models.NotifTypeChallengeCreated,
+		Title:       "Udfordring oprettet",
+		Content:     "Din udfordring er live og klar til deltagere.",
+	})
+
 	return c, nil
 }
 
@@ -233,9 +241,19 @@ func JoinChallenge(id uint, userId uint) error {
 			return err
 		}
 
-		return tx.Model(&c).
+		err = tx.Model(&c).
 			Association("Users").
 			Append(&u)
+
+		if err != nil {
+			return err
+		}
+		// Notifi creator
+		CreateUserJoinedChallengeNotificationToCreator(tx, u, c)
+		// Notifi user
+		CreateUserJoinedChallengeNotification(tx, u, c)
+
+		return nil
 	})
 }
 
