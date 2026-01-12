@@ -108,7 +108,7 @@ func HideNotificationByInvitationID(invitationID uint) {
 
 	if err != nil {
 		slog.Warn("Failed to hide notification for invitation",
-			slog.Int("invitation_id", int(invitationID)),
+			slog.Uint64("invitation_id", uint64(invitationID)),
 			slog.Any("error", err),
 		)
 	}
