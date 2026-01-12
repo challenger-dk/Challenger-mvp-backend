@@ -32,6 +32,7 @@ const (
 	NotifTypeChallengeUpcomming24H      NotificationType = "challenge_upcomming_24h"
 	NotifTypeChallengeUpcomming1H       NotificationType = "challenge_upcomming_1h"
 	NotifTypeChallengeFullParticipation NotificationType = "challenge_full_participation"
+	NotifTypeChallengeNotAnswered24H    NotificationType = "challenge_invitation_not_answered_24h"
 )
 
 type Notification struct {

@@ -367,6 +367,20 @@ func CreateNotificationChallengeFullParticipation(db *gorm.DB, user models.User,
 	})
 }
 
+func CreateNotificationChallengeNotAnswered24H(db *gorm.DB, user models.User, challenge models.Challenge) {
+	title := "Husk at svare på invitation"
+	content := "Du er inviteret til en udfordring – husk at svare inden start."
+	rType := "challenge"
+	CreateNotification(db, NotificationParams{
+		RecipientID:  user.ID,
+		Type:         models.NotifTypeChallengeNotAnswered24H,
+		Title:        title,
+		Content:      content,
+		ResourceID:   &challenge.ID,
+		ResourceType: &rType,
+	})
+}
+
 // -------------- Private -------------- \\
 func shouldNotify(db *gorm.DB, userID uint, notifType models.NotificationType) bool {
 	var settings models.UserSettings
