@@ -62,6 +62,23 @@ jobs:
           curl -sSf https://atlasgo.sh | sh
           echo "$HOME/.atlas/bin" >> $GITHUB_PATH
 
+      - name: Validate Atlas checksums
+        run: |
+          # Normalize line endings to avoid checksum mismatches
+          find Database/migrations -type f -name '*.sql' -exec dos2unix {} \; || true
+          # Recompute hashes
+          atlas migrate hash --dir file://$GITHUB_WORKSPACE/Database/migrations
+          # Fail if atlas.sum changed (developer must commit atlas.sum)
+          git --no-pager diff --exit-code -- Database/migrations/atlas.sum || (echo "atlas.sum is out of date. Run 'atlas migrate hash --dir file://Database/migrations' and commit the result." && exit 1)
+
+      - name: Apply Atlas migrations (main DB)
+        run: |
+          atlas migrate apply --dir file://$GITHUB_WORKSPACE/Database/migrations --url "postgres://gouser:gopassword@localhost:5432/godb?sslmode=disable"
+
+      - name: Apply Atlas migrations (test DB)
+        run: |
+          atlas migrate apply --dir file://$GITHUB_WORKSPACE/Database/migrations --url "postgres://test_user:test_password@localhost:5433/challenger_test?sslmode=disable"
+
       - name: Lint - Check sanitize validation tags
         run: go run tools/validate-sanitize/main.go
 
