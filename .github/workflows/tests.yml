@@ -73,11 +73,14 @@ jobs:
 
       - name: Apply Atlas migrations (main DB)
         run: |
-          atlas migrate apply --dir file://$GITHUB_WORKSPACE/Database/migrations --url "postgres://gouser:gopassword@localhost:5432/godb?sslmode=disable"
+          # Allow dirty in CI because the postgres image may create auxiliary schemas (e.g., tiger)
+          atlas migrate apply --dir file://$GITHUB_WORKSPACE/Database/migrations --url "postgres://gouser:gopassword@localhost:5432/godb?sslmode=disable" --allow-dirty
+          atlas migrate status --url "postgres://gouser:gopassword@localhost:5432/godb?sslmode=disable"
 
       - name: Apply Atlas migrations (test DB)
         run: |
-          atlas migrate apply --dir file://$GITHUB_WORKSPACE/Database/migrations --url "postgres://test_user:test_password@localhost:5433/challenger_test?sslmode=disable"
+          atlas migrate apply --dir file://$GITHUB_WORKSPACE/Database/migrations --url "postgres://test_user:test_password@localhost:5433/challenger_test?sslmode=disable" --allow-dirty
+          atlas migrate status --url "postgres://test_user:test_password@localhost:5433/challenger_test?sslmode=disable"
 
       - name: Lint - Check sanitize validation tags
         run: go run tools/validate-sanitize/main.go
