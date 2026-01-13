@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"errors"
 	"log/slog"
 	"server/common/config"
 	"server/common/models"
@@ -9,6 +10,8 @@ import (
 
 	"gorm.io/gorm"
 )
+
+// ------- RUNNERS ------- \\
 
 func RunUpdateExpiredChallenges() {
 	slog.Info("⏰ Cron: Starting expired challenges update...")
@@ -20,21 +23,6 @@ func RunUpdateExpiredChallenges() {
 		slog.Info("✅ Cron: Expired challenges update completed successfully")
 	}
 }
-
-// TODO:
-// Notifi creators of challenges starting in ~12 hours with participants missing
-/*
-func RunNotifiMissingParticipantsInChallenges() {
-	now := time.Now()
-	windowStart := now.Add(12*time.Hour - 5*time.Minute)
-	windowEnd := now.Add(12*time.Hour + 5*time.Minute)
-
-	var challenges []models.Challenge
-
-}
-*/
-
-// ------- RUNNERS ------- \\
 
 func RunNotifiUserUpcommingChallenges24H() {
 	slog.Info("⏰ Cron: Starting upcomming challenges notification 24h...")
@@ -93,11 +81,18 @@ func notifiUserUpcommingChallenges24H() error {
 
 		for _, ch := range challenges {
 			for _, u := range ch.Users {
-				// Skip if already exists
+				// Skip if already exists and is still relevant
 				var existing models.Notification
-				if err := tx.Where("user_id = ? AND resource_id = ? AND type = ?",
-					u.ID, ch.ID, models.NotifTypeChallengeUpcomming24H).First(&existing).Error; err == nil {
+				err := tx.
+					Where("user_id = ? AND resource_id IS NOT NULL AND resource_id = ? AND type = ? AND is_relevant = ?",
+						u.ID, ch.ID, models.NotifTypeChallengeUpcomming24H, true).
+					First(&existing).Error
+
+				if err == nil {
 					continue
+				}
+				if !errors.Is(err, gorm.ErrRecordNotFound) {
+					return err
 				}
 
 				services.CreateNotificationUpcomingChallenge(tx, u, ch, models.NotifTypeChallengeUpcomming24H)
@@ -113,6 +108,7 @@ func notifiUserUpcommingChallenges1H() error {
 		now := NowFunc()
 		windowStart := now.Add(1*time.Hour - 5*time.Minute)
 		windowEnd := now.Add(1*time.Hour + 5*time.Minute)
+
 		var challenges []models.Challenge
 		if err := tx.Preload("Users").
 			Where("start_time BETWEEN ? AND ?", windowStart, windowEnd).
@@ -122,11 +118,18 @@ func notifiUserUpcommingChallenges1H() error {
 
 		for _, ch := range challenges {
 			for _, u := range ch.Users {
-				// Skip if already exists
+				// Skip if already exists and is still relevant
 				var existing models.Notification
-				if err := tx.Where("user_id = ? AND resource_id = ? AND type = ?",
-					u.ID, ch.ID, models.NotifTypeChallengeUpcomming1H).First(&existing).Error; err == nil {
+				err := tx.
+					Where("user_id = ? AND resource_id IS NOT NULL AND resource_id = ? AND type = ? AND is_relevant = ?",
+						u.ID, ch.ID, models.NotifTypeChallengeUpcomming1H, true).
+					First(&existing).Error
+
+				if err == nil {
 					continue
+				}
+				if !errors.Is(err, gorm.ErrRecordNotFound) {
+					return err
 				}
 
 				services.CreateNotificationUpcomingChallenge(tx, u, ch, models.NotifTypeChallengeUpcomming1H)
@@ -145,8 +148,8 @@ func notifiUserInvitedToChallengeNotAnswered24H() error {
 
 		// Fetch pending challenge invitations where the challenge starts in ~24h
 		type row struct {
-			models.Invitation `gorm:"embedded"` // Embed invitation model for easy access to fields (e.g. Inviter, Invitee) (for deduplication)
-			StartTime         time.Time         `gorm:"column:start_time"` // Challenge start time (for deduplication)
+			models.Invitation `gorm:"embedded"`
+			StartTime         time.Time `gorm:"column:start_time"`
 		}
 
 		var invitations []row
@@ -167,7 +170,7 @@ func notifiUserInvitedToChallengeNotAnswered24H() error {
 			return nil
 		}
 
-		// To avoid N+1 loading the same challenge repeatedly
+		// Avoid N+1 loading the same challenge repeatedly
 		challengeByID := make(map[uint]models.Challenge, 32)
 
 		for _, inv := range invitations {
@@ -176,21 +179,25 @@ func notifiUserInvitedToChallengeNotAnswered24H() error {
 			if !ok {
 				var c models.Challenge
 				if err := tx.First(&c, inv.ResourceID).Error; err != nil {
-					// If challenge was deleted or missing, just skip this invitation
-					// (alternatively: return err if you want strictness)
+					// Challenge deleted/missing -> skip
 					continue
 				}
 				challengeByID[inv.ResourceID] = c
 				ch = c
 			}
 
-			// Deduplicate: skip if notification already exists
+			// Deduplicate: skip if notification already exists and is still relevant
 			var existing models.Notification
-			if err := tx.
-				Where("user_id = ? AND resource_id = ? AND type = ?",
-					inv.InviteeId, inv.ResourceID, models.NotifTypeChallengeNotAnswered24H).
-				First(&existing).Error; err == nil {
+			err := tx.
+				Where("user_id = ? AND resource_id IS NOT NULL AND resource_id = ? AND type = ? AND is_relevant = ?",
+					inv.InviteeId, inv.ResourceID, models.NotifTypeChallengeNotAnswered24H, true).
+				First(&existing).Error
+
+			if err == nil {
 				continue
+			}
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
 			}
 
 			// Ensure we have a valid invitee user to notify
@@ -199,12 +206,10 @@ func notifiUserInvitedToChallengeNotAnswered24H() error {
 				invitee = inv.Invitee
 			} else {
 				if err := tx.First(&invitee, inv.InviteeId).Error; err != nil {
-					// Missing invitee (deleted user?) — skip
 					continue
 				}
 			}
 
-			// Create notification to invitee
 			services.CreateNotificationChallengeNotAnswered24H(tx, invitee, ch)
 		}
 
@@ -231,7 +236,7 @@ func updateExpiredChallenges() error {
 	})
 }
 
-// Notify creators of challenges starting in 12 hours with 1-2 participants missing
+// Notify creators of challenges starting in 12 hours with missing participants
 func notifiUserMissingParticipantsInChallenges12H() error {
 	return config.DB.Transaction(func(tx *gorm.DB) error {
 		now := NowFunc()
@@ -259,20 +264,26 @@ func notifiUserMissingParticipantsInChallenges12H() error {
 				continue
 			}
 
-			// Notify creator if exists (any missing participants)
+			// Notify creator if exists
 			var creator models.User
 			if err := tx.First(&creator, ch.CreatorID).Error; err != nil {
 				continue
 			}
 
-			// Skip if notification already exists
+			// Skip if notification already exists and is still relevant
 			var existing models.Notification
-			if err := tx.Where("user_id = ? AND resource_id = ? AND type = ?",
-				creator.ID, ch.ID, models.NotifTypeChallengeMissingParticipants).First(&existing).Error; err == nil {
+			err := tx.
+				Where("user_id = ? AND resource_id IS NOT NULL AND resource_id = ? AND type = ? AND is_relevant = ?",
+					creator.ID, ch.ID, models.NotifTypeChallengeMissingParticipants, true).
+				First(&existing).Error
+
+			if err == nil {
 				continue
 			}
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
 
-			// Send notification
 			services.CreateNotificationChallengeMissingParticipants(tx, creator, ch)
 		}
 

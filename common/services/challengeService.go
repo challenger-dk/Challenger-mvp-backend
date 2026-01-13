@@ -173,11 +173,14 @@ func CreateChallenge(c models.Challenge, invitedUserIds []uint) (models.Challeng
 	}
 
 	// Successfully created challenge, notify creator
+	rType := models.ResourceTypeChallenge
 	CreateNotification(config.DB, NotificationParams{
-		RecipientID: c.CreatorID,
-		Type:        models.NotifTypeChallengeCreated,
-		Title:       "Udfordring oprettet",
-		Content:     "Din udfordring er live og klar til deltagere.",
+		RecipientID:  c.CreatorID,
+		Type:         models.NotifTypeChallengeCreated,
+		Title:        "Udfordring oprettet",
+		Content:      "Din udfordring er live og klar til deltagere.",
+		ResourceID:   &c.ID,
+		ResourceType: &rType,
 	})
 
 	return c, nil

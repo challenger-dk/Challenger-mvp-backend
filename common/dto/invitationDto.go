@@ -23,15 +23,15 @@ type InvitationResponseDto struct {
 	ID           uint                    `json:"id"`
 	Inviter      UserResponseDto         `json:"inviter"`
 	Note         string                  `json:"note"`
-	ResourceType models.InvitationType   `json:"resource_type"`
+	ResourceType models.ResourceType     `json:"resource_type"`
 	Status       models.InvitationStatus `json:"status"`
 }
 
 type InvitationCreateDto struct {
-	InviteeId    uint                  `json:"invitee_id"    validate:"required"`
-	Note         string                `json:"note"          validate:"sanitize"`
-	ResourceType models.InvitationType `json:"resource_type" validate:"required,oneof=team friend challenge"`
-	ResourceID   uint                  `json:"resource_id"   validate:"required_if=ResourceType team required_if=ResourceType challenge"` // Friend invitations may not need ResourceID
+	InviteeId    uint                `json:"invitee_id"    validate:"required"`
+	Note         string              `json:"note"          validate:"sanitize"`
+	ResourceType models.ResourceType `json:"resource_type" validate:"required,oneof=team friend challenge"`
+	ResourceID   uint                `json:"resource_id"   validate:"required_if=ResourceType team required_if=ResourceType challenge"` // Friend invitations may not need ResourceID
 }
 
 func ToInvitationModel(dto InvitationCreateDto) models.Invitation {

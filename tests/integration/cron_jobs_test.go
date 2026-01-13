@@ -12,6 +12,7 @@ import (
 )
 
 // ------- TESTS FOR UPCOMMING CHALLENGES NOTIFICATIONS ------- \\
+
 func TestNotifiUserUpcommingChallenges24H(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
@@ -40,15 +41,20 @@ func TestNotifiUserUpcommingChallenges24H(t *testing.T) {
 	// Run the cron task (wrapper)
 	tasks.RunNotifiUserUpcommingChallenges24H()
 
-	// Assert notification exists for participant
+	// Assert notification exists for participant (and is relevant)
 	var n models.Notification
-	err = config.DB.Where("user_id = ? AND resource_id = ? AND type = ?", participant.ID, created.ID, models.NotifTypeChallengeUpcomming24H).First(&n).Error
+	err = config.DB.Where("user_id = ? AND resource_id IS NOT NULL AND resource_id = ? AND type = ? AND is_relevant = ?",
+		participant.ID, created.ID, models.NotifTypeChallengeUpcomming24H, true).
+		First(&n).Error
 	assert.NoError(t, err)
 
-	// Run again to ensure dedupe prevents duplicates
+	// Run again to ensure dedupe prevents duplicates (count only relevant ones)
 	tasks.RunNotifiUserUpcommingChallenges24H()
 	var count int64
-	config.DB.Model(&models.Notification{}).Where("user_id = ? AND resource_id = ? AND type = ?", participant.ID, created.ID, models.NotifTypeChallengeUpcomming24H).Count(&count)
+	config.DB.Model(&models.Notification{}).
+		Where("user_id = ? AND resource_id IS NOT NULL AND resource_id = ? AND type = ? AND is_relevant = ?",
+			participant.ID, created.ID, models.NotifTypeChallengeUpcomming24H, true).
+		Count(&count)
 	assert.Equal(t, int64(1), count)
 }
 
@@ -80,15 +86,20 @@ func TestNotifiUserUpcommingChallenges1H(t *testing.T) {
 	// Run the cron task (wrapper)
 	tasks.RunNotifiUserUpcommingChallenges1H()
 
-	// Assert notification exists for participant
+	// Assert notification exists for participant (and is relevant)
 	var n models.Notification
-	err = config.DB.Where("user_id = ? AND resource_id = ? AND type = ?", participant.ID, created.ID, models.NotifTypeChallengeUpcomming1H).First(&n).Error
+	err = config.DB.Where("user_id = ? AND resource_id IS NOT NULL AND resource_id = ? AND type = ? AND is_relevant = ?",
+		participant.ID, created.ID, models.NotifTypeChallengeUpcomming1H, true).
+		First(&n).Error
 	assert.NoError(t, err)
 
-	// Run again to ensure dedupe prevents duplicates
+	// Run again to ensure dedupe prevents duplicates (count only relevant ones)
 	tasks.RunNotifiUserUpcommingChallenges1H()
 	var count int64
-	config.DB.Model(&models.Notification{}).Where("user_id = ? AND resource_id = ? AND type = ?", participant.ID, created.ID, models.NotifTypeChallengeUpcomming1H).Count(&count)
+	config.DB.Model(&models.Notification{}).
+		Where("user_id = ? AND resource_id IS NOT NULL AND resource_id = ? AND type = ? AND is_relevant = ?",
+			participant.ID, created.ID, models.NotifTypeChallengeUpcomming1H, true).
+		Count(&count)
 	assert.Equal(t, int64(1), count)
 }
 
@@ -126,15 +137,20 @@ func TestNotifiUserInvitedToChallengeNotAnswered24H(t *testing.T) {
 	// Run the cron task (wrapper)
 	tasks.RunNotifiUserInvitedToChallengeNotAnswered24H()
 
-	// Assert notification exists for invitee
+	// Assert notification exists for invitee (and is relevant)
 	var n models.Notification
-	err = config.DB.Where("user_id = ? AND resource_id = ? AND type = ?", invitee.ID, created.ID, models.NotifTypeChallengeNotAnswered24H).First(&n).Error
+	err = config.DB.Where("user_id = ? AND resource_id IS NOT NULL AND resource_id = ? AND type = ? AND is_relevant = ?",
+		invitee.ID, created.ID, models.NotifTypeChallengeNotAnswered24H, true).
+		First(&n).Error
 	assert.NoError(t, err)
 
-	// Run again to ensure dedupe prevents duplicates
+	// Run again to ensure dedupe prevents duplicates (count only relevant ones)
 	tasks.RunNotifiUserInvitedToChallengeNotAnswered24H()
 	var count int64
-	config.DB.Model(&models.Notification{}).Where("user_id = ? AND resource_id = ? AND type = ?", invitee.ID, created.ID, models.NotifTypeChallengeNotAnswered24H).Count(&count)
+	config.DB.Model(&models.Notification{}).
+		Where("user_id = ? AND resource_id IS NOT NULL AND resource_id = ? AND type = ? AND is_relevant = ?",
+			invitee.ID, created.ID, models.NotifTypeChallengeNotAnswered24H, true).
+		Count(&count)
 	assert.Equal(t, int64(1), count)
 }
 
@@ -155,9 +171,9 @@ func TestNotifiUserMissingParticipants12H(t *testing.T) {
 	// Case A: participants=3, creator + participant = 2 -> missing 1 => should notify
 	p := func() *int { i := 3; return &i }()
 	chA := models.Challenge{
-		CreatorID: creator.ID,
-		Date:      fixed,
-		StartTime: fixed.Add(12 * time.Hour).Add(2 * time.Minute),
+		CreatorID:    creator.ID,
+		Date:         fixed,
+		StartTime:    fixed.Add(12 * time.Hour).Add(2 * time.Minute),
 		Participants: p,
 	}
 	createdA, err := services.CreateChallenge(chA, nil)
@@ -170,23 +186,28 @@ func TestNotifiUserMissingParticipants12H(t *testing.T) {
 	// Run cron
 	tasks.RunNotifiUserMissingParticipantsInChallenges12H()
 
-	// Assert notification exists for creator
+	// Assert notification exists for creator (and is relevant)
 	var notf models.Notification
-	err = config.DB.Where("user_id = ? AND resource_id = ? AND type = ?", creator.ID, createdA.ID, models.NotifTypeChallengeMissingParticipants).First(&notf).Error
+	err = config.DB.Where("user_id = ? AND resource_id IS NOT NULL AND resource_id = ? AND type = ? AND is_relevant = ?",
+		creator.ID, createdA.ID, models.NotifTypeChallengeMissingParticipants, true).
+		First(&notf).Error
 	assert.NoError(t, err)
 
-	// Dedup: run again
+	// Dedup: run again (count only relevant)
 	tasks.RunNotifiUserMissingParticipantsInChallenges12H()
 	var cnt int64
-	config.DB.Model(&models.Notification{}).Where("user_id = ? AND resource_id = ? AND type = ?", creator.ID, createdA.ID, models.NotifTypeChallengeMissingParticipants).Count(&cnt)
+	config.DB.Model(&models.Notification{}).
+		Where("user_id = ? AND resource_id IS NOT NULL AND resource_id = ? AND type = ? AND is_relevant = ?",
+			creator.ID, createdA.ID, models.NotifTypeChallengeMissingParticipants, true).
+		Count(&cnt)
 	assert.Equal(t, int64(1), cnt)
 
-	// Case B: participants=5, only 2 members present -> missing 3 => DO NOT notify
+	// Case B: participants=5, only 2 members present -> missing 3 => should still notify (any missing participants)
 	p2 := func() *int { i := 5; return &i }()
 	chB := models.Challenge{
-		CreatorID: creator.ID,
-		Date:      fixed,
-		StartTime: fixed.Add(12 * time.Hour).Add(2 * time.Minute),
+		CreatorID:    creator.ID,
+		Date:         fixed,
+		StartTime:    fixed.Add(12 * time.Hour).Add(2 * time.Minute),
 		Participants: p2,
 	}
 	createdB, err := services.CreateChallenge(chB, nil)
@@ -200,15 +221,19 @@ func TestNotifiUserMissingParticipants12H(t *testing.T) {
 	tasks.RunNotifiUserMissingParticipantsInChallenges12H()
 
 	var cntB int64
-	config.DB.Model(&models.Notification{}).Where("user_id = ? AND resource_id = ? AND type = ?", creator.ID, createdB.ID, models.NotifTypeChallengeMissingParticipants).Count(&cntB)
-	// Any missing participants (not just 1-2) should trigger notification
+	config.DB.Model(&models.Notification{}).
+		Where("user_id = ? AND resource_id IS NOT NULL AND resource_id = ? AND type = ? AND is_relevant = ?",
+			creator.ID, createdB.ID, models.NotifTypeChallengeMissingParticipants, true).
+		Count(&cntB)
+
+	// Any missing participants should trigger notification
 	assert.Equal(t, int64(1), cntB)
 
 	// Case C: participants=nil => should be skipped
 	chC := models.Challenge{
-		CreatorID: creator.ID,
-		Date:      fixed,
-		StartTime: fixed.Add(12 * time.Hour).Add(2 * time.Minute),
+		CreatorID:    creator.ID,
+		Date:         fixed,
+		StartTime:    fixed.Add(12 * time.Hour).Add(2 * time.Minute),
 		Participants: nil,
 	}
 	createdC, err := services.CreateChallenge(chC, nil)
@@ -222,6 +247,9 @@ func TestNotifiUserMissingParticipants12H(t *testing.T) {
 	tasks.RunNotifiUserMissingParticipantsInChallenges12H()
 
 	var cntC int64
-	config.DB.Model(&models.Notification{}).Where("user_id = ? AND resource_id = ? AND type = ?", creator.ID, createdC.ID, models.NotifTypeChallengeMissingParticipants).Count(&cntC)
+	config.DB.Model(&models.Notification{}).
+		Where("user_id = ? AND resource_id IS NOT NULL AND resource_id = ? AND type = ? AND is_relevant = ?",
+			creator.ID, createdC.ID, models.NotifTypeChallengeMissingParticipants, true).
+		Count(&cntC)
 	assert.Equal(t, int64(0), cntC)
 }

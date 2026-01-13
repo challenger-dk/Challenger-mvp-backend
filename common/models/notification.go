@@ -46,7 +46,7 @@ type Notification struct {
 	Title        string           `gorm:"not null"`
 	Content      string           `gorm:"not null"`
 	ResourceID   *uint            // Linked ID (e.g., TeamID)
-	ResourceType *string          // Linked Type (e.g., "team")
+	ResourceType *ResourceType    // Linked Type (e.g., "team")
 	InvitationID *uint            // Linked Invitation ID
 	IsRead       bool             `gorm:"default:false"`
 	IsRelevant   bool             `gorm:"default:true"` // <--- Controls visibility
