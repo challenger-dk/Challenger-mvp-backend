@@ -57,6 +57,7 @@ var (
 var (
 	ErrChallengeFullParticipation = errors.New("challenge is full")
 	ErrUserAlreadyInChallenge     = errors.New("user is already in challenge")
+	ErrChallengeAlreadyConfirmed  = errors.New("challenge is already confirmed")
 )
 
 var (
@@ -92,6 +93,7 @@ var errorMap = map[int][]error{
 		ErrTeamConversationExists,
 		ErrChallengeFullParticipation,
 		ErrUserAlreadyInChallenge,
+		ErrChallengeAlreadyConfirmed,
 	},
 	http.StatusBadRequest: {
 		ErrInvalidSport,

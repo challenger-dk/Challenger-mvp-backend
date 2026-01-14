@@ -12,7 +12,9 @@ type ChallengeStatus string
 const (
 	ChallengeStatusSuggested ChallengeStatus = "suggested"
 	ChallengeStatusOpen      ChallengeStatus = "open"
+	ChallengeStatusPending   ChallengeStatus = "pending"
 	ChallengeStatusReady     ChallengeStatus = "ready"
+	ChallengeConfirmed       ChallengeStatus = "confirmed"
 	ChallengeStatusCompleted ChallengeStatus = "completed"
 	ChallengeStatusExceeded  ChallengeStatus = "exceeded"
 )
@@ -40,7 +42,7 @@ type Challenge struct {
 	IsIndoor     bool            `gorm:"default:false"`
 	IsPublic     bool            `gorm:"default:false"`
 	IsCompleted  bool            `gorm:"default:false"`
-	Status       ChallengeStatus `gorm:"type:VARCHAR(20);not null;default:'open';check:status IN ('suggested','open','ready','completed','exceeded')"`
+	Status       ChallengeStatus `gorm:"type:VARCHAR(20);not null;default:'open';check:status IN ('suggested','open','pending','ready','confirmed','completed','exceeded')"`
 	Type         ChallengeType   `gorm:"type:VARCHAR(20);not null;default:'open-for-all';check:type IN ('open-for-all','team-vs-team','run-cycling')"`
 	PlayFor      *string         `gorm:"default:null"`
 	HasCost      bool            `gorm:"default:false"`

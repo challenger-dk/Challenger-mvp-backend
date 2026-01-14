@@ -141,7 +141,7 @@ func TestChallengeService_FullParticipation(t *testing.T) {
 
 	fetched, _ := services.GetChallengeByID(created.ID)
 	assert.Len(t, fetched.Users, 2)
-	assert.Equal(t, models.ChallengeStatusReady, fetched.Status)
+	assert.Equal(t, models.ChallengeConfirmed, fetched.Status)
 
 	// creator should get full participation notification
 	var notif models.Notification

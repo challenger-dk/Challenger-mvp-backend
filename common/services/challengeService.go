@@ -130,15 +130,8 @@ func CreateChallenge(c models.Challenge, invitedUserIds []uint) (models.Challeng
 					// Already pending, skip
 					continue
 				case models.StatusAccepted:
-					// Already accepted, add user to challenge
-					var user models.User
-					err = tx.First(&user, userId).Error
-					if err != nil {
-						return err
-					}
-					err = tx.Model(&c).
-						Association("Users").
-						Append(&user)
+					// Already accepted, add user to challenge (with capacity check)
+					err = addUserToChallenge(c.ID, userId, tx)
 					if err != nil {
 						return err
 					}
@@ -347,13 +340,13 @@ func addUserToChallenge(challengeId uint, userId uint, db *gorm.DB) error {
 
 	isFull := c.Participants != nil && newCount == int64(*c.Participants)
 
-	// If full, update challenge status to READY
-	if isFull && c.Status != models.ChallengeStatusReady && c.Status != models.ChallengeStatusCompleted {
+	// If full, update challenge status to CONFIRMED
+	if isFull && c.Status != models.ChallengeConfirmed && c.Status != models.ChallengeStatusCompleted {
 		if err := db.Model(&c).
-			Update("status", models.ChallengeStatusReady).Error; err != nil {
+			Update("status", models.ChallengeConfirmed).Error; err != nil {
 			return err
 		}
-		c.Status = models.ChallengeStatusReady
+		c.Status = models.ChallengeConfirmed
 	}
 
 	// Load creator for notification
@@ -373,4 +366,30 @@ func addUserToChallenge(challengeId uint, userId uint, db *gorm.DB) error {
 	}
 
 	return nil
+}
+
+func ConfirmChallenge(id uint, user *models.User) error {
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+		var c models.Challenge
+		var u models.User
+
+		err := tx.First(&c, id).Error
+		if err != nil {
+			return err
+		}
+
+		err = tx.First(&u, user.ID).Error
+		if err != nil {
+			return err
+		}
+		if c.CreatorID != user.ID {
+			return appError.ErrUnauthorized
+		}
+		if c.Status != models.ChallengeStatusPending {
+			return appError.ErrChallengeAlreadyConfirmed
+		}
+
+		return tx.Model(&c).
+			Update("status", models.ChallengeConfirmed).Error
+	})
 }
