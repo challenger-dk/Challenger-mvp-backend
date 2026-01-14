@@ -68,26 +68,66 @@ func (c *Client) readPump() {
 			continue
 		}
 
+		// Default event type is "message"
+		if req.Type == "" {
+			req.Type = "message"
+		}
+
+		// ✅ Handle typing events (no DB writes)
+		if req.Type == "typing_start" || req.Type == "typing_stop" {
+			evtType := dto.RealtimeEventTypingStart
+			if req.Type == "typing_stop" {
+				evtType = dto.RealtimeEventTypingStop
+			}
+
+			evt := dto.RealtimeEventDto{
+				Type:           evtType,
+				ConversationID: req.ConversationID,
+				TeamID:         req.TeamID,
+				RecipientID:    req.RecipientID,
+				UserID:         c.userID,
+				Timestamp:      time.Now(),
+				Message:        nil,
+			}
+
+			// Only broadcast if there is a routing target
+			if req.ConversationID != nil || req.TeamID != nil || req.RecipientID != nil {
+				c.hub.broadcast <- evt
+			}
+			continue
+		}
+
+		// ✅ Normal message sending
 		if req.Content == "" {
 			continue
 		}
 
 		// New conversation-based messaging
 		if req.ConversationID != nil {
-			// Use conversation service
 			msg, err := services.SendMessage(*req.ConversationID, c.userID, req.Content)
 			if err != nil {
 				log.Printf("Error sending message via conversation: %v", err)
 				continue
 			}
-			c.hub.broadcast <- dto.ToMessageResponseDto(*msg)
-		} else if req.TeamID != nil || req.RecipientID != nil {
-			// Legacy messaging (backward compatibility)
-			// --- Blocking Check (Incoming DM) ---
-			// Prevent user from sending a DM to someone who has blocked them
+
+			msgDto := dto.ToMessageResponseDto(*msg)
+			evt := dto.RealtimeEventDto{
+				Type:           dto.RealtimeEventMessage,
+				ConversationID: req.ConversationID,
+				UserID:         c.userID,
+				Timestamp:      time.Now(),
+				Message:        &msgDto,
+			}
+
+			c.hub.broadcast <- evt
+			continue
+		}
+
+		// Legacy messaging (backward compatibility)
+		if req.TeamID != nil || req.RecipientID != nil {
+			// Blocking check for legacy DM
 			if req.RecipientID != nil {
 				if services.IsBlocked(*req.RecipientID, c.userID) {
-					// User is blocked by recipient. Ignore message.
 					continue
 				}
 			}
@@ -114,11 +154,21 @@ func (c *Client) readPump() {
 				LIMIT 1
 			`, c.userID, time.Now().Add(-1*time.Second)).Scan(&msg)
 
-			c.hub.broadcast <- msg
-		} else {
-			// No valid target specified
+			evt := dto.RealtimeEventDto{
+				Type:        dto.RealtimeEventMessage,
+				TeamID:      req.TeamID,
+				RecipientID: req.RecipientID,
+				UserID:      c.userID,
+				Timestamp:   time.Now(),
+				Message:     &msg,
+			}
+
+			c.hub.broadcast <- evt
 			continue
 		}
+
+		// No valid target specified
+		continue
 	}
 }
 
