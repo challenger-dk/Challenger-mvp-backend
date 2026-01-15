@@ -72,6 +72,7 @@ func RegisterRoutes(r chi.Router) {
 			r.Post("/{id}/join", controllers.JoinChallenge)
 			r.Post("/{id}/leave", controllers.LeaveChallenge)
 			r.Delete("/{id}", controllers.DeleteChallenge)
+			r.Post("/{id}/confirm", controllers.ConfirmChallenge)
 		})
 	})
 
