@@ -213,8 +213,8 @@ func CreateInvitationNotification(db *gorm.DB, inv models.Invitation) {
 func CreateAcceptedInvitationNotification(db *gorm.DB, inv models.Invitation) {
 	switch inv.ResourceType {
 	case models.ResourceTypeTeam:
-		title := "Holdinvitation accepteret"
-		content := fmt.Sprintf("%s er blevet medlem af dit hold", inv.Invitee.FirstName)
+		title := "Klubinvitation accepteret"
+		content := fmt.Sprintf("%s er blevet medlem af din klub", inv.Invitee.FirstName)
 
 		rid := inv.ResourceID
 		rType := inv.ResourceType
@@ -282,8 +282,8 @@ func CreateAcceptedInvitationNotification(db *gorm.DB, inv models.Invitation) {
 func CreateDeclinedInvitationNotification(db *gorm.DB, inv models.Invitation) {
 	switch inv.ResourceType {
 	case models.ResourceTypeTeam:
-		title := "Holdinvitation afvist"
-		content := fmt.Sprintf("%s har afvist din holdinvitation", inv.Invitee.FirstName)
+		title := "Klubinvitation afvist"
+		content := fmt.Sprintf("%s har afvist din klubinvitation", inv.Invitee.FirstName)
 
 		rid := inv.ResourceID
 		rType := inv.ResourceType
@@ -350,7 +350,7 @@ func CreateDeclinedInvitationNotification(db *gorm.DB, inv models.Invitation) {
 
 // User removed from team
 func CreateRemovedUserFromTeamNotification(db *gorm.DB, userID uint, team models.Team) {
-	title := "Du er blevet fjernet fra et hold"
+	title := "Du er blevet fjernet fra en klub"
 	content := fmt.Sprintf("Du er blevet fjernet fra '%s'", team.Name)
 
 	rid := team.ID
@@ -368,7 +368,7 @@ func CreateRemovedUserFromTeamNotification(db *gorm.DB, userID uint, team models
 
 // User left team, notifies the creator only
 func CreateUserLeftTeamNotification(db *gorm.DB, leaver models.User, team models.Team) {
-	title := "En bruger har forladt holdet"
+	title := "En bruger har forladt klubben"
 	content := fmt.Sprintf("%s har forladt '%s'", leaver.FirstName, team.Name)
 
 	rid := team.ID
@@ -386,7 +386,7 @@ func CreateUserLeftTeamNotification(db *gorm.DB, leaver models.User, team models
 }
 
 func CreateTeamDeletedNotification(db *gorm.DB, user models.User, team models.Team) {
-	title := "Et hold du er medlem af er blevet slettet"
+	title := "En klub du er medlem af er blevet slettet"
 	content := fmt.Sprintf("'%s' er blevet slettet", team.Name)
 
 	rid := team.ID
