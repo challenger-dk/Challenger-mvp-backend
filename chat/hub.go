@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"log"
 	"server/common/dto"
+	"server/common/services"
 )
 
 type Hub struct {
 	clients map[*Client]bool
 
-	// Changed to handle DTOs
-	broadcast chan dto.MessageResponseDto
+	// ✅ Now broadcast realtime events (message + typing)
+	broadcast chan dto.RealtimeEventDto
 
 	register   chan *Client
 	unregister chan *Client
@@ -18,7 +19,7 @@ type Hub struct {
 
 func newHub() *Hub {
 	return &Hub{
-		broadcast:  make(chan dto.MessageResponseDto),
+		broadcast:  make(chan dto.RealtimeEventDto),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		clients:    make(map[*Client]bool),
@@ -38,30 +39,52 @@ func (h *Hub) run() {
 				close(client.send)
 			}
 
-		case msgDto := <-h.broadcast:
-			payload, err := json.Marshal(msgDto)
+		case evt := <-h.broadcast:
+			payload, err := json.Marshal(evt)
 			if err != nil {
-				log.Println("Error marshaling message:", err)
+				log.Println("Error marshaling realtime event:", err)
 				continue
+			}
+
+			// ✅ Pre-fetch participant IDs for conversation routing (once per event)
+			var participantIDs map[uint]bool
+			if evt.ConversationID != nil {
+				ids, err := services.GetConversationParticipantIDs(*evt.ConversationID)
+				if err != nil {
+					log.Println("Error fetching conversation participants:", err)
+					continue
+				}
+				participantIDs = make(map[uint]bool, len(ids))
+				for _, id := range ids {
+					participantIDs[id] = true
+				}
 			}
 
 			for client := range h.clients {
 				shouldSend := false
 
-				// Check blocking
-				// If the recipient (client) has blocked the sender, they should NOT receive the message
-				if client.blockedUserIDs[msgDto.SenderID] {
+				// If the receiving client has blocked the triggering user, skip
+				if client.blockedUserIDs[evt.UserID] {
 					continue
 				}
 
-				if msgDto.TeamID != nil {
-					if _, isMember := client.teamIDs[*msgDto.TeamID]; isMember {
+				// Conversation routing
+				if evt.ConversationID != nil {
+					if participantIDs != nil && participantIDs[client.userID] {
 						shouldSend = true
 					}
 				}
 
-				if msgDto.RecipientID != nil {
-					if client.userID == *msgDto.RecipientID || client.userID == msgDto.SenderID {
+				// Legacy team routing
+				if evt.TeamID != nil {
+					if _, isMember := client.teamIDs[*evt.TeamID]; isMember {
+						shouldSend = true
+					}
+				}
+
+				// Legacy DM routing
+				if evt.RecipientID != nil {
+					if client.userID == *evt.RecipientID || client.userID == evt.UserID {
 						shouldSend = true
 					}
 				}

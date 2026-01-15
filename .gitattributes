@@ -1,0 +1,4 @@
+# Ensure migration SQL files use LF (avoid CRLF checksum mismatches)
+Database/migrations/* text eol=lf
+Database/migrations/*.sql text eol=lf
+Database/migrations/atlas.sum text eol=lf

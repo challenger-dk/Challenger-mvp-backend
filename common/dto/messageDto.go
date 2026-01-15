@@ -6,10 +6,14 @@ import (
 )
 
 type IncomingMessage struct {
-	ConversationID *uint  `json:"conversation_id,omitempty"` // New conversation-based messaging
-	TeamID         *uint  `json:"team_id,omitempty"`         // Legacy team messaging
-	RecipientID    *uint  `json:"recipient_id,omitempty"`    // Legacy direct messaging
-	Content        string `json:"content" validate:"sanitize"`
+	Type string `json:"type,omitempty"`
+
+	ConversationID *uint `json:"conversation_id,omitempty"`
+	TeamID         *uint `json:"team_id,omitempty"`      // Legacy team messaging
+	RecipientID    *uint `json:"recipient_id,omitempty"` // Legacy direct messaging
+
+	// Only used for Type == "message"
+	Content string `json:"content" validate:"sanitize"`
 }
 
 type MessageResponseDto struct {
@@ -28,7 +32,7 @@ func ToMessageResponseDto(msg models.Message) MessageResponseDto {
 		ID:             msg.ID,
 		ConversationID: msg.ConversationID,
 		SenderID:       msg.SenderID,
-		Sender:         ToUserResponseDto(msg.Sender), // This cleans up the User object!
+		Sender:         ToUserResponseDto(msg.Sender),
 		TeamID:         msg.TeamID,
 		RecipientID:    msg.RecipientID,
 		Content:        msg.Content,

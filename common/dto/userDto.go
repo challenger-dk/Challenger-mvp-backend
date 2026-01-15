@@ -45,6 +45,7 @@ type UserResponseDto struct {
 	NextChallenges      []ChallengeResponseDto     `json:"next_challenges,omitempty"`
 	Settings            UserSettingsResponseDto    `json:"settings"`
 	EmergencyContacts   []EmergencyInfoResponseDto `json:"emergency_contacts,omitempty"`
+	Teams               []TeamResponseDto          `json:"teams,omitempty"`
 }
 
 type UserSettingsResponseDto struct {
@@ -131,9 +132,12 @@ func ToPublicUserDtoResponse(user models.User) PublicUserDtoResponse {
 		}
 	}
 
-	// Get next upcoming challenges (limited to UserNextChallengesCount)
+	// Get next upcoming challenges, not including completed or past
 	nextChallenges := make([]ChallengeResponseDto, 0, UserNextChallengesCount)
 	for _, ch := range user.JoinedChallenges {
+		if ch.Date.Before(time.Now()) {
+			continue
+		}
 		if ch.IsCompleted {
 			continue
 		}
@@ -191,9 +195,12 @@ func ToUserResponseDto(user models.User) UserResponseDto {
 		}
 	}
 
-	// Get next upcoming challenges (limited to UserNextChallengesCount)
+	// Get next upcoming challenges, not including completed or past
 	nextChallenges := make([]ChallengeResponseDto, 0, UserNextChallengesCount)
 	for _, ch := range user.JoinedChallenges {
+		if ch.Date.Before(time.Now()) {
+			continue
+		}
 		if ch.IsCompleted {
 			continue
 		}
@@ -206,6 +213,11 @@ func ToUserResponseDto(user models.User) UserResponseDto {
 	emergencyContacts := make([]EmergencyInfoResponseDto, len(user.EmergencyContacts))
 	for i, contact := range user.EmergencyContacts {
 		emergencyContacts[i] = ToEmergencyInfoResponseDto(contact)
+	}
+
+	teams := make([]TeamResponseDto, len(user.Teams))
+	for i, team := range user.Teams {
+		teams[i] = ToTeamResponseDto(team)
 	}
 
 	return UserResponseDto{
@@ -223,6 +235,7 @@ func ToUserResponseDto(user models.User) UserResponseDto {
 		CompletedChallenges: completedChallengesCount,
 		NextChallenges:      nextChallenges,
 		EmergencyContacts:   emergencyContacts,
+		Teams:               teams,
 	}
 }
 

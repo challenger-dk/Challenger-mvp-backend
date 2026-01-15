@@ -404,7 +404,7 @@ func TestNotificationService_CreateTeamDeletedNotification(t *testing.T) {
 	var notif1 models.Notification
 	err := config.DB.Where("user_id = ? AND type = ?", member1.ID, models.NotifTypeTeamDeleted).First(&notif1).Error
 	assert.NoError(t, err)
-	assert.Equal(t, "Et hold du er medlem af er blevet slettet", notif1.Title)
+	assert.Equal(t, "En klub du er medlem af er blevet slettet", notif1.Title)
 	assert.Contains(t, notif1.Content, "Team To Delete")
 	assert.Equal(t, models.NotifTypeTeamDeleted, notif1.Type)
 	assert.False(t, notif1.IsRead)

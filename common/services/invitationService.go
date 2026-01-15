@@ -2,7 +2,7 @@ package services
 
 import (
 	"errors"
-	"fmt"
+	"log/slog"
 	"server/common/appError"
 	"server/common/config"
 	"server/common/models"
@@ -35,6 +35,13 @@ func SendInvitation(invitation *models.Invitation) error {
 	// Check if Invitee has blocked Inviter
 	if IsBlocked(invitation.InviteeId, invitation.InviterId) {
 		return appError.ErrUserBlocked
+	}
+
+	// Normalize friend invitations so ResourceID is always deterministic.
+	// ResourceID is required (not null) and part of the unique index.
+	// Convention: for friends, ResourceID points to the inviter (sender).
+	if invitation.ResourceType == models.ResourceTypeFriend {
+		invitation.ResourceID = invitation.InviterId
 	}
 
 	return config.DB.Transaction(func(tx *gorm.DB) error {
@@ -122,6 +129,12 @@ func SendInvitation(invitation *models.Invitation) error {
 				return err
 			}
 
+			// Heal older friend invitations that may have ResourceID=0 from earlier code
+			if existing.ResourceType == models.ResourceTypeFriend && existing.ResourceID == 0 {
+				existing.ResourceID = existing.InviterId
+				_ = tx.Save(&existing).Error // best-effort; don't fail resend
+			}
+
 			// Re-notify
 			CreateInvitationNotification(tx, existing)
 			return nil
@@ -134,6 +147,13 @@ func SendInvitation(invitation *models.Invitation) error {
 			if err != nil {
 				return err
 			}
+
+			// Heal older friend invitations that may have ResourceID=0 from earlier code
+			if existing.ResourceType == models.ResourceTypeFriend && existing.ResourceID == 0 {
+				existing.ResourceID = existing.InviterId
+				_ = tx.Save(&existing).Error // best-effort; don't fail resend
+			}
+
 			// Re-notify
 			CreateInvitationNotification(tx, existing)
 			return nil
@@ -254,7 +274,10 @@ func AcceptInvitation(invitationId uint, currentUserId uint) error {
 			// Sync conversation (don't fail if this errors)
 			if err := SyncTeamConversationMembers(teamID, memberIDs); err != nil {
 				// Log error but don't fail the request
-				fmt.Printf("Warning: Failed to sync team conversation for team %d: %v\n", teamID, err)
+				slog.Warn("Failed to sync team conversation for team",
+					slog.Int("team_id", int(teamID)),
+					slog.Any("error", err),
+				)
 			}
 		}
 	}
@@ -266,7 +289,6 @@ func DeclineInvitation(invitationId uint, currentUserId uint) error {
 	err := config.DB.Transaction(func(tx *gorm.DB) error {
 		var invitation models.Invitation
 
-		// FIXED: Preloads must happen BEFORE First()
 		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Preload("Inviter").
 			Preload("Invitee").
@@ -307,15 +329,12 @@ func DeclineInvitation(invitationId uint, currentUserId uint) error {
 
 // getResource fetches the resource associated with an invitation
 func getResource(invitation models.Invitation, db *gorm.DB) (any, error) {
-	fmt.Println("ResourceType:", invitation.ResourceType)
-	fmt.Println("ResourceID:", invitation.ResourceID)
 	switch invitation.ResourceType {
 	case models.ResourceTypeTeam:
 		var team models.Team
 		err := db.Preload("Users").
 			First(&team, invitation.ResourceID).
 			Error
-
 		if err != nil {
 			return nil, err
 		}
@@ -326,11 +345,14 @@ func getResource(invitation models.Invitation, db *gorm.DB) (any, error) {
 		err := db.Preload("Users").
 			First(&challenge, invitation.ResourceID).
 			Error
-
 		if err != nil {
 			return nil, err
 		}
 		return challenge, nil
+
+	case models.ResourceTypeFriend:
+		// No resource fetch needed for friend invitations in this service
+		return nil, nil
 
 	default:
 		return nil, appError.ErrUnknownResource

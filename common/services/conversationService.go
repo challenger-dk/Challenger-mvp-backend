@@ -324,3 +324,22 @@ func MarkConversationRead(conversationID, userID uint, readAt time.Time) error {
 
 	return nil
 }
+
+// GetConversationParticipantIDs returns all user IDs that currently belong to a conversation.
+// - Only includes participants where left_at IS NULL
+// - Used by the chat WebSocket hub for routing conversation messages live
+func GetConversationParticipantIDs(conversationID uint) ([]uint, error) {
+	var userIDs []uint
+
+	err := config.DB.
+		Model(&models.ConversationParticipant{}).
+		Select("user_id").
+		Where("conversation_id = ? AND left_at IS NULL", conversationID).
+		Scan(&userIDs).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return userIDs, nil
+}

@@ -192,3 +192,25 @@ func DeleteChallenge(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func ConfirmChallenge(w http.ResponseWriter, r *http.Request) {
+	id, err := helpers.GetParamId(r)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	user, ok := r.Context().
+		Value(middleware.UserContextKey).(*models.User)
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
+		return
+	}
+
+	err = services.ConfirmChallenge(id, user)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}

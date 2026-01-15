@@ -14,7 +14,7 @@ type NotificationResponseDto struct {
 	IsRelevant   bool                    `json:"is_relevant"`
 	Actor        *PublicUserDtoResponse  `json:"actor,omitempty"`
 	ResourceID   *uint                   `json:"resource_id,omitempty"`
-	ResourceType *string                 `json:"resource_type,omitempty"`
+	ResourceType *models.ResourceType    `json:"resource_type,omitempty"`
 	InvitationID *uint                   `json:"invitation_id,omitempty"`
 	CreatedAt    time.Time               `json:"created_at"`
 }

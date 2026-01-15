@@ -68,8 +68,8 @@ func ChallengeCreateDtoToModel(t ChallengeCreateDto) models.Challenge {
 		endTime = &t.EndTime
 	}
 
-	// Set status, defaulting to "open" if not provided
-	status := models.ChallengeStatusOpen
+	// Set status, defaulting to "pending" if not provided
+	status := models.ChallengeStatusPending
 	if strings.TrimSpace(t.Status) != "" {
 		status = models.ChallengeStatus(strings.TrimSpace(t.Status))
 	}
