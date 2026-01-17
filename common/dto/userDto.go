@@ -49,17 +49,23 @@ type UserResponseDto struct {
 }
 
 type UserSettingsResponseDto struct {
-	NotifyTeamInvite      bool `json:"notify_team_invite"`
-	NotifyFriendReq       bool `json:"notify_friend_req"`
-	NotifyChallengeInvite bool `json:"notify_challenge_invite"`
-	NotifyChallengeUpdate bool `json:"notify_challenge_update"`
+	NotifyTeamInvites        bool `json:"notify_team_invites"`
+	NotifyTeamMembership     bool `json:"notify_team_membership"`
+	NotifyFriendRequests     bool `json:"notify_friend_requests"`
+	NotifyFriendUpdates      bool `json:"notify_friend_updates"`
+	NotifyChallengeInvites   bool `json:"notify_challenge_invites"`
+	NotifyChallengeUpdates   bool `json:"notify_challenge_updates"`
+	NotifyChallengeReminders bool `json:"notify_challenge_reminders"`
 }
 
 type UserSettingsUpdateDto struct {
-	NotifyTeamInvite      *bool `json:"notify_team_invite"`
-	NotifyFriendReq       *bool `json:"notify_friend_req"`
-	NotifyChallengeInvite *bool `json:"notify_challenge_invite"`
-	NotifyChallengeUpdate *bool `json:"notify_challenge_update"`
+	NotifyTeamInvites        *bool `json:"notify_team_invites"`
+	NotifyTeamMembership     *bool `json:"notify_team_membership"`
+	NotifyFriendRequests     *bool `json:"notify_friend_requests"`
+	NotifyFriendUpdates      *bool `json:"notify_friend_updates"`
+	NotifyChallengeInvites   *bool `json:"notify_challenge_invites"`
+	NotifyChallengeUpdates   *bool `json:"notify_challenge_updates"`
+	NotifyChallengeReminders *bool `json:"notify_challenge_reminders"`
 }
 
 type UsersSearchResponse struct {
@@ -180,10 +186,13 @@ func ToUserResponseDto(user models.User) UserResponseDto {
 	} else {
 		// Default settings when Settings is nil (all notifications enabled)
 		settings = UserSettingsResponseDto{
-			NotifyTeamInvite:      true,
-			NotifyFriendReq:       true,
-			NotifyChallengeInvite: true,
-			NotifyChallengeUpdate: true,
+			NotifyTeamInvites:        true,
+			NotifyTeamMembership:     true,
+			NotifyFriendRequests:     true,
+			NotifyFriendUpdates:      true,
+			NotifyChallengeInvites:   true,
+			NotifyChallengeUpdates:   true,
+			NotifyChallengeReminders: true,
 		}
 	}
 
@@ -241,20 +250,42 @@ func ToUserResponseDto(user models.User) UserResponseDto {
 
 func ToUserSettingsResponseDto(s models.UserSettings) UserSettingsResponseDto {
 	return UserSettingsResponseDto{
-		NotifyTeamInvite:      s.NotifyTeamInvite,
-		NotifyFriendReq:       s.NotifyFriendReq,
-		NotifyChallengeInvite: s.NotifyChallengeInvite,
-		NotifyChallengeUpdate: s.NotifyChallengeUpdate,
+		NotifyTeamInvites:        s.NotifyTeamInvites,
+		NotifyTeamMembership:     s.NotifyTeamMembership,
+		NotifyFriendRequests:     s.NotifyFriendRequests,
+		NotifyFriendUpdates:      s.NotifyFriendUpdates,
+		NotifyChallengeInvites:   s.NotifyChallengeInvites,
+		NotifyChallengeUpdates:   s.NotifyChallengeUpdates,
+		NotifyChallengeReminders: s.NotifyChallengeReminders,
 	}
 }
 
 func UserSettingsUpdateDtoToModel(s UserSettingsUpdateDto) models.UserSettings {
-	return models.UserSettings{
-		NotifyTeamInvite:      *s.NotifyTeamInvite,
-		NotifyFriendReq:       *s.NotifyFriendReq,
-		NotifyChallengeInvite: *s.NotifyChallengeInvite,
-		NotifyChallengeUpdate: *s.NotifyChallengeUpdate,
+	// NOTE: this assumes controller validated required fields if you want them required.
+	// If you allow partial updates, prefer NOT using this and update field-by-field in service.
+	m := models.UserSettings{}
+	if s.NotifyTeamInvites != nil {
+		m.NotifyTeamInvites = *s.NotifyTeamInvites
 	}
+	if s.NotifyTeamMembership != nil {
+		m.NotifyTeamMembership = *s.NotifyTeamMembership
+	}
+	if s.NotifyFriendRequests != nil {
+		m.NotifyFriendRequests = *s.NotifyFriendRequests
+	}
+	if s.NotifyFriendUpdates != nil {
+		m.NotifyFriendUpdates = *s.NotifyFriendUpdates
+	}
+	if s.NotifyChallengeInvites != nil {
+		m.NotifyChallengeInvites = *s.NotifyChallengeInvites
+	}
+	if s.NotifyChallengeUpdates != nil {
+		m.NotifyChallengeUpdates = *s.NotifyChallengeUpdates
+	}
+	if s.NotifyChallengeReminders != nil {
+		m.NotifyChallengeReminders = *s.NotifyChallengeReminders
+	}
+	return m
 }
 
 func UserCreateDtoToModel(u UserCreateDto) models.User {
@@ -278,6 +309,16 @@ func UserCreateDtoToModel(u UserCreateDto) models.User {
 		BirthDate:      u.BirthDate,
 		City:           u.City,
 		FavoriteSports: favoriteSports,
-		Settings:       &models.UserSettings{},
+
+		// IMPORTANT: initialize to true; otherwise bool zero-values can persist as false.
+		Settings: &models.UserSettings{
+			NotifyTeamInvites:        true,
+			NotifyTeamMembership:     true,
+			NotifyFriendRequests:     true,
+			NotifyFriendUpdates:      true,
+			NotifyChallengeInvites:   true,
+			NotifyChallengeUpdates:   true,
+			NotifyChallengeReminders: true,
+		},
 	}
 }

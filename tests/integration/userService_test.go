@@ -85,23 +85,23 @@ func TestUserService_Settings(t *testing.T) {
 	// 1. Get Settings
 	settings, err := services.GetUserSettings(user.ID)
 	assert.NoError(t, err)
-	assert.True(t, settings.NotifyTeamInvite) // Default is true
+	assert.True(t, settings.NotifyTeamInvites) // Default is true
 
 	// 2. Update Settings
 	f := false
 	updateDto := dto.UserSettingsUpdateDto{
-		NotifyTeamInvite:      &f,
-		NotifyFriendReq:       &f,
-		NotifyChallengeInvite: &f,
-		NotifyChallengeUpdate: &f,
+		NotifyTeamInvites:      &f,
+		NotifyFriendRequests:   &f,
+		NotifyChallengeInvites: &f,
+		NotifyChallengeUpdates: &f,
 	}
 	err = services.UpdateUserSettings(user.ID, updateDto)
 	assert.NoError(t, err)
 
 	// 3. Verify Update
 	updatedSettings, _ := services.GetUserSettings(user.ID)
-	assert.False(t, updatedSettings.NotifyTeamInvite)
-	assert.False(t, updatedSettings.NotifyFriendReq)
+	assert.False(t, updatedSettings.NotifyTeamInvites)
+	assert.False(t, updatedSettings.NotifyFriendRequests)
 }
 
 func TestUserService_GetUsers(t *testing.T) {

@@ -318,17 +318,28 @@ func UpdateUserSettings(userID uint, settingsDto dto.UserSettingsUpdateDto) erro
 			return err
 		}
 
-		if settingsDto.NotifyTeamInvite != nil {
-			settings.NotifyTeamInvite = *settingsDto.NotifyTeamInvite
+		if settingsDto.NotifyTeamInvites != nil {
+			settings.NotifyTeamInvites = *settingsDto.NotifyTeamInvites
 		}
-		if settingsDto.NotifyFriendReq != nil {
-			settings.NotifyFriendReq = *settingsDto.NotifyFriendReq
+		if settingsDto.NotifyTeamMembership != nil {
+			settings.NotifyTeamMembership = *settingsDto.NotifyTeamMembership
 		}
-		if settingsDto.NotifyChallengeInvite != nil {
-			settings.NotifyChallengeInvite = *settingsDto.NotifyChallengeInvite
+
+		if settingsDto.NotifyFriendRequests != nil {
+			settings.NotifyFriendRequests = *settingsDto.NotifyFriendRequests
 		}
-		if settingsDto.NotifyChallengeUpdate != nil {
-			settings.NotifyChallengeUpdate = *settingsDto.NotifyChallengeUpdate
+		if settingsDto.NotifyFriendUpdates != nil {
+			settings.NotifyFriendUpdates = *settingsDto.NotifyFriendUpdates
+		}
+
+		if settingsDto.NotifyChallengeInvites != nil {
+			settings.NotifyChallengeInvites = *settingsDto.NotifyChallengeInvites
+		}
+		if settingsDto.NotifyChallengeUpdates != nil {
+			settings.NotifyChallengeUpdates = *settingsDto.NotifyChallengeUpdates
+		}
+		if settingsDto.NotifyChallengeReminders != nil {
+			settings.NotifyChallengeReminders = *settingsDto.NotifyChallengeReminders
 		}
 
 		return tx.Save(&settings).Error
