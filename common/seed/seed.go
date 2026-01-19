@@ -148,8 +148,8 @@ func seedUsers() ([]models.User, error) {
 		{
 			Email:     "user1@challenger.dk",
 			Password:  &hashedPasswordStr,
-			FirstName: "Alice",
-			LastName:  "Johnson",
+			FirstName: "Anna",
+			LastName:  "Jensen",
 			Bio:       "Tennisentusiast og weekendkriger",
 			BirthDate: time.Date(1995, 1, 1, 0, 0, 0, 0, time.UTC),
 			Settings:  &models.UserSettings{},
@@ -157,8 +157,8 @@ func seedUsers() ([]models.User, error) {
 		{
 			Email:     "user2@challenger.dk",
 			Password:  &hashedPasswordStr,
-			FirstName: "Bob",
-			LastName:  "Smith",
+			FirstName: "Bjørn",
+			LastName:  "Schmidt",
 			Bio:       "Fodboldspiller på jagt efter konkurrencedygtige kampe",
 			BirthDate: time.Date(1990, 1, 1, 0, 0, 0, 0, time.UTC),
 			Settings:  &models.UserSettings{},
@@ -166,8 +166,8 @@ func seedUsers() ([]models.User, error) {
 		{
 			Email:     "user3@challenger.dk",
 			Password:  &hashedPasswordStr,
-			FirstName: "Charlie",
-			LastName:  "Brown",
+			FirstName: "Christian",
+			LastName:  "Brøndum",
 			Bio:       "Basketballfanatiker",
 			BirthDate: time.Date(1992, 1, 1, 0, 0, 0, 0, time.UTC),
 			Settings:  &models.UserSettings{},
@@ -175,8 +175,8 @@ func seedUsers() ([]models.User, error) {
 		{
 			Email:     "user4@challenger.dk",
 			Password:  &hashedPasswordStr,
-			FirstName: "Diana",
-			LastName:  "Williams",
+			FirstName: "Ditte",
+			LastName:  "Vilhelmsen",
 			Bio:       "Elsker at spille padel tennis og volleyball",
 			BirthDate: time.Date(2003, 1, 1, 0, 0, 0, 0, time.UTC),
 			Settings:  &models.UserSettings{},
@@ -184,8 +184,8 @@ func seedUsers() ([]models.User, error) {
 		{
 			Email:     "user5@challenger.dk",
 			Password:  &hashedPasswordStr,
-			FirstName: "Eve",
-			LastName:  "Davis",
+			FirstName: "Eva",
+			LastName:  "Davidsen",
 			Bio:       "Løbe- og cykelentusiast",
 			BirthDate: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
 			Settings:  &models.UserSettings{},
@@ -193,7 +193,7 @@ func seedUsers() ([]models.User, error) {
 		{
 			Email:     "user6@challenger.dk",
 			Password:  &hashedPasswordStr,
-			FirstName: "Frank",
+			FirstName: "Frederik",
 			LastName:  "Hansen",
 			Bio:       "Badminton spiller og tennisfan",
 			BirthDate: time.Date(1998, 3, 15, 0, 0, 0, 0, time.UTC),
@@ -202,7 +202,7 @@ func seedUsers() ([]models.User, error) {
 		{
 			Email:     "user7@challenger.dk",
 			Password:  &hashedPasswordStr,
-			FirstName: "Grace",
+			FirstName: "Gry",
 			LastName:  "Nielsen",
 			Bio:       "Svømning og vandpolo elsker",
 			BirthDate: time.Date(1994, 7, 22, 0, 0, 0, 0, time.UTC),
@@ -211,7 +211,7 @@ func seedUsers() ([]models.User, error) {
 		{
 			Email:     "user8@challenger.dk",
 			Password:  &hashedPasswordStr,
-			FirstName: "Henry",
+			FirstName: "Henrik",
 			LastName:  "Andersen",
 			Bio:       "Fodbold og basketball på weekenderne",
 			BirthDate: time.Date(1996, 11, 8, 0, 0, 0, 0, time.UTC),
@@ -220,7 +220,7 @@ func seedUsers() ([]models.User, error) {
 		{
 			Email:     "user9@challenger.dk",
 			Password:  &hashedPasswordStr,
-			FirstName: "Iris",
+			FirstName: "Ida",
 			LastName:  "Petersen",
 			Bio:       "Yoga og pilates instruktør",
 			BirthDate: time.Date(1991, 5, 30, 0, 0, 0, 0, time.UTC),
@@ -229,7 +229,7 @@ func seedUsers() ([]models.User, error) {
 		{
 			Email:     "user10@challenger.dk",
 			Password:  &hashedPasswordStr,
-			FirstName: "Jack",
+			FirstName: "Jakob",
 			LastName:  "Larsen",
 			Bio:       "Håndbold spiller og fitness entusiast",
 			BirthDate: time.Date(1999, 9, 12, 0, 0, 0, 0, time.UTC),
@@ -274,7 +274,7 @@ func seedUsers() ([]models.User, error) {
 		{
 			Email:     "user15@challenger.dk",
 			Password:  &hashedPasswordStr,
-			FirstName: "Olivia",
+			FirstName: "Oline",
 			LastName:  "Madsen",
 			Bio:       "Tennis, badminton og squash spiller",
 			BirthDate: time.Date(1995, 6, 20, 0, 0, 0, 0, time.UTC),
@@ -323,12 +323,12 @@ func seedUsers() ([]models.User, error) {
 	if len(users) > 5 && badmintonSport != nil && tennisSport != nil {
 		config.DB.Model(&users[5]).Association("FavoriteSports").Append(badmintonSport, tennisSport)
 	}
-	// User 6 (Grace) - Swimming/Water Polo mentioned in bio but not in allowed sports, skip favorite sport assignment
+	// User 6 (Gry) - Swimming/Water Polo mentioned in bio but not in allowed sports, skip favorite sport assignment
 	if len(users) > 7 && footballSport != nil && basketballSport != nil {
 		config.DB.Model(&users[7]).Association("FavoriteSports").Append(footballSport, basketballSport)
 	}
 	if len(users) > 8 {
-		// User 8 (Iris) - Yoga/Pilates (no specific sports in DB, skip)
+		// User 8 (Ida) - Yoga/Pilates (no specific sports in DB, skip)
 	}
 	if len(users) > 9 && handballSport != nil {
 		config.DB.Model(&users[9]).Association("FavoriteSports").Append(handballSport)
@@ -425,7 +425,7 @@ func seedTeams(users []models.User, sports []models.Sport, locations []models.Lo
 
 	teams := []models.Team{
 		{
-			Name:        "Ace Tennis Klub",
+			Name:        "Tennis Klubben",
 			Description: stringPtr("En venlig tennisklub for alle færdighedsniveauer"),
 			CreatorID:   users[0].ID,
 			LocationID:  &locations[0].ID,
@@ -437,7 +437,7 @@ func seedTeams(users []models.User, sports []models.Sport, locations []models.Lo
 			LocationID:  &locations[2].ID,
 		},
 		{
-			Name:        "Weekend Warriors FC",
+			Name:        "Weekend Krigere FC",
 			Description: stringPtr("Afslappet fodboldhold"),
 			CreatorID:   users[1].ID,
 			LocationID:  &locations[1].ID,
@@ -465,7 +465,7 @@ func seedTeams(users []models.User, sports []models.Sport, locations []models.Lo
 
 		// Add additional members
 		if i == 0 && len(users) > 3 {
-			// Ace Tennis Klub: Diana (3), Frank (5), Karen (10), Olivia (14)
+			// Tennis Klubben: Ditte (3), Frederik (5), Karen (10), Oline (14)
 			config.DB.Model(&teams[i]).Association("Users").Append(&users[3])
 			if len(users) > 5 {
 				config.DB.Model(&teams[i]).Association("Users").Append(&users[5])
@@ -478,7 +478,7 @@ func seedTeams(users []models.User, sports []models.Sport, locations []models.Lo
 			}
 		}
 		if i == 1 && len(users) > 2 {
-			// Nørrebro Ballers: Bob (1), Henry (7), Maria (12)
+			// Nørrebro Ballers: Bjørn (1), Henrik (7), Maria (12)
 			config.DB.Model(&teams[i]).Association("Users").Append(&users[1])
 			if len(users) > 7 {
 				config.DB.Model(&teams[i]).Association("Users").Append(&users[7])
@@ -488,7 +488,7 @@ func seedTeams(users []models.User, sports []models.Sport, locations []models.Lo
 			}
 		}
 		if i == 2 && len(users) > 4 {
-			// Weekend Warriors FC: Eve (4), Henry (7), Lars (11)
+			// Weekend Krigere FC: Eva (4), Henrik (7), Lars (11)
 			config.DB.Model(&teams[i]).Association("Users").Append(&users[4])
 			if len(users) > 7 {
 				config.DB.Model(&teams[i]).Association("Users").Append(&users[7])
@@ -544,7 +544,7 @@ func seedChallenges(users []models.User, teams []models.Team, locations []models
 			TeamSize:    intPtr(4),
 		},
 		{
-			Name:        "Basketball Pickup Game",
+			Name:        "Basketball Pickup Kamp",
 			Description: "Afslappet pickup game, alle færdighedsniveauer er velkomne",
 			Sport:       "Basketball",
 			LocationID:  locations[2].ID,
@@ -788,7 +788,7 @@ func seedChallenges(users []models.User, teams []models.Team, locations []models
 			EndTime:     timePtr(now.AddDate(0, 0, 6).Add(12 * time.Hour)),
 		},
 		{
-			Name:        "Squash Match",
+			Name:        "Squash Kamp",
 			Description: "Squash match om 4 dage",
 			Sport:       "Squash",
 			LocationID:  locations[4].ID,
@@ -817,7 +817,7 @@ func seedChallenges(users []models.User, teams []models.Team, locations []models
 
 		// Add some additional participants
 		if i == 0 && len(users) > 3 {
-			// Weekend Tennis Match: Diana (3), Frank (5), Karen (10)
+			// Weekend Tennis Match: Ditte (3), Frederik (5), Karen (10)
 			config.DB.Model(&challenges[i]).Association("Users").Append(&users[3])
 			if len(users) > 5 {
 				config.DB.Model(&challenges[i]).Association("Users").Append(&users[5])
@@ -827,7 +827,7 @@ func seedChallenges(users []models.User, teams []models.Team, locations []models
 			}
 		}
 		if i == 1 && len(users) > 1 {
-			// Basketball Pickup Game: Bob (1), Henry (7), Maria (12)
+			// Basketball Pickup Kamp: Bjørn (1), Henrik (7), Maria (12)
 			config.DB.Model(&challenges[i]).Association("Users").Append(&users[1])
 			if len(users) > 7 {
 				config.DB.Model(&challenges[i]).Association("Users").Append(&users[7])
@@ -837,78 +837,78 @@ func seedChallenges(users []models.User, teams []models.Team, locations []models
 			}
 		}
 		if i == 2 && len(teams) > 2 {
-			// 5v5 Football Tournament: Add team and individual users
+			// 5v5 Fodbold Turnering: Add team and individual users
 			config.DB.Model(&challenges[i]).Association("Teams").Append(&teams[2])
 			if len(users) > 11 {
 				config.DB.Model(&challenges[i]).Association("Users").Append(&users[11])
 			}
 		}
 		if i == 4 && len(users) > 0 {
-			// Aften Tennis Session: Alice (0), Frank (5), Olivia (14)
+			// Aften Tennis Session: Anna (0), Frederik (5), Oline (14)
 			config.DB.Model(&challenges[i]).Association("Users").Append(&users[0])
 			if len(users) > 14 {
 				config.DB.Model(&challenges[i]).Association("Users").Append(&users[14])
 			}
 		}
 		if i == 5 && len(users) > 2 {
-			// Sen Aften Basketball: Charlie (2), Maria (12)
+			// Sen Aften Basketball: Christian (2), Maria (12)
 			config.DB.Model(&challenges[i]).Association("Users").Append(&users[2])
 			if len(users) > 12 {
 				config.DB.Model(&challenges[i]).Association("Users").Append(&users[12])
 			}
 		}
 		if i == 6 && len(users) > 1 {
-			// Natlig Fodbold: Bob (1), Lars (11)
+			// Natlig Fodbold: Bjørn (1), Lars (11)
 			config.DB.Model(&challenges[i]).Association("Users").Append(&users[1])
 			if len(users) > 11 {
 				config.DB.Model(&challenges[i]).Association("Users").Append(&users[11])
 			}
 		}
 		if i == 8 && len(users) > 0 {
-			// I Morgen Tennis: Alice (0), Karen (10)
+			// I Morgen Tennis: Anna (0), Karen (10)
 			config.DB.Model(&challenges[i]).Association("Users").Append(&users[0])
 			if len(users) > 10 {
 				config.DB.Model(&challenges[i]).Association("Users").Append(&users[10])
 			}
 		}
 		if i == 9 && len(users) > 1 {
-			// I Morgen Fodbold: Bob (1), Henry (7)
+			// I Morgen Fodbold: Bjørn (1), Henrik (7)
 			config.DB.Model(&challenges[i]).Association("Users").Append(&users[1])
 			if len(users) > 7 {
 				config.DB.Model(&challenges[i]).Association("Users").Append(&users[7])
 			}
 		}
 		if i == 10 && len(users) > 3 {
-			// Padel Tennis Weekend: Diana (3), Karen (10)
+			// Padel Tennis Weekend: Ditte (3), Karen (10)
 			config.DB.Model(&challenges[i]).Association("Users").Append(&users[3])
 			if len(users) > 10 {
 				config.DB.Model(&challenges[i]).Association("Users").Append(&users[10])
 			}
 		}
 		if i == 11 && len(users) > 5 {
-			// Badminton Turnering: Frank (5), Olivia (14)
+			// Badminton Turnering: Frederik (5), Oline (14)
 			if len(users) > 14 {
 				config.DB.Model(&challenges[i]).Association("Users").Append(&users[14])
 			}
 		}
 		if i == 12 && len(users) > 9 {
-			// Håndbold Kamp: Jack (9), Lars (11)
+			// Håndbold Kamp: Jakob (9), Lars (11)
 			if len(users) > 11 {
 				config.DB.Model(&challenges[i]).Association("Users").Append(&users[11])
 			}
 		}
 		if i == 13 && len(users) > 4 {
-			// Løbetur: Eve (4), Niels (13)
+			// Løbetur: Eva (4), Niels (13)
 			if len(users) > 13 {
 				config.DB.Model(&challenges[i]).Association("Users").Append(&users[13])
 			}
 		}
 		if i == 14 && len(users) > 13 {
-			// Cykel Tur: Niels (13), Eve (4)
+			// Cykel Tur: Niels (13), Eva (4)
 			config.DB.Model(&challenges[i]).Association("Users").Append(&users[4])
 		}
 		if i == 15 && len(users) > 14 {
-			// Squash Match: Olivia (14), Frank (5)
+			// Squash Kamp: Oline (14), Frederik (5)
 			if len(users) > 5 {
 				config.DB.Model(&challenges[i]).Association("Users").Append(&users[5])
 			}
@@ -927,25 +927,25 @@ func seedFriendships(users []models.User) error {
 	}
 
 	// Create a network of friendships to enable friend suggestions
-	// Alice (0) is friends with Bob (1), Charlie (2), Frank (5)
+	// Anna (0) is friends with Bjørn (1), Christian (2), Frederik (5)
 	config.DB.Model(&users[0]).Association("Friends").Append(&users[1], &users[2])
 	if len(users) > 5 {
 		config.DB.Model(&users[0]).Association("Friends").Append(&users[5])
 	}
 
-	// Bob (1) is friends with Alice (0), Charlie (2), Henry (7)
+	// Bjørn (1) is friends with Anna (0), Christian (2), Henrik (7)
 	config.DB.Model(&users[1]).Association("Friends").Append(&users[2])
 	if len(users) > 7 {
 		config.DB.Model(&users[1]).Association("Friends").Append(&users[7])
 	}
 
-	// Diana (3) is friends with Eve (4), Karen (10)
+	// Ditte (3) is friends with Eva (4), Karen (10)
 	config.DB.Model(&users[3]).Association("Friends").Append(&users[4])
 	if len(users) > 10 {
 		config.DB.Model(&users[3]).Association("Friends").Append(&users[10])
 	}
 
-	// Frank (5) is friends with Alice (0), Grace (6), Olivia (14)
+	// Frederik (5) is friends with Anna (0), Gry (6), Oline (14)
 	if len(users) > 6 {
 		config.DB.Model(&users[5]).Association("Friends").Append(&users[6])
 	}
@@ -953,17 +953,17 @@ func seedFriendships(users []models.User) error {
 		config.DB.Model(&users[5]).Association("Friends").Append(&users[14])
 	}
 
-	// Henry (7) is friends with Bob (1), Maria (12)
+	// Henrik (7) is friends with Bjørn (1), Maria (12)
 	if len(users) > 12 {
 		config.DB.Model(&users[7]).Association("Friends").Append(&users[12])
 	}
 
-	// Karen (10) is friends with Diana (3), Olivia (14)
+	// Karen (10) is friends with Ditte (3), Oline (14)
 	if len(users) > 14 {
 		config.DB.Model(&users[10]).Association("Friends").Append(&users[14])
 	}
 
-	// Lars (11) is friends with Jack (9), Niels (13)
+	// Lars (11) is friends with Jakob (9), Niels (13)
 	if len(users) > 13 {
 		config.DB.Model(&users[11]).Association("Friends").Append(&users[9], &users[13])
 	}
@@ -1072,27 +1072,27 @@ func seedConversations(users []models.User, teams []models.Team) error {
 	// Create a group conversation using the service function
 	if len(users) >= 4 {
 		participantIDs := []uint{users[0].ID, users[1].ID, users[2].ID, users[3].ID}
-		groupConv, err := services.CreateGroupConversation(users[0].ID, participantIDs, "Weekend Sports Group")
+		groupConv, err := services.CreateGroupConversation(users[0].ID, participantIDs, "Weekend Idrætsgruppe")
 		if err != nil {
 			return fmt.Errorf("failed to create group conversation: %w", err)
 		}
 
 		// Add some messages to the group
-		_, err = services.SendMessage(groupConv.ID, users[0].ID, "Hey everyone! Ready for this weekend?")
+		_, err = services.SendMessage(groupConv.ID, users[0].ID, "Hej alle sammen! Klar til weekenden?")
 		if err != nil {
 			return fmt.Errorf("failed to send message 1: %w", err)
 		}
 
 		time.Sleep(10 * time.Millisecond) // Small delay to ensure different timestamps
 
-		_, err = services.SendMessage(groupConv.ID, users[1].ID, "Absolutely! What time are we meeting?")
+		_, err = services.SendMessage(groupConv.ID, users[1].ID, "Selvfølgelig! Hvad tid møder vi?")
 		if err != nil {
 			return fmt.Errorf("failed to send message 2: %w", err)
 		}
 
 		time.Sleep(10 * time.Millisecond)
 
-		_, err = services.SendMessage(groupConv.ID, users[2].ID, "I'm thinking 10 AM at Fælledparken")
+		_, err = services.SendMessage(groupConv.ID, users[2].ID, "Jeg tænker klokken 10 på Fælledparken")
 		if err != nil {
 			return fmt.Errorf("failed to send message 3: %w", err)
 		}
@@ -1119,21 +1119,21 @@ func seedConversations(users []models.User, teams []models.Team) error {
 
 	// Add some messages to the first direct conversation using SendMessage
 	if len(directConversations) > 0 {
-		_, err := services.SendMessage(directConversations[0].ID, users[1].ID, "Hey! Want to play tennis this weekend?")
+		_, err := services.SendMessage(directConversations[0].ID, users[1].ID, "Hej! Vil du spille tennis i weekenden?")
 		if err != nil {
 			return fmt.Errorf("failed to send message 1: %w", err)
 		}
 
 		time.Sleep(10 * time.Millisecond)
 
-		_, err = services.SendMessage(directConversations[0].ID, users[0].ID, "Sure! Saturday morning works for me")
+		_, err = services.SendMessage(directConversations[0].ID, users[0].ID, "Selvfølgelig! Lørdag formiddag passer mig fint")
 		if err != nil {
 			return fmt.Errorf("failed to send message 2: %w", err)
 		}
 
 		time.Sleep(10 * time.Millisecond)
 
-		_, err = services.SendMessage(directConversations[0].ID, users[1].ID, "Perfect! See you at 9 AM at Fælledparken?")
+		_, err = services.SendMessage(directConversations[0].ID, users[1].ID, "Perfekt! Ses klokken 9 på Fælledparken?")
 		if err != nil {
 			return fmt.Errorf("failed to send message 3: %w", err)
 		}
