@@ -417,9 +417,28 @@ func DeleteUser(user models.User, email string) error {
 		}
 
 		// 9. Delete challenges created by this user
-		if err := tx.Where("creator_id = ?", userID).
-			Delete(&models.Challenge{}).Error; err != nil {
+		// Get all challenges created by this user
+		var challenges []models.Challenge
+		if err := tx.Where("creator_id = ?", userID).Find(&challenges).Error; err != nil {
 			return err
+		}
+
+		// For each challenge, clean up relationships before hard deleting
+		for _, challenge := range challenges {
+			// Delete challenge_teams relationships
+			if err := tx.Exec("DELETE FROM challenge_teams WHERE challenge_id = ?", challenge.ID).Error; err != nil {
+				return err
+			}
+
+			// Delete user_challenges relationships (already done above for the user, but clean up for other users)
+			if err := tx.Exec("DELETE FROM user_challenges WHERE challenge_id = ?", challenge.ID).Error; err != nil {
+				return err
+			}
+
+			// Hard delete the challenge itself (use Unscoped to bypass soft delete)
+			if err := tx.Unscoped().Delete(&challenge).Error; err != nil {
+				return err
+			}
 		}
 
 		// 10. Remove user from many-to-many: user_teams (team memberships)
@@ -428,12 +447,60 @@ func DeleteUser(user models.User, email string) error {
 		}
 
 		// 11. Delete teams created by this user
+		// First, get all teams created by this user
 		var teams []models.Team
 		if err := tx.Where("creator_id = ?", userID).Find(&teams).Error; err != nil {
 			return err
 		}
+
+		// For each team, clean up relationships before deleting
 		for _, team := range teams {
-			if err := DeleteTeam(team.ID); err != nil {
+			// Delete challenge_teams relationships (teams in challenges)
+			if err := tx.Exec("DELETE FROM challenge_teams WHERE team_id = ?", team.ID).Error; err != nil {
+				return err
+			}
+
+			// Delete team_sports relationships
+			if err := tx.Exec("DELETE FROM team_sports WHERE team_id = ?", team.ID).Error; err != nil {
+				return err
+			}
+
+			// Delete conversations associated with this team
+			// First, get conversation IDs for this team
+			var conversationIDs []uint
+			if err := tx.Model(&models.Conversation{}).
+				Where("team_id = ?", team.ID).
+				Pluck("id", &conversationIDs).Error; err != nil {
+				return err
+			}
+
+			// Delete conversation participants for these conversations
+			if len(conversationIDs) > 0 {
+				if err := tx.Where("conversation_id IN ?", conversationIDs).
+					Delete(&models.ConversationParticipant{}).Error; err != nil {
+					return err
+				}
+
+				// Delete messages in these conversations
+				if err := tx.Where("conversation_id IN ?", conversationIDs).
+					Delete(&models.Message{}).Error; err != nil {
+					return err
+				}
+
+				// Now delete the conversations themselves
+				if err := tx.Where("id IN ?", conversationIDs).
+					Delete(&models.Conversation{}).Error; err != nil {
+					return err
+				}
+			}
+
+			// Delete user_teams relationships (already done above for the user, but clean up for other users)
+			if err := tx.Exec("DELETE FROM user_teams WHERE team_id = ?", team.ID).Error; err != nil {
+				return err
+			}
+
+			// Finally, hard delete the team itself
+			if err := tx.Unscoped().Delete(&team).Error; err != nil {
 				return err
 			}
 		}
@@ -476,7 +543,7 @@ func DeleteUser(user models.User, email string) error {
 		}
 
 		// 17. Finally, delete the user record itself
-		if err := tx.Delete(&user).Error; err != nil {
+		if err := tx.Unscoped().Delete(&user).Error; err != nil {
 			return err
 		}
 
