@@ -68,12 +68,21 @@ func TestUserService_CRUD(t *testing.T) {
 	assert.Equal(t, "Football", updatedUser.FavoriteSports[0].Name)
 
 	// 7. Delete User
-	err = services.DeleteUser(createdUser.ID)
+	err = services.DeleteUser(*createdUser, email)
 	assert.NoError(t, err)
 
 	// Verify Deletion
 	_, err = services.GetUserByID(createdUser.ID)
 	assert.Error(t, err)
+
+	// 8. Test Delete User with wrong email (should fail)
+	user2, _ := services.CreateUser(models.User{Email: "test2@example.com", FirstName: "Jane", LastName: "Doe"}, "password123")
+	err = services.DeleteUser(*user2, "wrong@email.com")
+	assert.ErrorIs(t, err, appError.ErrInvalidCredentials)
+
+	// Verify user2 still exists
+	_, err = services.GetUserByID(user2.ID)
+	assert.NoError(t, err)
 }
 
 func TestUserService_Settings(t *testing.T) {

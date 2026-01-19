@@ -39,19 +39,20 @@ func RegisterRoutes(r chi.Router) {
 		r.Get("/friends", controllers.GetFriends)
 		r.Get("/suggested-friends", controllers.GetSuggestedFriends)
 
-		// Block / unblock
-		r.Post("/block/{id}", controllers.BlockUser)
-		r.Post("/unblock/{id}", controllers.UnblockUser)
-
 		// User by id (KEEP THESE LAST)
 		r.Get("/{id}/in-common", controllers.GetInCommonStats)
 		r.Get("/{id}", controllers.GetUserByID)
 
 		// Mutations
+		// Block / unblock
+		r.Post("/block/{id}", controllers.BlockUser)
+		r.Post("/unblock/{id}", controllers.UnblockUser)
+
+		// Updates / deletions
 		r.Put("/", controllers.UpdateUser)
 		r.Put("/settings", controllers.UpdateUserSettings)
 		r.Delete("/{id}/remove", controllers.RemoveFriend)
-		r.Delete("/{id}", controllers.DeleteUser)
+		r.Delete("/me", controllers.DeleteUser)
 	})
 
 	r.Route("/emergency-info", func(r chi.Router) {
@@ -88,7 +89,7 @@ func RegisterRoutes(r chi.Router) {
 
 		r.Put("/{id}", controllers.UpdateTeam)
 
-		r.Delete("/{id}", controllers.DeleteTeam)
+		r.Delete("/{id}", controllers.SoftDeleteTeam)
 		r.Delete("/{id}/user/{rmvUserId}", controllers.RemoveUserFromTeam)
 		r.Delete("/{id}/leave", controllers.LeaveTeam)
 	})

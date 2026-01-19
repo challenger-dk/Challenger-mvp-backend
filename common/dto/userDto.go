@@ -30,6 +30,10 @@ type UserUpdateDto struct {
 	FavoriteSports []string  `json:"favorite_sports,omitempty"`
 }
 
+type DeleteUserDto struct {
+	Email string `json:"email" validate:"sanitize,required,email"`
+}
+
 type UserResponseDto struct {
 	ID                  uint                       `json:"id"`
 	Email               string                     `json:"email"`

@@ -228,14 +228,14 @@ func UpdateTeam(w http.ResponseWriter, r *http.Request) {
 }
 
 // --- DELETE ---
-func DeleteTeam(w http.ResponseWriter, r *http.Request) {
+func SoftDeleteTeam(w http.ResponseWriter, r *http.Request) {
 	id, err := helpers.GetParamId(r)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
 	}
 
-	err = services.DeleteTeam(id)
+	err = services.SoftDeleteTeam(id)
 	if err != nil {
 		appError.HandleError(w, err)
 		return

@@ -47,7 +47,7 @@ func TestTeamService_CRUD(t *testing.T) {
 	assert.Equal(t, "Updated Team", updated.Name)
 
 	// 4. Delete Team
-	err = services.DeleteTeam(createdTeam.ID)
+	err = services.SoftDeleteTeam(createdTeam.ID)
 	assert.NoError(t, err)
 
 	_, err = services.GetTeamByID(createdTeam.ID)

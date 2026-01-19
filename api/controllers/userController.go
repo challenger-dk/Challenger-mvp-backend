@@ -288,13 +288,21 @@ func UpdateUserSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
-	id, err := helpers.GetParamId(r)
+	user, ok := r.Context().
+		Value(middleware.UserContextKey).(*models.User)
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
+		return
+	}
+
+	req := dto.DeleteUserDto{}
+	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
 	}
 
-	err = services.DeleteUser(id)
+	err = services.DeleteUser(*user, req.Email)
 	if err != nil {
 		appError.HandleError(w, err)
 		return

@@ -121,7 +121,8 @@ func UpdateTeam(id uint, team models.Team) error {
 }
 
 // --- DELETE ---
-func DeleteTeam(id uint) error {
+// Soft delete team and associations (soft delete)
+func SoftDeleteTeam(id uint) error {
 	return config.DB.Transaction(func(tx *gorm.DB) error {
 		var t models.Team
 
@@ -147,6 +148,24 @@ func DeleteTeam(id uint) error {
 			}
 
 			CreateTeamDeletedNotification(tx, u, t)
+		}
+
+		return nil
+	})
+}
+
+// Completely Delete team and associations (no soft delete)
+func DeleteTeam(id uint) error {
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+		var t models.Team
+		// Load team + users in a single query
+		if err := tx.Preload("Users").First(&t, id).Error; err != nil {
+			return err
+		}
+
+		// Delete team
+		if err := tx.Unscoped().Delete(&t).Error; err != nil {
+			return err
 		}
 
 		return nil

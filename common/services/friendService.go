@@ -67,13 +67,16 @@ func GetSuggestedFriends(userID uint) ([]models.User, error) {
 	// Combine all blocked user IDs
 	allBlockedIDs := append(blockedUserIDs, blockingUserIDs...)
 
-	// Get all potential candidates (users who are not friends and not blocked)
+	// Get all potential candidates (users who are not friends and not blocked and not invited by or to the user)
 	var candidates []models.User
 	query := config.DB.Preload("Friends").
 		Preload("Teams").
 		Preload("JoinedChallenges").
 		Preload("FavoriteSports").
-		Where("id != ?", userID) // Exclude self
+		Where("id != ?", userID). // Exclude self
+		// Exclude users who have pending friend invitations with the current user
+		Where("id NOT IN (SELECT invitee_id FROM invitations WHERE inviter_id = ? AND resource_type = 'friend' AND status = 'pending')", userID). // Exclude users invited by current user
+		Where("id NOT IN (SELECT inviter_id FROM invitations WHERE invitee_id = ? AND resource_type = 'friend' AND status = 'pending')", userID)  // Exclude users who invited current user
 
 	// Exclude friends
 	if len(friendIDs) > 0 {
