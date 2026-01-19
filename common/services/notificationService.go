@@ -536,30 +536,21 @@ func CreateNotificationChallengeMissingParticipants(db *gorm.DB, user models.Use
 }
 
 // -------------- Private -------------- \\
-
 func shouldNotify(db *gorm.DB, userID uint, notifType models.NotificationType) bool {
 	var settings models.UserSettings
 
+	// If settings row doesn't exist (or any error), default to sending notifications.
 	if err := db.First(&settings, userID).Error; err != nil {
 		return true
 	}
 
-	switch notifType {
-	// Team
-	case models.NotifTypeTeamInvite:
-		return settings.NotifyTeamInvite
-	case models.NotifTypeTeamAccept:
-		return settings.NotifyTeamInvite
-
-	// Friend
-	case models.NotifTypeFriendReq:
-		return settings.NotifyFriendReq
-	case models.NotifTypeFriendAccept:
-		return settings.NotifyFriendReq
-
-	default:
-		return true
+	// Look up a setting getter for this notification type.
+	if getter, ok := notificationSettingsMap[notifType]; ok {
+		return getter(settings)
 	}
+
+	// Unknown/unmapped types default to "send".
+	return true
 }
 
 // persistNotification performs the actual DB write.
@@ -585,4 +576,39 @@ func persistNotification(db *gorm.DB, params NotificationParams) {
 	if err != nil {
 		slog.Error("Notification DB error (swallowed)", slog.Any("error", err))
 	}
+}
+
+// notificationSettingsMap maps each notification type to the relevant user-setting toggle.
+var notificationSettingsMap = map[models.NotificationType]func(s models.UserSettings) bool{
+	// System
+	models.NotifTypeSystem: func(s models.UserSettings) bool { return true },
+
+	// ---------------- Team ----------------
+	models.NotifTypeTeamInvite: func(s models.UserSettings) bool { return s.NotifyTeamInvites },
+
+	models.NotifTypeTeamAccept:      func(s models.UserSettings) bool { return s.NotifyTeamMembership },
+	models.NotifTypeTeamDecline:     func(s models.UserSettings) bool { return s.NotifyTeamMembership },
+	models.NotifTypeTeamRemovedUser: func(s models.UserSettings) bool { return s.NotifyTeamMembership },
+	models.NotifTypeTeamUserLeft:    func(s models.UserSettings) bool { return s.NotifyTeamMembership },
+	models.NotifTypeTeamDeleted:     func(s models.UserSettings) bool { return s.NotifyTeamMembership },
+
+	// ---------------- Friend ----------------
+	models.NotifTypeFriendReq:     func(s models.UserSettings) bool { return s.NotifyFriendRequests },
+	models.NotifTypeFriendAccept:  func(s models.UserSettings) bool { return s.NotifyFriendUpdates },
+	models.NotifTypeFriendDecline: func(s models.UserSettings) bool { return s.NotifyFriendUpdates },
+
+	// ---------------- Challenge ----------------
+	models.NotifTypeChallengeReq:     func(s models.UserSettings) bool { return s.NotifyChallengeInvites },
+	models.NotifTypeChallengeAccept:  func(s models.UserSettings) bool { return s.NotifyChallengeInvites },
+	models.NotifTypeChallengeDecline: func(s models.UserSettings) bool { return s.NotifyChallengeInvites },
+
+	models.NotifTypeChallengeCreated:             func(s models.UserSettings) bool { return s.NotifyChallengeUpdates },
+	models.NotifTypeChallengeJoin:                func(s models.UserSettings) bool { return s.NotifyChallengeUpdates },
+	models.NotifTypeChallengeUserLeft:            func(s models.UserSettings) bool { return s.NotifyChallengeUpdates },
+	models.NotifTypeChallengeFullParticipation:   func(s models.UserSettings) bool { return s.NotifyChallengeUpdates },
+	models.NotifTypeChallengeMissingParticipants: func(s models.UserSettings) bool { return s.NotifyChallengeUpdates },
+
+	models.NotifTypeChallengeUpcomming24H:   func(s models.UserSettings) bool { return s.NotifyChallengeReminders },
+	models.NotifTypeChallengeUpcomming1H:    func(s models.UserSettings) bool { return s.NotifyChallengeReminders },
+	models.NotifTypeChallengeNotAnswered24H: func(s models.UserSettings) bool { return s.NotifyChallengeReminders },
 }

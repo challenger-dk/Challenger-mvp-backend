@@ -318,51 +318,232 @@ func UpdateUserSettings(userID uint, settingsDto dto.UserSettingsUpdateDto) erro
 			return err
 		}
 
-		if settingsDto.NotifyTeamInvite != nil {
-			settings.NotifyTeamInvite = *settingsDto.NotifyTeamInvite
+		if settingsDto.NotifyTeamInvites != nil {
+			settings.NotifyTeamInvites = *settingsDto.NotifyTeamInvites
 		}
-		if settingsDto.NotifyFriendReq != nil {
-			settings.NotifyFriendReq = *settingsDto.NotifyFriendReq
+		if settingsDto.NotifyTeamMembership != nil {
+			settings.NotifyTeamMembership = *settingsDto.NotifyTeamMembership
 		}
-		if settingsDto.NotifyChallengeInvite != nil {
-			settings.NotifyChallengeInvite = *settingsDto.NotifyChallengeInvite
+
+		if settingsDto.NotifyFriendRequests != nil {
+			settings.NotifyFriendRequests = *settingsDto.NotifyFriendRequests
 		}
-		if settingsDto.NotifyChallengeUpdate != nil {
-			settings.NotifyChallengeUpdate = *settingsDto.NotifyChallengeUpdate
+		if settingsDto.NotifyFriendUpdates != nil {
+			settings.NotifyFriendUpdates = *settingsDto.NotifyFriendUpdates
+		}
+
+		if settingsDto.NotifyChallengeInvites != nil {
+			settings.NotifyChallengeInvites = *settingsDto.NotifyChallengeInvites
+		}
+		if settingsDto.NotifyChallengeUpdates != nil {
+			settings.NotifyChallengeUpdates = *settingsDto.NotifyChallengeUpdates
+		}
+		if settingsDto.NotifyChallengeReminders != nil {
+			settings.NotifyChallengeReminders = *settingsDto.NotifyChallengeReminders
 		}
 
 		return tx.Save(&settings).Error
 	})
 }
 
-func DeleteUser(userID uint) error {
+// DeleteUser permanently deletes a user and all associated data.
+// This function handles all user relationships in the correct order to maintain referential integrity.
+//
+// Relationships cleaned up:
+// - Many-to-many: favorite sports, team memberships, challenge participations, friendships, blocks
+// - Foreign keys: created challenges, created teams, invitations, notifications, messages, conversation participants, reports
+// - Cascading deletes: emergency contacts, user settings (handled by database constraints)
+//
+// Important: This is a hard delete operation that cannot be undone.
+func DeleteUser(user models.User, email string) error {
+	userID := user.ID
+
+	// Verify mail to make sure its the right user.
+	if user.Email != email {
+		return appError.ErrInvalidCredentials
+	}
+
 	return config.DB.Transaction(func(tx *gorm.DB) error {
 		var user models.User
 		if err := tx.First(&user, userID).Error; err != nil {
 			return err
 		}
 
-		// Soft delete related Challenges/Teams created by this user
-		// (these will be soft-deleted as long as those models have DeletedAt)
-		if err := tx.Where("creator_id = ?", userID).
-			Delete(&models.Challenge{}).Error; err != nil {
+		// 1. Delete conversation participants
+		if err := tx.Where("user_id = ?", userID).
+			Delete(&models.ConversationParticipant{}).Error; err != nil {
 			return err
 		}
 
-		if err := tx.Where("creator_id = ?", userID).
-			Delete(&models.Team{}).Error; err != nil {
+		// 2. Delete all messages sent by this user
+		if err := tx.Where("sender_id = ?", userID).
+			Delete(&models.Message{}).Error; err != nil {
 			return err
 		}
 
-		// Clean up invitations
-		if err := tx.
-			Where("inviter_id = ? OR invitee_id = ?", userID, userID).
+		// 3. Delete messages where user is recipient (legacy field)
+		if err := tx.Where("recipient_id = ?", userID).
+			Delete(&models.Message{}).Error; err != nil {
+			return err
+		}
+
+		// 4. Delete reports created by this user
+		if err := tx.Where("reporter_id = ?", userID).
+			Delete(&models.Report{}).Error; err != nil {
+			return err
+		}
+
+		// 5. Delete notifications where user is the recipient
+		if err := tx.Where("user_id = ?", userID).
+			Delete(&models.Notification{}).Error; err != nil {
+			return err
+		}
+
+		// 6. Delete notifications where user is the actor (triggered by this user)
+		if err := tx.Where("actor_id = ?", userID).
+			Delete(&models.Notification{}).Error; err != nil {
+			return err
+		}
+
+		// 7. Delete invitations sent or received by this user
+		if err := tx.Where("inviter_id = ? OR invitee_id = ?", userID, userID).
 			Delete(&models.Invitation{}).Error; err != nil {
 			return err
 		}
 
-		// Finally, soft delete the user
-		if err := tx.Delete(&user).Error; err != nil {
+		// 8. Remove user from many-to-many: user_challenges (challenge participations)
+		if err := tx.Exec("DELETE FROM user_challenges WHERE user_id = ?", userID).Error; err != nil {
+			return err
+		}
+
+		// 9. Delete challenges created by this user
+		// Get all challenges created by this user
+		var challenges []models.Challenge
+		if err := tx.Where("creator_id = ?", userID).Find(&challenges).Error; err != nil {
+			return err
+		}
+
+		// For each challenge, clean up relationships before hard deleting
+		for _, challenge := range challenges {
+			// Delete challenge_teams relationships
+			if err := tx.Exec("DELETE FROM challenge_teams WHERE challenge_id = ?", challenge.ID).Error; err != nil {
+				return err
+			}
+
+			// Delete user_challenges relationships (already done above for the user, but clean up for other users)
+			if err := tx.Exec("DELETE FROM user_challenges WHERE challenge_id = ?", challenge.ID).Error; err != nil {
+				return err
+			}
+
+			// Hard delete the challenge itself (use Unscoped to bypass soft delete)
+			if err := tx.Unscoped().Delete(&challenge).Error; err != nil {
+				return err
+			}
+		}
+
+		// 10. Remove user from many-to-many: user_teams (team memberships)
+		if err := tx.Exec("DELETE FROM user_teams WHERE user_id = ?", userID).Error; err != nil {
+			return err
+		}
+
+		// 11. Delete teams created by this user
+		// First, get all teams created by this user
+		var teams []models.Team
+		if err := tx.Where("creator_id = ?", userID).Find(&teams).Error; err != nil {
+			return err
+		}
+
+		// For each team, clean up relationships before deleting
+		for _, team := range teams {
+			// Delete challenge_teams relationships (teams in challenges)
+			if err := tx.Exec("DELETE FROM challenge_teams WHERE team_id = ?", team.ID).Error; err != nil {
+				return err
+			}
+
+			// Delete team_sports relationships
+			if err := tx.Exec("DELETE FROM team_sports WHERE team_id = ?", team.ID).Error; err != nil {
+				return err
+			}
+
+			// Delete conversations associated with this team
+			// First, get conversation IDs for this team
+			var conversationIDs []uint
+			if err := tx.Model(&models.Conversation{}).
+				Where("team_id = ?", team.ID).
+				Pluck("id", &conversationIDs).Error; err != nil {
+				return err
+			}
+
+			// Delete conversation participants for these conversations
+			if len(conversationIDs) > 0 {
+				if err := tx.Where("conversation_id IN ?", conversationIDs).
+					Delete(&models.ConversationParticipant{}).Error; err != nil {
+					return err
+				}
+
+				// Delete messages in these conversations
+				if err := tx.Where("conversation_id IN ?", conversationIDs).
+					Delete(&models.Message{}).Error; err != nil {
+					return err
+				}
+
+				// Now delete the conversations themselves
+				if err := tx.Where("id IN ?", conversationIDs).
+					Delete(&models.Conversation{}).Error; err != nil {
+					return err
+				}
+			}
+
+			// Delete user_teams relationships (already done above for the user, but clean up for other users)
+			if err := tx.Exec("DELETE FROM user_teams WHERE team_id = ?", team.ID).Error; err != nil {
+				return err
+			}
+
+			// Finally, hard delete the team itself
+			if err := tx.Unscoped().Delete(&team).Error; err != nil {
+				return err
+			}
+		}
+
+		// 12. Remove user from many-to-many: user_friends (friendships - bidirectional)
+		// Remove where user is the primary user
+		if err := tx.Exec("DELETE FROM user_friends WHERE user_id = ?", userID).Error; err != nil {
+			return err
+		}
+		// Remove where user is the friend
+		if err := tx.Exec("DELETE FROM user_friends WHERE friend_id = ?", userID).Error; err != nil {
+			return err
+		}
+
+		// 13. Remove user from many-to-many: user_blocked_users (blocks - bidirectional)
+		// Remove where user is the blocker
+		if err := tx.Exec("DELETE FROM user_blocked_users WHERE user_id = ?", userID).Error; err != nil {
+			return err
+		}
+		// Remove where user is the blocked user
+		if err := tx.Exec("DELETE FROM user_blocked_users WHERE blocked_user_id = ?", userID).Error; err != nil {
+			return err
+		}
+
+		// 14. Remove user from many-to-many: user_favorite_sports
+		if err := tx.Exec("DELETE FROM user_favorite_sports WHERE user_id = ?", userID).Error; err != nil {
+			return err
+		}
+
+		// 15. Delete emergency contacts (has CASCADE constraint, but explicit delete for clarity)
+		if err := tx.Where("user_id = ?", userID).
+			Delete(&models.EmergencyInfo{}).Error; err != nil {
+			return err
+		}
+
+		// 16. Delete user settings (has CASCADE constraint, but explicit delete for clarity)
+		if err := tx.Where("user_id = ?", userID).
+			Delete(&models.UserSettings{}).Error; err != nil {
+			return err
+		}
+
+		// 17. Finally, delete the user record itself
+		if err := tx.Unscoped().Delete(&user).Error; err != nil {
 			return err
 		}
 

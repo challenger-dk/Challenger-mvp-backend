@@ -68,12 +68,21 @@ func TestUserService_CRUD(t *testing.T) {
 	assert.Equal(t, "Football", updatedUser.FavoriteSports[0].Name)
 
 	// 7. Delete User
-	err = services.DeleteUser(createdUser.ID)
+	err = services.DeleteUser(*createdUser, email)
 	assert.NoError(t, err)
 
 	// Verify Deletion
 	_, err = services.GetUserByID(createdUser.ID)
 	assert.Error(t, err)
+
+	// 8. Test Delete User with wrong email (should fail)
+	user2, _ := services.CreateUser(models.User{Email: "test2@example.com", FirstName: "Jane", LastName: "Doe"}, "password123")
+	err = services.DeleteUser(*user2, "wrong@email.com")
+	assert.ErrorIs(t, err, appError.ErrInvalidCredentials)
+
+	// Verify user2 still exists
+	_, err = services.GetUserByID(user2.ID)
+	assert.NoError(t, err)
 }
 
 func TestUserService_Settings(t *testing.T) {
@@ -85,23 +94,23 @@ func TestUserService_Settings(t *testing.T) {
 	// 1. Get Settings
 	settings, err := services.GetUserSettings(user.ID)
 	assert.NoError(t, err)
-	assert.True(t, settings.NotifyTeamInvite) // Default is true
+	assert.True(t, settings.NotifyTeamInvites) // Default is true
 
 	// 2. Update Settings
 	f := false
 	updateDto := dto.UserSettingsUpdateDto{
-		NotifyTeamInvite:      &f,
-		NotifyFriendReq:       &f,
-		NotifyChallengeInvite: &f,
-		NotifyChallengeUpdate: &f,
+		NotifyTeamInvites:      &f,
+		NotifyFriendRequests:   &f,
+		NotifyChallengeInvites: &f,
+		NotifyChallengeUpdates: &f,
 	}
 	err = services.UpdateUserSettings(user.ID, updateDto)
 	assert.NoError(t, err)
 
 	// 3. Verify Update
 	updatedSettings, _ := services.GetUserSettings(user.ID)
-	assert.False(t, updatedSettings.NotifyTeamInvite)
-	assert.False(t, updatedSettings.NotifyFriendReq)
+	assert.False(t, updatedSettings.NotifyTeamInvites)
+	assert.False(t, updatedSettings.NotifyFriendRequests)
 }
 
 func TestUserService_GetUsers(t *testing.T) {
