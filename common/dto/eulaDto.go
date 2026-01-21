@@ -11,16 +11,16 @@ type EulaAcceptDto struct {
 // Response DTOs
 
 type EulaVersionDto struct {
-	ID          uint   `json:"id"`
-	Version     string `json:"version"`
-	Locale      string `json:"locale"`
-	Content     string `json:"content"`
-	ContentHash string `json:"content_hash"`
+	ID          uint   `json:"id" validate:"sanitize"`
+	Version     string `json:"version" validate:"sanitize"`
+	Locale      string `json:"locale" validate:"sanitize"`
+	Content     string `json:"content" validate:"sanitize"`
+	ContentHash string `json:"content_hash" validate:"sanitize"`
 }
 
 type EulaStatusDto struct {
-	Locale         string     `json:"locale"`
-	ActiveVersion  string     `json:"active_version"`
+	Locale         string     `json:"locale" validate:"sanitize"`
+	ActiveVersion  string     `json:"active_version" validate:"sanitize"`
 	Accepted       bool       `json:"accepted"`
 	AcceptedAt     *time.Time `json:"accepted_at,omitempty"`
 	RequiresAction bool       `json:"requires_action"` // true if user needs to accept
