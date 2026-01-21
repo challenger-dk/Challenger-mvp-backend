@@ -1,4 +1,4 @@
-h1:A7qkV5VARo3VUX6Jb54pr5dZLA1Ez1wcYu6Man7c45Q=
+h1:s3eJPd7pHG2ChnqVkHhl1fQq5KmoCaKviFJxqClmSfM=
 20260106224705.sql h1:DbPkCIDD9Hs4/XAj6fQp9+oOFjfhNWpzV5WWWFKeSoo=
 20260107211344_add_password_reset_fields.sql h1:IstQ0I574xw0PvsL0B4dR2jdOvg8Fst8J2gK2pYuroI=
 20260108000000_add_auth_provider_fields.sql h1:AbwOCAunbI5FgQ+86huLh9WIWNh1EWkf5KK2rd6dvXs=
@@ -8,3 +8,5 @@ h1:A7qkV5VARo3VUX6Jb54pr5dZLA1Ez1wcYu6Man7c45Q=
 20260112000000_add_confirmed_status.sql h1:+ly7J/LGVTDJH7PUIxPYm4S/r/1Fzm5ZMV1T3Hfe8vc=
 20260115132310_add_location_type_and_facility_fields.sql h1:kLYqYBjYZeJu2223C4LEC7TSrIF7IYhqFTzWaYC+xQw=
 20260117201003_update_notification_user_settings.sql h1:qKHqOLuz1RnDuNK+YRWQTuIorkdIPonoxN36Dn9UYaE=
+20260121140132_create_eula_tables.sql h1:EA//RA0Ljq8e8yrKhBTPlPtDX0KleA0Tmr+O93rJ3Vk=
+20260121140133_seed_initial_eula.sql h1:Zmdev0X+PG/lF+YmUFdhyoMa0r/ZRqpBpRyb3c3z264=
