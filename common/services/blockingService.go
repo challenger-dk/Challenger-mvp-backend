@@ -8,6 +8,19 @@ import (
 	"gorm.io/gorm"
 )
 
+func GetBlockedUsers(userID uint) ([]models.User, error) {
+	var user models.User
+	// Only get basic info about blocked users
+	err := config.DB.Preload("BlockedUsers", func(db *gorm.DB) *gorm.DB {
+		return db.Select("id", "first_name", "last_name", "email", "created_at", "updated_at").Order("created_at DESC")
+	}).First(&user, userID).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return user.BlockedUsers, nil
+}
+
 func BlockUser(userIdA uint, userIdB uint) error {
 	return config.DB.Transaction(func(tx *gorm.DB) error {
 		// Ids must be different

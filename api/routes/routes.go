@@ -45,6 +45,7 @@ func RegisterRoutes(r chi.Router) {
 
 		// Mutations
 		// Block / unblock
+		r.Get("/blocked", controllers.GetBlockedUsers)
 		r.Post("/block/{id}", controllers.BlockUser)
 		r.Post("/unblock/{id}", controllers.UnblockUser)
 
