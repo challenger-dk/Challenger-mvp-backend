@@ -60,6 +60,12 @@ var (
 	ErrChallengeAlreadyConfirmed  = errors.New("challenge is already confirmed")
 )
 
+// EULA Errors
+var (
+	ErrEulaNotAccepted = errors.New("EULA not accepted")
+	ErrEulaNotActive   = errors.New("this EULA version is not active")
+)
+
 var (
 	ErrMissingIdParam = errors.New("missing id parameter")
 	ErrIdBelowOne     = errors.New("id parameter must be greater than 0")
@@ -82,6 +88,7 @@ var errorMap = map[int][]error{
 	http.StatusForbidden: {
 		ErrUserBlocked,
 		ErrNotConversationMember,
+		ErrEulaNotAccepted,
 	},
 	http.StatusConflict: {
 		ErrUserExists,
@@ -108,6 +115,7 @@ var errorMap = map[int][]error{
 		ErrInsufficientParticipants,
 		ErrUnhandledInvitationStatus,
 		ErrBadRequest,
+		ErrEulaNotActive,
 	},
 	http.StatusInternalServerError: {
 		ErrUnknownResource,

@@ -334,6 +334,33 @@ func RemoveFriend(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func GetBlockedUsers(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().
+		Value(middleware.UserContextKey).(*models.User)
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
+		return
+	}
+
+	blockedUsers, err := services.GetBlockedUsers(user.ID)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	// Convert to DTOs public user response
+	response := make([]dto.PublicUserDtoResponse, len(blockedUsers))
+	for i, u := range blockedUsers {
+		response[i] = dto.ToPublicUserDtoResponse(u)
+	}
+
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+}
+
 func BlockUser(w http.ResponseWriter, r *http.Request) {
 	id, err := helpers.GetParamId(r)
 	if err != nil {

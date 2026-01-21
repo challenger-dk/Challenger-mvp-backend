@@ -27,6 +27,7 @@ func RegisterRoutes(r chi.Router) {
 
 	r.Route("/users", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware)
+		r.Use(middleware.EulaMiddleware)
 
 		// Search / list users (supports ?q=&limit=&cursor=)
 		r.Get("/", controllers.GetUsers)
@@ -45,6 +46,7 @@ func RegisterRoutes(r chi.Router) {
 
 		// Mutations
 		// Block / unblock
+		r.Get("/blocked", controllers.GetBlockedUsers)
 		r.Post("/block/{id}", controllers.BlockUser)
 		r.Post("/unblock/{id}", controllers.UnblockUser)
 
@@ -57,6 +59,7 @@ func RegisterRoutes(r chi.Router) {
 
 	r.Route("/emergency-info", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware)
+		r.Use(middleware.EulaMiddleware)
 		r.Post("/", controllers.CreateEmergencyContact)
 		r.Put("/{id}", controllers.UpdateEmergencyContact)
 		r.Delete("/{id}", controllers.DeleteEmergencyContact)
@@ -68,6 +71,7 @@ func RegisterRoutes(r chi.Router) {
 
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.AuthMiddleware)
+			r.Use(middleware.EulaMiddleware)
 			r.Post("/", controllers.CreateChallenge)
 			r.Put("/{id}", controllers.UpdateChallenge)
 			r.Post("/{id}/join", controllers.JoinChallenge)
@@ -79,6 +83,7 @@ func RegisterRoutes(r chi.Router) {
 
 	r.Route("/teams", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware)
+		r.Use(middleware.EulaMiddleware)
 		r.Get("/{id}", controllers.GetTeam)
 		r.Get("/", controllers.GetTeams)
 		r.Get("/user/{id}", controllers.GetTeamsByUserId)
@@ -96,6 +101,7 @@ func RegisterRoutes(r chi.Router) {
 
 	r.Route("/invitations", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware)
+		r.Use(middleware.EulaMiddleware)
 		r.Get("/user/{id}", controllers.GetInvitationsByUserId)
 		r.Get("/me", controllers.GetCurrentUserInvitations)
 		r.Post("/", controllers.SendInvitation)
@@ -105,6 +111,7 @@ func RegisterRoutes(r chi.Router) {
 
 	r.Route("/notifications", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware)
+		r.Use(middleware.EulaMiddleware)
 		r.Get("/", controllers.GetMyNotifications)
 		r.Put("/read-all", controllers.MarkAllRead)
 		r.Put("/{id}/read", controllers.MarkRead)
@@ -112,7 +119,20 @@ func RegisterRoutes(r chi.Router) {
 
 	r.Route("/reports", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware)
+		r.Use(middleware.EulaMiddleware)
 		r.Post("/", controllers.CreateReport)
+	})
+
+	r.Route("/eula", func(r chi.Router) {
+		// Public endpoint - anyone can get the active EULA
+		r.Get("/active", controllers.GetActiveEula)
+
+		// Protected endpoints - require authentication
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.AuthMiddleware)
+			r.Get("/status", controllers.GetEulaStatus)
+			r.Post("/accept", controllers.AcceptEula)
+		})
 	})
 }
 

@@ -50,6 +50,7 @@ func main() {
 	// New Conversation API Routes (with auth middleware)
 	r.Route("/api/conversations", func(r chi.Router) {
 		r.Use(commonMiddleware.AuthMiddleware)
+		r.Use(commonMiddleware.EulaMiddleware)
 
 		r.Post("/direct", handlers.CreateDirectConversation)
 		r.Post("/group", handlers.CreateGroupConversation)
