@@ -9,10 +9,12 @@ import (
 )
 
 // --- GET ---
-func GetTeamByID(id uint) (models.Team, error) {
+func GetTeamByID(id uint, currentUserID uint) (models.Team, error) {
 	var t models.Team
 
-	err := config.DB.Preload("Users").
+	err := config.DB.
+		Scopes(ExcludeBlockedUsersOn(currentUserID, "creator_id")).
+		Preload("Users", ExcludeBlockedUsers(currentUserID)).
 		Preload("Creator").
 		Preload("Location").
 		First(&t, id).
@@ -25,10 +27,12 @@ func GetTeamByID(id uint) (models.Team, error) {
 	return t, nil
 }
 
-func GetTeams() ([]models.Team, error) {
+func GetTeams(currentUserID uint) ([]models.Team, error) {
 	var teams []models.Team
 
-	err := config.DB.Preload("Users").
+	err := config.DB.
+		Scopes(ExcludeBlockedUsersOn(currentUserID, "creator_id")).
+		Preload("Users", ExcludeBlockedUsers(currentUserID)).
 		Preload("Creator").
 		Preload("Location").
 		Find(&teams).
@@ -40,10 +44,12 @@ func GetTeams() ([]models.Team, error) {
 	return teams, nil
 }
 
-func GetTeamsByUserId(id uint) ([]models.Team, error) {
+func GetTeamsByUserId(id uint, currentUserID uint) ([]models.Team, error) {
 	var user models.User
 
-	err := config.DB.Preload("Teams.Users").
+	err := config.DB.
+		Preload("Teams", ExcludeBlockedUsersOn(currentUserID, "creator_id")).
+		Preload("Teams.Users", ExcludeBlockedUsers(currentUserID)).
 		Preload("Teams.Creator").
 		Preload("Teams.Location").
 		First(&user, id).

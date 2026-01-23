@@ -11,10 +11,12 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-func GetChallengeByID(id uint) (models.Challenge, error) {
+func GetChallengeByID(id uint, currentUserID uint) (models.Challenge, error) {
 	var c models.Challenge
 
-	err := config.DB.Preload("Users").
+	err := config.DB.
+		Scopes(ExcludeBlockedUsersOn(currentUserID, "creator_id")).
+		Preload("Users", ExcludeBlockedUsers(currentUserID)).
 		Preload("Teams").
 		Preload("Creator").
 		Preload("Location").
@@ -32,10 +34,12 @@ func GetChallengeByID(id uint) (models.Challenge, error) {
 }
 
 // TODO: Some kind of pagination so we dont fetch all challenges
-func GetChallenges() ([]models.Challenge, error) {
+func GetChallenges(currentUserID uint) ([]models.Challenge, error) {
 	var challenges []models.Challenge
 
-	err := config.DB.Preload("Users").
+	err := config.DB.
+		Scopes(ExcludeBlockedUsersOn(currentUserID, "creator_id")).
+		Preload("Users", ExcludeBlockedUsers(currentUserID)).
 		Preload("Teams").
 		Preload("Creator").
 		Preload("Location").

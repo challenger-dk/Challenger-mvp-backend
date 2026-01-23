@@ -51,14 +51,17 @@ func GetMessages(conversationID, userID uint, limit int, beforeMessageID *uint) 
 		return nil, false, 0, appError.ErrNotConversationMember
 	}
 
-	// Get total count
+	// Get total count (exclude messages from blocked users)
 	var total int64
 	config.DB.Model(&models.Message{}).
+		Scopes(ExcludeBlockedUsersOn(userID, "sender_id")).
 		Where("conversation_id = ?", conversationID).
 		Count(&total)
 
-	// Build query
-	query := config.DB.Where("conversation_id = ?", conversationID).
+	// Build query (exclude messages from blocked users)
+	query := config.DB.
+		Scopes(ExcludeBlockedUsersOn(userID, "sender_id")).
+		Where("conversation_id = ?", conversationID).
 		Preload("Sender").
 		Order("created_at DESC")
 
@@ -103,4 +106,3 @@ func GetMessageByID(messageID uint) (*models.Message, error) {
 	}
 	return &message, nil
 }
-

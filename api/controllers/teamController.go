@@ -15,13 +15,19 @@ import (
 
 // --- GET ---
 func GetTeam(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().Value(middleware.UserContextKey).(*models.User)
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
+		return
+	}
+
 	id, err := helpers.GetParamId(r)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
 	}
 
-	teamModel, err := services.GetTeamByID(id)
+	teamModel, err := services.GetTeamByID(id, user.ID)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
@@ -37,7 +43,13 @@ func GetTeam(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetTeams(w http.ResponseWriter, r *http.Request) {
-	teamsModel, err := services.GetTeams()
+	user, ok := r.Context().Value(middleware.UserContextKey).(*models.User)
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
+		return
+	}
+
+	teamsModel, err := services.GetTeams(user.ID)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
@@ -56,13 +68,19 @@ func GetTeams(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetTeamsByUserId(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().Value(middleware.UserContextKey).(*models.User)
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
+		return
+	}
+
 	id, err := helpers.GetParamId(r)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
 	}
 
-	teamsModel, err := services.GetTeamsByUserId(id)
+	teamsModel, err := services.GetTeamsByUserId(id, user.ID)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
@@ -88,7 +106,7 @@ func GetCurrentUserTeams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	teamsModel, err := services.GetTeamsByUserId(user.ID)
+	teamsModel, err := services.GetTeamsByUserId(user.ID, user.ID)
 	if err != nil {
 		appError.HandleError(w, err)
 		return

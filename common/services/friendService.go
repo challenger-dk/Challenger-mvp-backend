@@ -11,7 +11,8 @@ import (
 func GetFriends(userID uint) ([]models.User, error) {
 	var user models.User
 
-	err := config.DB.Preload("Friends").
+	err := config.DB.
+		Preload("Friends", ExcludeBlockedUsers(userID)).
 		First(&user, userID).
 		Error
 

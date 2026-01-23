@@ -56,7 +56,10 @@ func GetMyNotifications(userID uint, filters NotificationFilters) ([]models.Noti
 	var notifs []models.Notification
 
 	// Filter: UserID matches AND IsRelevant is true
-	query := config.DB.Preload("Actor").
+	// Also exclude notifications from blocked users (actor_id)
+	query := config.DB.
+		Scopes(ExcludeBlockedUsersOn(userID, "actor_id")).
+		Preload("Actor").
 		Where("user_id = ? AND is_relevant = ?", userID, true)
 
 	// Apply Read/Unread filter if provided

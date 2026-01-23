@@ -14,7 +14,9 @@ import (
 // --- GET ---
 func GetInvitationsByUserId(id uint) ([]models.Invitation, error) {
 	var invitations []models.Invitation
-	err := config.DB.Preload("Inviter").
+	err := config.DB.
+		Scopes(ExcludeBlockedUsersOn(id, "inviter_id")).
+		Preload("Inviter").
 		Where("invitee_id = ?", id).
 		Find(&invitations).
 		Error
