@@ -126,6 +126,15 @@ func clearDatabase() error {
 	if err := config.DB.Exec("DELETE FROM user_settings").Error; err != nil {
 		return err
 	}
+	if err := config.DB.Exec("DELETE FROM emergency_infos").Error; err != nil {
+		return err
+	}
+	if err := config.DB.Exec("DELETE FROM reports").Error; err != nil {
+		return err
+	}
+	if err := config.DB.Exec("DELETE FROM user_blocked_users").Error; err != nil {
+		return err
+	}
 	if err := config.DB.Exec("DELETE FROM users").Error; err != nil {
 		return err
 	}
