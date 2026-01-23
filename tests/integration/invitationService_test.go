@@ -46,7 +46,7 @@ func TestInvitationService_TeamFlow(t *testing.T) {
 	assert.ErrorIs(t, err, appError.ErrInvitationAccepted)
 
 	// 5. Verify Team Member
-	updatedTeam, _ := services.GetTeamByID(team.ID)
+	updatedTeam, _ := services.GetTeamByID(team.ID, inviter.ID)
 	assert.Len(t, updatedTeam.Users, 2)
 }
 

@@ -66,12 +66,11 @@ func RegisterRoutes(r chi.Router) {
 	})
 
 	r.Route("/challenges", func(r chi.Router) {
-		r.Get("/", controllers.GetChallenges)
-		r.Get("/{id}", controllers.GetChallenge)
-
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.AuthMiddleware)
 			r.Use(middleware.EulaMiddleware)
+			r.Get("/", controllers.GetChallenges)
+			r.Get("/{id}", controllers.GetChallenge)
 			r.Post("/", controllers.CreateChallenge)
 			r.Put("/{id}", controllers.UpdateChallenge)
 			r.Post("/{id}/join", controllers.JoinChallenge)

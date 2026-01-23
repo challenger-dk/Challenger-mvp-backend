@@ -13,13 +13,20 @@ import (
 )
 
 func GetChallenge(w http.ResponseWriter, r *http.Request) {
+	// Get current user from context
+	user, ok := r.Context().Value(middleware.UserContextKey).(*models.User)
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
+		return
+	}
+
 	id, err := helpers.GetParamId(r)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
 	}
 
-	chalModel, err := services.GetChallengeByID(id)
+	chalModel, err := services.GetChallengeByID(id, user.ID)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
@@ -34,7 +41,14 @@ func GetChallenge(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetChallenges(w http.ResponseWriter, r *http.Request) {
-	challengesModel, err := services.GetChallenges()
+	// Get current user from context
+	user, ok := r.Context().Value(middleware.UserContextKey).(*models.User)
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
+		return
+	}
+
+	challengesModel, err := services.GetChallenges(user.ID)
 	if err != nil {
 		appError.HandleError(w, err)
 		return

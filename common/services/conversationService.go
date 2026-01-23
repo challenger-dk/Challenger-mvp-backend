@@ -258,9 +258,9 @@ func ListConversations(userID uint) ([]models.Conversation, []int64, []*models.M
 		// Only include conversations that have messages
 		Joins("JOIN messages ON messages.conversation_id = conversation_participants.conversation_id").
 		Preload("Conversation.Team").
-		Preload("Conversation.Participants.User").
+		Preload("Conversation.Participants.User", ExcludeBlockedUsers(userID)).
 		Preload("Conversation.Messages", func(db *gorm.DB) *gorm.DB {
-			return db.Order("created_at DESC")
+			return db.Scopes(ExcludeBlockedUsersOn(userID, "sender_id")).Order("created_at DESC")
 		}).
 		Order("conversation_id DESC").
 		Distinct(). // Avoid duplicates from the JOIN
@@ -281,8 +281,9 @@ func ListConversations(userID uint) ([]models.Conversation, []int64, []*models.M
 	for i, p := range participants {
 		conversations[i] = p.Conversation
 
-		// Calculate unread count
+		// Calculate unread count (exclude messages from blocked users)
 		query := config.DB.Model(&models.Message{}).
+			Scopes(ExcludeBlockedUsersOn(userID, "sender_id")).
 			Where("conversation_id = ? AND sender_id != ?", p.ConversationID, userID)
 
 		if p.LastReadAt != nil {
@@ -293,9 +294,11 @@ func ListConversations(userID uint) ([]models.Conversation, []int64, []*models.M
 
 		query.Count(&unreadCounts[i])
 
-		// Get last message
+		// Get last message (exclude messages from blocked users)
 		var lastMsg models.Message
-		err := config.DB.Where("conversation_id = ?", p.ConversationID).
+		err := config.DB.
+			Scopes(ExcludeBlockedUsersOn(userID, "sender_id")).
+			Where("conversation_id = ?", p.ConversationID).
 			Preload("Sender").
 			Order("created_at DESC").
 			First(&lastMsg).Error

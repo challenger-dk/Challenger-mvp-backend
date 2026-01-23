@@ -35,7 +35,7 @@ func TestTeamService_CRUD(t *testing.T) {
 	assert.Len(t, createdTeam.Users, 1) // Creator auto-added
 
 	// 2. Get Team By ID
-	fetched, err := services.GetTeamByID(createdTeam.ID)
+	fetched, err := services.GetTeamByID(createdTeam.ID, creator.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, "Test Team", fetched.Name)
 
@@ -43,14 +43,14 @@ func TestTeamService_CRUD(t *testing.T) {
 	err = services.UpdateTeam(createdTeam.ID, models.Team{Name: "Updated Team"})
 	assert.NoError(t, err)
 
-	updated, _ := services.GetTeamByID(createdTeam.ID)
+	updated, _ := services.GetTeamByID(createdTeam.ID, creator.ID)
 	assert.Equal(t, "Updated Team", updated.Name)
 
 	// 4. Delete Team
 	err = services.SoftDeleteTeam(createdTeam.ID)
 	assert.NoError(t, err)
 
-	_, err = services.GetTeamByID(createdTeam.ID)
+	_, err = services.GetTeamByID(createdTeam.ID, creator.ID)
 	assert.Error(t, err)
 }
 
@@ -63,12 +63,12 @@ func TestTeamService_List(t *testing.T) {
 	services.CreateTeam(models.Team{Name: "T2", CreatorID: u.ID})
 
 	// Get All
-	teams, err := services.GetTeams()
+	teams, err := services.GetTeams(u.ID)
 	assert.NoError(t, err)
 	assert.GreaterOrEqual(t, len(teams), 2)
 
 	// Get By User
-	userTeams, err := services.GetTeamsByUserId(u.ID)
+	userTeams, err := services.GetTeamsByUserId(u.ID, u.ID)
 	assert.NoError(t, err)
 	assert.Len(t, userTeams, 2)
 }
@@ -104,13 +104,13 @@ func TestTeamService_Membership(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify removal
-	tAfterRemove, _ := services.GetTeamByID(team.ID)
+	tAfterRemove, _ := services.GetTeamByID(team.ID, creator.ID)
 	assert.Len(t, tAfterRemove.Users, 1) // Only creator left
 
 	// 3. Leave Team
 	err = services.LeaveTeam(*creator, team.ID)
 	assert.NoError(t, err)
 
-	tAfterLeave, _ := services.GetTeamByID(team.ID)
+	tAfterLeave, _ := services.GetTeamByID(team.ID, creator.ID)
 	assert.Len(t, tAfterLeave.Users, 0)
 }

@@ -125,3 +125,77 @@ func IsBlocked(blockerID, targetID uint) bool {
 
 	return count > 0
 }
+
+// GetBlockedUserIDs returns all user IDs that are blocked by or have blocked the given user.
+// This includes bidirectional blocking (if A blocks B, both A and B are in each other's blocked list).
+func GetBlockedUserIDs(userID uint) []uint {
+	var blockedIDs []uint
+
+	// Get all users that are blocked in either direction
+	// If userID blocked someone OR someone blocked userID
+	config.DB.Table("user_blocked_users").
+		Where("user_id = ? OR blocked_user_id = ?", userID, userID).
+		Select("CASE WHEN user_id = ? THEN blocked_user_id ELSE user_id END as blocked_id", userID).
+		Pluck("blocked_id", &blockedIDs)
+
+	return blockedIDs
+}
+
+// ExcludeBlockedUsers returns a GORM scope that filters out blocked users.
+// When used on the users table directly (e.g., in Preload), it filters by "id".
+// When used on other tables, it filters by "user_id".
+// Usage: db.Scopes(services.ExcludeBlockedUsers(currentUserID)).Find(&users)
+func ExcludeBlockedUsers(userID uint) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		blockedIDs := GetBlockedUserIDs(userID)
+		if len(blockedIDs) == 0 {
+			return db
+		}
+
+		// Check if we're querying the users table directly
+		// In that case, filter by "id" instead of "user_id"
+		stmt := db.Statement
+		if stmt.Table == "users" || stmt.Table == "" {
+			// When preloading users, filter by id
+			return db.Where("id NOT IN ?", blockedIDs)
+		}
+
+		// For other tables, filter by user_id
+		return db.Where("user_id NOT IN ?", blockedIDs)
+	}
+}
+
+// ExcludeBlockedUsersOn returns a GORM scope that filters out content from blocked users
+// based on a specific field name (e.g., "creator_id", "sender_id", etc.).
+// Usage: db.Scopes(services.ExcludeBlockedUsersOn(currentUserID, "creator_id")).Find(&challenges)
+func ExcludeBlockedUsersOn(userID uint, fieldName string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		blockedIDs := GetBlockedUserIDs(userID)
+		if len(blockedIDs) > 0 {
+			return db.Where(fieldName+" NOT IN ?", blockedIDs)
+		}
+		return db
+	}
+}
+
+// ExcludeBlockedUsersMultipleFields returns a GORM scope that filters out content from blocked users
+// based on multiple field names. Content is excluded if ANY of the fields contain a blocked user.
+// Usage: db.Scopes(services.ExcludeBlockedUsersMultipleFields(currentUserID, "creator_id", "owner_id")).Find(&items)
+func ExcludeBlockedUsersMultipleFields(userID uint, fieldNames ...string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		blockedIDs := GetBlockedUserIDs(userID)
+		if len(blockedIDs) == 0 {
+			return db
+		}
+
+		// Build OR conditions for each field
+		for i, fieldName := range fieldNames {
+			if i == 0 {
+				db = db.Where(fieldName+" NOT IN ?", blockedIDs)
+			} else {
+				db = db.Where(fieldName+" NOT IN ?", blockedIDs)
+			}
+		}
+		return db
+	}
+}
