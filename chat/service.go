@@ -3,12 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"server/common/config"
 	"server/common/dto"
 	"server/common/models"
+	"server/common/services"
 	"strconv"
-	"math"
+
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -57,7 +59,12 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 
 	// 2. Build the DB Query
 	var messages []models.Message
-	query := config.DB.Preload("Sender").Order("created_at DESC").Limit(limit)
+	// Apply blocking filter to exclude messages from blocked users
+	query := config.DB.
+		Scopes(services.ExcludeBlockedUsersOn(userID, "sender_id")).
+		Preload("Sender").
+		Order("created_at DESC").
+		Limit(limit)
 
 	if teamIDStr != "" {
 		// --- Group Chat History ---
