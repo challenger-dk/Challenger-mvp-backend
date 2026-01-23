@@ -41,12 +41,12 @@ func TestChallengeService_CRUD(t *testing.T) {
 	assert.NotZero(t, created.ID)
 
 	// 2. Get All
-	list, err := services.GetChallenges()
+	list, err := services.GetChallenges(creator.ID)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, list)
 
 	// 3. Get By ID
-	fetched, err := services.GetChallengeByID(created.ID)
+	fetched, err := services.GetChallengeByID(created.ID, creator.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, created.ID, fetched.ID)
 
@@ -60,7 +60,7 @@ func TestChallengeService_CRUD(t *testing.T) {
 	err = services.UpdateChallenge(created.ID, updateModel)
 	assert.NoError(t, err)
 
-	updated, _ := services.GetChallengeByID(created.ID)
+	updated, _ := services.GetChallengeByID(created.ID, creator.ID)
 	assert.Equal(t, "Updated Match", updated.Name)
 	assert.Equal(t, "New Desc", updated.Description)
 	assert.Equal(t, "Football", updated.Sport)
@@ -70,7 +70,7 @@ func TestChallengeService_CRUD(t *testing.T) {
 	err = services.DeleteChallenge(created.ID)
 	assert.NoError(t, err)
 
-	_, err = services.GetChallengeByID(created.ID)
+	_, err = services.GetChallengeByID(created.ID, creator.ID)
 	assert.Error(t, err)
 }
 
@@ -94,14 +94,14 @@ func TestChallengeService_Participation(t *testing.T) {
 	err := services.JoinChallenge(created.ID, u1.ID)
 	assert.NoError(t, err)
 
-	fetched, _ := services.GetChallengeByID(created.ID)
+	fetched, _ := services.GetChallengeByID(created.ID, c1.ID)
 	assert.Len(t, fetched.Users, 2) // Creator + u1
 
 	// 2. Leave
 	err = services.LeaveChallenge(created.ID, u1.ID)
 	assert.NoError(t, err)
 
-	fetched, _ = services.GetChallengeByID(created.ID)
+	fetched, _ = services.GetChallengeByID(created.ID, c1.ID)
 	assert.Len(t, fetched.Users, 1)
 }
 
@@ -128,7 +128,7 @@ func TestChallengeService_FullParticipation(t *testing.T) {
 
 	created, _ := services.CreateChallenge(chal, nil)
 
-	fetchedBeforeJoin, _ := services.GetChallengeByID(created.ID)
+	fetchedBeforeJoin, _ := services.GetChallengeByID(created.ID, creator.ID)
 	idsBefore := make([]uint, len(fetchedBeforeJoin.Users))
 	for i, u := range fetchedBeforeJoin.Users {
 		idsBefore[i] = u.ID
@@ -139,7 +139,7 @@ func TestChallengeService_FullParticipation(t *testing.T) {
 	err := services.JoinChallenge(created.ID, user1.ID)
 	assert.NoError(t, err)
 
-	fetched, _ := services.GetChallengeByID(created.ID)
+	fetched, _ := services.GetChallengeByID(created.ID, creator.ID)
 	assert.Len(t, fetched.Users, 2)
 	assert.Equal(t, models.ChallengeConfirmed, fetched.Status)
 
@@ -219,7 +219,7 @@ func TestChallengeService_UpdateChallengeStatusIfExpired(t *testing.T) {
 	createdPast, _ := services.CreateChallenge(chalPast, nil)
 
 	// Get challenge - should automatically update status to completed
-	fetchedPast, err := services.GetChallengeByID(createdPast.ID)
+	fetchedPast, err := services.GetChallengeByID(createdPast.ID, creator.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, models.ChallengeStatusCompleted, fetchedPast.Status, "Challenge with past EndTime should be marked as completed")
 
@@ -237,7 +237,7 @@ func TestChallengeService_UpdateChallengeStatusIfExpired(t *testing.T) {
 	createdFuture, _ := services.CreateChallenge(chalFuture, nil)
 
 	// Get challenge - should remain open
-	fetchedFuture, err := services.GetChallengeByID(createdFuture.ID)
+	fetchedFuture, err := services.GetChallengeByID(createdFuture.ID, creator.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, models.ChallengeStatusOpen, fetchedFuture.Status, "Challenge with future EndTime should remain open")
 
@@ -254,7 +254,7 @@ func TestChallengeService_UpdateChallengeStatusIfExpired(t *testing.T) {
 	createdNoEnd, _ := services.CreateChallenge(chalNoEnd, nil)
 
 	// Get challenge - should remain open
-	fetchedNoEnd, err := services.GetChallengeByID(createdNoEnd.ID)
+	fetchedNoEnd, err := services.GetChallengeByID(createdNoEnd.ID, creator.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, models.ChallengeStatusOpen, fetchedNoEnd.Status, "Challenge with no EndTime should remain unchanged")
 
@@ -272,7 +272,7 @@ func TestChallengeService_UpdateChallengeStatusIfExpired(t *testing.T) {
 	createdCompleted, _ := services.CreateChallenge(chalCompleted, nil)
 
 	// Get challenge - should remain completed
-	fetchedCompleted, err := services.GetChallengeByID(createdCompleted.ID)
+	fetchedCompleted, err := services.GetChallengeByID(createdCompleted.ID, creator.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, models.ChallengeStatusCompleted, fetchedCompleted.Status, "Already completed challenge should remain completed")
 
@@ -290,7 +290,7 @@ func TestChallengeService_UpdateChallengeStatusIfExpired(t *testing.T) {
 	createdExpired, _ := services.CreateChallenge(chalExpired, nil)
 
 	// Get all challenges - expired one should be updated
-	allChallenges, err := services.GetChallenges()
+	allChallenges, err := services.GetChallenges(creator.ID)
 	assert.NoError(t, err)
 
 	var foundExpired *models.Challenge
@@ -323,7 +323,7 @@ func TestChallengeService_AddUserToChallenge(t *testing.T) {
 	created, _ := services.CreateChallenge(chal, nil)
 
 	// Verify creator is already in challenge
-	fetched, _ := services.GetChallengeByID(created.ID)
+	fetched, _ := services.GetChallengeByID(created.ID, creator.ID)
 	assert.Len(t, fetched.Users, 1, "Creator should be in challenge")
 	assert.Equal(t, creator.ID, fetched.Users[0].ID)
 
@@ -343,7 +343,7 @@ func TestChallengeService_AddUserToChallenge(t *testing.T) {
 	assert.NoError(t, err)
 
 	// 3. Verify user1 was added to challenge
-	fetched, _ = services.GetChallengeByID(created.ID)
+	fetched, _ = services.GetChallengeByID(created.ID, creator.ID)
 	assert.Len(t, fetched.Users, 2, "Challenge should have 2 users (creator + user1)")
 
 	userIDs := make(map[uint]bool)
@@ -367,7 +367,7 @@ func TestChallengeService_AddUserToChallenge(t *testing.T) {
 	assert.NoError(t, err)
 
 	// 5. Verify both users are in challenge
-	fetched, _ = services.GetChallengeByID(created.ID)
+	fetched, _ = services.GetChallengeByID(created.ID, creator.ID)
 	assert.Len(t, fetched.Users, 3, "Challenge should have 3 users")
 
 	userIDs = make(map[uint]bool)
