@@ -192,6 +192,7 @@ func UpdateChallenge(id uint, ch models.Challenge) error {
 			return err
 		}
 
+		// Update basic fields
 		if ch.Name != "" {
 			c.Name = ch.Name
 		}
@@ -204,10 +205,30 @@ func UpdateChallenge(id uint, ch models.Challenge) error {
 			c.Sport = ch.Sport
 		}
 
-		if ch.Location.ID != 0 {
-			c.LocationID = ch.Location.ID
+		// Update location - find or create if location data is provided
+		if ch.Location.Address != "" {
+			location, err := FindOrCreateLocation(tx, ch.Location)
+			if err != nil {
+				return err
+			}
+			c.LocationID = location.ID
 		}
 
+		// Update boolean fields (always update since they can be true/false)
+		c.IsIndoor = ch.IsIndoor
+		c.IsPublic = ch.IsPublic
+		c.HasCost = ch.HasCost
+
+		// Update pointer fields (string)
+		if ch.Comment != nil {
+			c.Comment = ch.Comment
+		}
+
+		if ch.PlayFor != nil {
+			c.PlayFor = ch.PlayFor
+		}
+
+		// Update pointer fields (numeric)
 		if ch.TeamSize != nil {
 			c.TeamSize = ch.TeamSize
 		}
@@ -220,8 +241,26 @@ func UpdateChallenge(id uint, ch models.Challenge) error {
 			c.Participants = ch.Participants
 		}
 
+		// Update time fields
+		if !ch.Date.IsZero() {
+			c.Date = ch.Date
+		}
+
+		if !ch.StartTime.IsZero() {
+			c.StartTime = ch.StartTime
+		}
+
+		if ch.EndTime != nil {
+			c.EndTime = ch.EndTime
+		}
+
+		// Update status and type
 		if ch.Status != "" {
 			c.Status = ch.Status
+		}
+
+		if ch.Type != "" {
+			c.Type = ch.Type
 		}
 
 		return tx.Save(&c).Error
