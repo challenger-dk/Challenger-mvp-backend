@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"log/slog"
 	"server/common/appError"
 	"server/common/config"
 	"server/common/models"
@@ -180,6 +181,20 @@ func CreateChallenge(c models.Challenge, invitedUserIds []uint) (models.Challeng
 		ResourceType: &rType,
 	})
 
+	// Create challenge conversation with initial members
+	memberIDs := make([]uint, len(c.Users))
+	for i, u := range c.Users {
+		memberIDs[i] = u.ID
+	}
+	if err := SyncChallengeConversationMembers(c.ID, memberIDs); err != nil {
+		// Log error but don't fail the request
+		// Challenge conversation can be created later
+		slog.Warn("Failed to create challenge conversation for challenge",
+			slog.Int("challenge_id", int(c.ID)),
+			slog.Any("error", err),
+		)
+	}
+
 	return c, nil
 }
 
@@ -268,13 +283,38 @@ func UpdateChallenge(id uint, ch models.Challenge) error {
 }
 
 func JoinChallenge(id uint, userId uint) error {
-	return config.DB.Transaction(func(tx *gorm.DB) error {
+	err := config.DB.Transaction(func(tx *gorm.DB) error {
 		return addUserToChallenge(id, userId, tx)
 	})
+	if err != nil {
+		return err
+	}
+
+	// Sync challenge conversation members after successful join
+	var challenge models.Challenge
+	if err := config.DB.Preload("Users").First(&challenge, id).Error; err != nil {
+		return err
+	}
+
+	memberIDs := make([]uint, len(challenge.Users))
+	for i, u := range challenge.Users {
+		memberIDs[i] = u.ID
+	}
+
+	if err := SyncChallengeConversationMembers(id, memberIDs); err != nil {
+		// Log error but don't fail the request
+		slog.Warn("Failed to sync challenge conversation after user joined",
+			slog.Int("challenge_id", int(id)),
+			slog.Int("user_id", int(userId)),
+			slog.Any("error", err),
+		)
+	}
+
+	return nil
 }
 
 func LeaveChallenge(id uint, userId uint) error {
-	return config.DB.Transaction(func(tx *gorm.DB) error {
+	err := config.DB.Transaction(func(tx *gorm.DB) error {
 		var c models.Challenge
 		var u models.User
 
@@ -292,6 +332,31 @@ func LeaveChallenge(id uint, userId uint) error {
 			Association("Users").
 			Delete(&u)
 	})
+	if err != nil {
+		return err
+	}
+
+	// Sync challenge conversation members after successful leave
+	var challenge models.Challenge
+	if err := config.DB.Preload("Users").First(&challenge, id).Error; err != nil {
+		return err
+	}
+
+	memberIDs := make([]uint, len(challenge.Users))
+	for i, u := range challenge.Users {
+		memberIDs[i] = u.ID
+	}
+
+	if err := SyncChallengeConversationMembers(id, memberIDs); err != nil {
+		// Log error but don't fail the request
+		slog.Warn("Failed to sync challenge conversation after user left",
+			slog.Int("challenge_id", int(id)),
+			slog.Int("user_id", int(userId)),
+			slog.Any("error", err),
+		)
+	}
+
+	return nil
 }
 
 func DeleteChallenge(id uint) error {

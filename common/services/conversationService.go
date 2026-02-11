@@ -227,6 +227,96 @@ func SyncTeamConversationMembers(teamID uint, memberIDs []uint) error {
 	})
 }
 
+// EnsureChallengeConversation ensures a challenge conversation exists for the given challenge
+func EnsureChallengeConversation(challengeID uint) (*models.Conversation, error) {
+	var conversation models.Conversation
+
+	// Check if conversation exists using count to avoid logging errors
+	var count int64
+	err := config.DB.Model(&models.Conversation{}).
+		Where("challenge_id = ?", challengeID).
+		Count(&count).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// If conversation exists, load it with participants
+	if count > 0 {
+		err := config.DB.Where("challenge_id = ?", challengeID).
+			Preload("Participants.User").
+			First(&conversation).Error
+		if err != nil {
+			return nil, err
+		}
+		return &conversation, nil
+	}
+
+	// Create new challenge conversation
+	// Note: Participants will be synced separately via SyncChallengeConversationMembers
+	conversation = models.Conversation{
+		Type:        models.ConversationTypeChallenge,
+		ChallengeID: &challengeID,
+	}
+
+	if err := config.DB.Create(&conversation).Error; err != nil {
+		return nil, err
+	}
+
+	return &conversation, nil
+}
+
+// SyncChallengeConversationMembers syncs challenge conversation participants with challenge users
+func SyncChallengeConversationMembers(challengeID uint, memberIDs []uint) error {
+	// Find or create challenge conversation
+	conversation, err := EnsureChallengeConversation(challengeID)
+	if err != nil {
+		return err
+	}
+
+	return config.DB.Transaction(func(tx *gorm.DB) error {
+		// Get current participants
+		var currentParticipants []models.ConversationParticipant
+		if err := tx.Where("conversation_id = ?", conversation.ID).
+			Find(&currentParticipants).Error; err != nil {
+			return err
+		}
+
+		currentMemberMap := make(map[uint]bool)
+		for _, p := range currentParticipants {
+			currentMemberMap[p.UserID] = true
+		}
+
+		newMemberMap := make(map[uint]bool)
+		for _, id := range memberIDs {
+			newMemberMap[id] = true
+		}
+
+		// Add missing members
+		for _, memberID := range memberIDs {
+			if !currentMemberMap[memberID] {
+				participant := models.ConversationParticipant{
+					ConversationID: conversation.ID,
+					UserID:         memberID,
+				}
+				if err := tx.Create(&participant).Error; err != nil {
+					return err
+				}
+			}
+		}
+
+		// Remove members no longer in challenge
+		for _, p := range currentParticipants {
+			if !newMemberMap[p.UserID] {
+				if err := tx.Delete(&p).Error; err != nil {
+					return err
+				}
+			}
+		}
+
+		return nil
+	})
+}
+
 // GetConversationByID retrieves a conversation by ID
 func GetConversationByID(conversationID uint) (*models.Conversation, error) {
 	var conversation models.Conversation
