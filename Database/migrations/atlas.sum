@@ -1,5 +1,4 @@
-h1:6lJPAE3+fJabpLvvqq5F/Qgoe2g3vHugNvWpeBDy1sM=
-h1:AIEvSzAkmbmEDIkVYrSCDR1j4wX7AaZBhChL9Sbz4Pc=
+h1:x3w/ETgb8IccSHl222qiZoqwThBefwckdyU7KiYqf9k=
 20260106224705.sql h1:DbPkCIDD9Hs4/XAj6fQp9+oOFjfhNWpzV5WWWFKeSoo=
 20260107211344_add_password_reset_fields.sql h1:IstQ0I574xw0PvsL0B4dR2jdOvg8Fst8J2gK2pYuroI=
 20260108000000_add_auth_provider_fields.sql h1:AbwOCAunbI5FgQ+86huLh9WIWNh1EWkf5KK2rd6dvXs=
@@ -11,5 +10,5 @@ h1:AIEvSzAkmbmEDIkVYrSCDR1j4wX7AaZBhChL9Sbz4Pc=
 20260117201003_update_notification_user_settings.sql h1:qKHqOLuz1RnDuNK+YRWQTuIorkdIPonoxN36Dn9UYaE=
 20260121140132_create_eula_tables.sql h1:EA//RA0Ljq8e8yrKhBTPlPtDX0KleA0Tmr+O93rJ3Vk=
 20260121140133_seed_initial_eula.sql h1:Zmdev0X+PG/lF+YmUFdhyoMa0r/ZRqpBpRyb3c3z264=
-20260212141858_add_expo_token_to_users.sql h1:KTCw+eKjV3AhdlT8qsg1kF0pyVGbTlHTMCjt/K7HxO8=
 20260211145732_add_column_challenge_to_conversation.sql h1:/IjaUAfWpSSRaXinMIxpe0eLwNsoFMclyFv20q0Pj00=
+20260212141858_add_expo_token_to_users.sql h1:ZBgusaLgR6zRlPeOkeqYBIbUjDIk1uht6KKwSy3FRTM=
