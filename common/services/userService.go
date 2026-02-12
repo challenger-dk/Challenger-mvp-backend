@@ -310,6 +310,10 @@ func UpdateUser(userID uint, user dto.UserUpdateDto) error {
 	})
 }
 
+func RegisterPushToken(userID uint, pushToken string) error {
+	return config.DB.Model(&models.User{}).Where("id = ?", userID).Update("expo_token", pushToken).Error
+}
+
 func UpdateUserSettings(userID uint, settingsDto dto.UserSettingsUpdateDto) error {
 	return config.DB.Transaction(func(tx *gorm.DB) error {
 		var settings models.UserSettings

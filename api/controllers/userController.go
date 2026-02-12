@@ -9,6 +9,7 @@ import (
 	"server/common/middleware"
 	"server/common/models"
 	"server/common/services"
+	"server/common/validator"
 )
 
 func GetUsers(w http.ResponseWriter, r *http.Request) {
@@ -256,6 +257,35 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = services.UpdateUser(user.ID, req)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func RegisterPushToken(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().
+		Value(middleware.UserContextKey).(*models.User)
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
+		return
+	}
+
+	req := dto.RegisterPushTokenDto{}
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		appError.HandleError(w, appError.ErrBadRequest)
+		return
+	}
+
+	if err := validator.V.Struct(req); err != nil {
+		appError.HandleError(w, appError.ErrBadRequest)
+		return
+	}
+
+	err = services.RegisterPushToken(user.ID, req.PushToken)
 	if err != nil {
 		appError.HandleError(w, err)
 		return

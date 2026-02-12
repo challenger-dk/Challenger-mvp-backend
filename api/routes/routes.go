@@ -53,6 +53,7 @@ func RegisterRoutes(r chi.Router) {
 		// Updates / deletions
 		r.Put("/", controllers.UpdateUser)
 		r.Put("/settings", controllers.UpdateUserSettings)
+		r.Post("/push-token", controllers.RegisterPushToken)
 		r.Delete("/{id}/remove", controllers.RemoveFriend)
 		r.Delete("/me", controllers.DeleteUser)
 	})

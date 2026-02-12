@@ -22,6 +22,9 @@ type User struct {
 	PasswordResetCode          string     `gorm:"index"`
 	PasswordResetCodeExpiresAt *time.Time `gorm:"index"`
 
+	// Push Notification Expo Token
+	ExpoToken string `gorm:"default::null"`
+
 	// Relationships
 	FavoriteSports    []Sport     `gorm:"many2many:user_favorite_sports;"`
 	Teams             []Team      `gorm:"many2many:user_teams;"`
