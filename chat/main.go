@@ -60,10 +60,12 @@ func main() {
 		r.Post("/{id}/messages", handlers.SendMessage)
 		r.Post("/{id}/read", handlers.MarkConversationRead)
 		r.Get("/team/{teamId}", handlers.GetTeamConversation)
+		r.Get("/challenge/{challengeId}", handlers.GetChallengeConversation)
 	})
 
-	// Internal endpoint for team sync (no auth for internal service calls)
+	// Internal endpoints for team/challenge sync (no auth for internal service calls)
 	r.Post("/internal/teams/{teamId}/sync", handlers.SyncTeamMembers)
+	r.Post("/internal/challenges/{challengeId}/sync", handlers.SyncChallengeMembers)
 
 	// Port from Cloud Run environment variable
 	port := os.Getenv("PORT")

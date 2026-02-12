@@ -52,18 +52,11 @@ func BlockUser(userIdA uint, userIdB uint) error {
 			return err
 		}
 
-		// 2. Add to BlockedUsers (Symmetric blocking)
+		// 2. Add to BlockedUsers (ONE-WAY blocking)
+		// Only userA blocks userB, not the other way around
 		err = tx.Model(&userA).
 			Association("BlockedUsers").
 			Append(&userB)
-
-		if err != nil {
-			return err
-		}
-
-		err = tx.Model(&userB).
-			Association("BlockedUsers").
-			Append(&userA)
 
 		if err != nil {
 			return err
@@ -92,17 +85,10 @@ func UnblockUser(userIdA uint, userIdB uint) error {
 			return err
 		}
 
+		// Only remove userA's block on userB (ONE-WAY unblocking)
 		err = tx.Model(&userA).
 			Association("BlockedUsers").
 			Delete(&userB)
-
-		if err != nil {
-			return err
-		}
-
-		err = tx.Model(&userB).
-			Association("BlockedUsers").
-			Delete(&userA)
 
 		if err != nil {
 			return err
@@ -126,8 +112,14 @@ func IsBlocked(blockerID, targetID uint) bool {
 	return count > 0
 }
 
-// GetBlockedUserIDs returns all user IDs that are blocked by or have blocked the given user.
-// This includes bidirectional blocking (if A blocks B, both A and B are in each other's blocked list).
+// GetBlockedUserIDs returns all user IDs that should be hidden from the given user.
+// This includes:
+// - Users that the given user has blocked (user_id = userID)
+// - Users that have blocked the given user (blocked_user_id = userID)
+//
+// This ensures bidirectional content filtering even though blocking is one-way:
+// - If A blocks B: A cannot see B's content, and B cannot see A's content
+// - Only A can unblock (B has no block relationship to remove)
 func GetBlockedUserIDs(userID uint) []uint {
 	var blockedIDs []uint
 
@@ -188,13 +180,10 @@ func ExcludeBlockedUsersMultipleFields(userID uint, fieldNames ...string) func(d
 			return db
 		}
 
-		// Build OR conditions for each field
-		for i, fieldName := range fieldNames {
-			if i == 0 {
-				db = db.Where(fieldName+" NOT IN ?", blockedIDs)
-			} else {
-				db = db.Where(fieldName+" NOT IN ?", blockedIDs)
-			}
+		// Build AND conditions for each field (using NOT IN)
+		// This excludes content if ANY field contains a blocked user
+		for _, fieldName := range fieldNames {
+			db = db.Where(fieldName+" NOT IN ?", blockedIDs)
 		}
 		return db
 	}
