@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"log/slog"
 	"server/common/appError"
 	"server/common/config"
 	"server/common/models"
@@ -180,6 +181,20 @@ func CreateChallenge(c models.Challenge, invitedUserIds []uint) (models.Challeng
 		ResourceType: &rType,
 	})
 
+	// Create challenge conversation with initial members
+	memberIDs := make([]uint, len(c.Users))
+	for i, u := range c.Users {
+		memberIDs[i] = u.ID
+	}
+	if err := SyncChallengeConversationMembers(c.ID, memberIDs); err != nil {
+		// Log error but don't fail the request
+		// Challenge conversation can be created later
+		slog.Warn("Failed to create challenge conversation for challenge",
+			slog.Int("challenge_id", int(c.ID)),
+			slog.Any("error", err),
+		)
+	}
+
 	return c, nil
 }
 
@@ -192,6 +207,7 @@ func UpdateChallenge(id uint, ch models.Challenge) error {
 			return err
 		}
 
+		// Update basic fields
 		if ch.Name != "" {
 			c.Name = ch.Name
 		}
@@ -204,10 +220,30 @@ func UpdateChallenge(id uint, ch models.Challenge) error {
 			c.Sport = ch.Sport
 		}
 
-		if ch.Location.ID != 0 {
-			c.LocationID = ch.Location.ID
+		// Update location - find or create if location data is provided
+		if ch.Location.Address != "" {
+			location, err := FindOrCreateLocation(tx, ch.Location)
+			if err != nil {
+				return err
+			}
+			c.LocationID = location.ID
 		}
 
+		// Update boolean fields (always update since they can be true/false)
+		c.IsIndoor = ch.IsIndoor
+		c.IsPublic = ch.IsPublic
+		c.HasCost = ch.HasCost
+
+		// Update pointer fields (string)
+		if ch.Comment != nil {
+			c.Comment = ch.Comment
+		}
+
+		if ch.PlayFor != nil {
+			c.PlayFor = ch.PlayFor
+		}
+
+		// Update pointer fields (numeric)
 		if ch.TeamSize != nil {
 			c.TeamSize = ch.TeamSize
 		}
@@ -220,8 +256,26 @@ func UpdateChallenge(id uint, ch models.Challenge) error {
 			c.Participants = ch.Participants
 		}
 
+		// Update time fields
+		if !ch.Date.IsZero() {
+			c.Date = ch.Date
+		}
+
+		if !ch.StartTime.IsZero() {
+			c.StartTime = ch.StartTime
+		}
+
+		if ch.EndTime != nil {
+			c.EndTime = ch.EndTime
+		}
+
+		// Update status and type
 		if ch.Status != "" {
 			c.Status = ch.Status
+		}
+
+		if ch.Type != "" {
+			c.Type = ch.Type
 		}
 
 		return tx.Save(&c).Error
@@ -229,13 +283,38 @@ func UpdateChallenge(id uint, ch models.Challenge) error {
 }
 
 func JoinChallenge(id uint, userId uint) error {
-	return config.DB.Transaction(func(tx *gorm.DB) error {
+	err := config.DB.Transaction(func(tx *gorm.DB) error {
 		return addUserToChallenge(id, userId, tx)
 	})
+	if err != nil {
+		return err
+	}
+
+	// Sync challenge conversation members after successful join
+	var challenge models.Challenge
+	if err := config.DB.Preload("Users").First(&challenge, id).Error; err != nil {
+		return err
+	}
+
+	memberIDs := make([]uint, len(challenge.Users))
+	for i, u := range challenge.Users {
+		memberIDs[i] = u.ID
+	}
+
+	if err := SyncChallengeConversationMembers(id, memberIDs); err != nil {
+		// Log error but don't fail the request
+		slog.Warn("Failed to sync challenge conversation after user joined",
+			slog.Uint("challenge_id", id),
+			slog.Uint("user_id", userId),
+			slog.Any("error", err),
+		)
+	}
+
+	return nil
 }
 
 func LeaveChallenge(id uint, userId uint) error {
-	return config.DB.Transaction(func(tx *gorm.DB) error {
+	err := config.DB.Transaction(func(tx *gorm.DB) error {
 		var c models.Challenge
 		var u models.User
 
@@ -253,6 +332,31 @@ func LeaveChallenge(id uint, userId uint) error {
 			Association("Users").
 			Delete(&u)
 	})
+	if err != nil {
+		return err
+	}
+
+	// Sync challenge conversation members after successful leave
+	var challenge models.Challenge
+	if err := config.DB.Preload("Users").First(&challenge, id).Error; err != nil {
+		return err
+	}
+
+	memberIDs := make([]uint, len(challenge.Users))
+	for i, u := range challenge.Users {
+		memberIDs[i] = u.ID
+	}
+
+	if err := SyncChallengeConversationMembers(id, memberIDs); err != nil {
+		// Log error but don't fail the request
+		slog.Warn("Failed to sync challenge conversation after user left",
+			slog.Uint("challenge_id", id),
+			slog.Uint("user_id", userId),
+			slog.Any("error", err),
+		)
+	}
+
+	return nil
 }
 
 func DeleteChallenge(id uint) error {

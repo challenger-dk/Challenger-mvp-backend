@@ -320,3 +320,65 @@ func SyncTeamMembers(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// GetChallengeConversation returns the conversation for a challenge
+func GetChallengeConversation(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().Value(middleware.UserContextKey).(*models.User)
+	if !ok {
+		appError.HandleError(w, appError.ErrUnauthorized)
+		return
+	}
+
+	challengeID, err := strconv.ParseUint(chi.URLParam(r, "challengeId"), 10, 32)
+	if err != nil {
+		appError.HandleError(w, appError.ErrMissingIdParam)
+		return
+	}
+
+	// Get or create challenge conversation
+	conversation, err := services.EnsureChallengeConversation(uint(challengeID))
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	// Check if user is a member of this conversation
+	isMember, err := services.IsConversationMember(conversation.ID, user.ID)
+	if err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+	if !isMember {
+		appError.HandleError(w, appError.ErrNotConversationMember)
+		return
+	}
+
+	json.NewEncoder(w).Encode(dto.ToConversationResponseDto(*conversation))
+}
+
+// SyncChallengeMembers is an internal endpoint to sync challenge conversation members
+func SyncChallengeMembers(w http.ResponseWriter, r *http.Request) {
+	challengeID, err := strconv.ParseUint(chi.URLParam(r, "challengeId"), 10, 32)
+	if err != nil {
+		appError.HandleError(w, appError.ErrMissingIdParam)
+		return
+	}
+
+	var req dto.SyncTeamMembersDto // Reuse the same DTO structure
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	if err := validator.V.Struct(req); err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	if err := services.SyncChallengeConversationMembers(uint(challengeID), req.MemberIDs); err != nil {
+		appError.HandleError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

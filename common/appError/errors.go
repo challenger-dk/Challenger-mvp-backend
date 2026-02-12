@@ -71,6 +71,11 @@ var (
 	ErrIdBelowOne     = errors.New("id parameter must be greater than 0")
 )
 
+// Push notification errors
+var (
+	ErrInvalidPushToken = errors.New("invalid Expo push token")
+)
+
 // ErrorMap groups specific errors by the HTTP status code they should return.
 // Validation errors are handled separately in the error handler.
 var errorMap = map[int][]error{
@@ -116,6 +121,7 @@ var errorMap = map[int][]error{
 		ErrUnhandledInvitationStatus,
 		ErrBadRequest,
 		ErrEulaNotActive,
+		ErrInvalidPushToken,
 	},
 	http.StatusInternalServerError: {
 		ErrUnknownResource,
