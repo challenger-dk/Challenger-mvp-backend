@@ -304,8 +304,8 @@ func JoinChallenge(id uint, userId uint) error {
 	if err := SyncChallengeConversationMembers(id, memberIDs); err != nil {
 		// Log error but don't fail the request
 		slog.Warn("Failed to sync challenge conversation after user joined",
-			slog.Uint("challenge_id", id),
-			slog.Uint("user_id", userId),
+			slog.Uint64("challenge_id", uint64(id)),
+			slog.Uint64("user_id", uint64(userId)),
 			slog.Any("error", err),
 		)
 	}
@@ -350,8 +350,8 @@ func LeaveChallenge(id uint, userId uint) error {
 	if err := SyncChallengeConversationMembers(id, memberIDs); err != nil {
 		// Log error but don't fail the request
 		slog.Warn("Failed to sync challenge conversation after user left",
-			slog.Uint("challenge_id", id),
-			slog.Uint("user_id", userId),
+			slog.Uint64("challenge_id", uint64(id)),
+			slog.Uint64("user_id", uint64(userId)),
 			slog.Any("error", err),
 		)
 	}
