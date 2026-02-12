@@ -50,9 +50,12 @@ func CreateNotification(db *gorm.DB, params NotificationParams) {
 	// Create the actual notification
 	persistNotification(db, params)
 
-	// Send push notification for challenge invitations
-	if params.Type == models.NotifTypeChallengeReq {
-		sendChallengeInvitationPushNotification(params)
+	// Send push notifications for invitations
+	switch params.Type {
+	case models.NotifTypeChallengeReq:
+		sendInvitationPushNotification(db, params)
+	case models.NotifTypeFriendReq:
+		sendInvitationPushNotification(db, params)
 	}
 }
 
@@ -561,24 +564,31 @@ func shouldNotify(db *gorm.DB, userID uint, notifType models.NotificationType) b
 	return true
 }
 
-// sendChallengeInvitationPushNotification sends a push notification to the invitee when invited to a challenge.
+// sendInvitationPushNotification sends a push notification to the invitee for friend requests and challenge invitations.
+// Uses db (may be a transaction) to load the recipient so it works correctly when called from within a transaction.
 // Errors are logged but do not affect the caller.
-func sendChallengeInvitationPushNotification(params NotificationParams) {
+func sendInvitationPushNotification(db *gorm.DB, params NotificationParams) {
 	var recipient models.User
-	if err := config.DB.Select("id", "expo_token").
+	if err := db.Select("id", "expo_token").
 		First(&recipient, params.RecipientID).Error; err != nil {
-		slog.Warn("Failed to load recipient for challenge invitation push",
+		slog.Warn("Failed to load recipient for invitation push",
 			slog.Uint64("recipient_id", uint64(params.RecipientID)),
+			slog.String("notification_type", string(params.Type)),
 			slog.Any("error", err),
 		)
 		return
 	}
 	if recipient.ExpoToken == "" {
+		slog.Info("Skipping invitation push: recipient has no expo token",
+			slog.Uint64("recipient_id", uint64(params.RecipientID)),
+			slog.String("notification_type", string(params.Type)),
+		)
 		return
 	}
 
-	data := map[string]any{
-		"resource_type": "challenge",
+	data := map[string]any{}
+	if params.ResourceType != nil {
+		data["resource_type"] = string(*params.ResourceType)
 	}
 	if params.ResourceID != nil {
 		data["resource_id"] = *params.ResourceID
@@ -589,8 +599,9 @@ func sendChallengeInvitationPushNotification(params NotificationParams) {
 
 	err := SendExpoPushNotification(recipient.ExpoToken, params.Title, params.Content, data)
 	if err != nil {
-		slog.Warn("Failed to send challenge invitation push notification",
+		slog.Warn("Failed to send invitation push notification",
 			slog.Uint64("recipient_id", uint64(params.RecipientID)),
+			slog.String("notification_type", string(params.Type)),
 			slog.Any("error", err),
 		)
 		if IsDeviceNotRegistered(err) {
