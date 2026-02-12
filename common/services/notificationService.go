@@ -49,6 +49,11 @@ func CreateNotification(db *gorm.DB, params NotificationParams) {
 
 	// Create the actual notification
 	persistNotification(db, params)
+
+	// Send push notification for challenge invitations
+	if params.Type == models.NotifTypeChallengeReq {
+		sendChallengeInvitationPushNotification(params)
+	}
 }
 
 // GetMyNotifications fetches notifications with filters.
@@ -554,6 +559,44 @@ func shouldNotify(db *gorm.DB, userID uint, notifType models.NotificationType) b
 
 	// Unknown/unmapped types default to "send".
 	return true
+}
+
+// sendChallengeInvitationPushNotification sends a push notification to the invitee when invited to a challenge.
+// Errors are logged but do not affect the caller.
+func sendChallengeInvitationPushNotification(params NotificationParams) {
+	var recipient models.User
+	if err := config.DB.Select("id", "expo_token").
+		First(&recipient, params.RecipientID).Error; err != nil {
+		slog.Warn("Failed to load recipient for challenge invitation push",
+			slog.Uint64("recipient_id", uint64(params.RecipientID)),
+			slog.Any("error", err),
+		)
+		return
+	}
+	if recipient.ExpoToken == "" {
+		return
+	}
+
+	data := map[string]any{
+		"resource_type": "challenge",
+	}
+	if params.ResourceID != nil {
+		data["resource_id"] = *params.ResourceID
+	}
+	if params.InvitationID != nil {
+		data["invitation_id"] = *params.InvitationID
+	}
+
+	err := SendExpoPushNotification(recipient.ExpoToken, params.Title, params.Content, data)
+	if err != nil {
+		slog.Warn("Failed to send challenge invitation push notification",
+			slog.Uint64("recipient_id", uint64(params.RecipientID)),
+			slog.Any("error", err),
+		)
+		if IsDeviceNotRegistered(err) {
+			config.DB.Model(&models.User{}).Where("id = ?", recipient.ID).Update("expo_token", "")
+		}
+	}
 }
 
 // persistNotification performs the actual DB write.

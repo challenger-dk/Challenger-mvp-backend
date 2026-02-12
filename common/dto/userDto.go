@@ -34,6 +34,10 @@ type DeleteUserDto struct {
 	Email string `json:"email" validate:"sanitize,required,email"`
 }
 
+type RegisterPushTokenDto struct {
+	PushToken string `json:"push_token" validate:"sanitize,required"`
+}
+
 type UserResponseDto struct {
 	ID                  uint                       `json:"id"`
 	Email               string                     `json:"email"`
