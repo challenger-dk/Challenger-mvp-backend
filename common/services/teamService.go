@@ -14,7 +14,7 @@ func GetTeamByID(id uint, currentUserID uint) (models.Team, error) {
 
 	err := config.DB.
 		Scopes(ExcludeBlockedUsersOn(currentUserID, "creator_id")).
-		Preload("Users", ExcludeBlockedUsers(currentUserID)).
+		Preload("Users.User", ExcludeBlockedUsers(currentUserID)).
 		Preload("Creator").
 		Preload("Location").
 		First(&t, id).
@@ -32,7 +32,7 @@ func GetTeams(currentUserID uint) ([]models.Team, error) {
 
 	err := config.DB.
 		Scopes(ExcludeBlockedUsersOn(currentUserID, "creator_id")).
-		Preload("Users", ExcludeBlockedUsers(currentUserID)).
+		Preload("Users.User", ExcludeBlockedUsers(currentUserID)).
 		Preload("Creator").
 		Preload("Location").
 		Find(&teams).
@@ -44,14 +44,14 @@ func GetTeams(currentUserID uint) ([]models.Team, error) {
 	return teams, nil
 }
 
-func GetTeamsByUserId(id uint, currentUserID uint) ([]models.Team, error) {
+func GetTeamsByUserId(id uint, currentUserID uint) ([]models.TeamMember, error) {
 	var user models.User
 
 	err := config.DB.
-		Preload("Teams", ExcludeBlockedUsersOn(currentUserID, "creator_id")).
-		Preload("Teams.Users", ExcludeBlockedUsers(currentUserID)).
-		Preload("Teams.Creator").
-		Preload("Teams.Location").
+		Preload("Teams.Team", ExcludeBlockedUsersOn(currentUserID, "creator_id")).
+		Preload("Teams.Team.Users.User", ExcludeBlockedUsers(currentUserID)).
+		Preload("Teams.Team.Creator").
+		Preload("Teams.Team.Location").
 		First(&user, id).
 		Error
 
@@ -85,14 +85,17 @@ func CreateTeam(t models.Team) (models.Team, error) {
 
 		t.CreatorID = creator.ID
 		t.Creator = models.User{}
-		t.Users = append(t.Users, creator)
+		t.Users = append(t.Users, models.TeamMember{
+			UserID: creator.ID,
+			Role:   models.RoleOwner,
+		})
 
 		err = tx.Create(&t).Error
 		if err != nil {
 			return err
 		}
 
-		err = tx.Preload("Users").
+		err = tx.Preload("Users.User").
 			Preload("Creator").
 			Preload("Location").
 			First(&t, t.ID).
@@ -133,7 +136,7 @@ func SoftDeleteTeam(id uint) error {
 		var t models.Team
 
 		// Load team + users in a single query
-		if err := tx.Preload("Users").First(&t, id).Error; err != nil {
+		if err := tx.Preload("Users.User").First(&t, id).Error; err != nil {
 			return err
 		}
 
@@ -149,11 +152,11 @@ func SoftDeleteTeam(id uint) error {
 
 		// Notify users (except creator)
 		for _, u := range users {
-			if u.ID == creatorId {
+			if u.UserID == creatorId {
 				continue
 			}
 
-			CreateTeamDeletedNotification(tx, u, t)
+			CreateTeamDeletedNotification(tx, u.User, t)
 		}
 
 		return nil
@@ -165,7 +168,7 @@ func DeleteTeam(id uint) error {
 	return config.DB.Transaction(func(tx *gorm.DB) error {
 		var t models.Team
 		// Load team + users in a single query
-		if err := tx.Preload("Users").First(&t, id).Error; err != nil {
+		if err := tx.Preload("Users.User").First(&t, id).Error; err != nil {
 			return err
 		}
 
@@ -181,7 +184,6 @@ func DeleteTeam(id uint) error {
 func RemoveUserFromTeam(creator models.User, teamId uint, userId uint) error {
 	return config.DB.Transaction(func(tx *gorm.DB) error {
 		var t models.Team
-		var u models.User
 
 		err := tx.First(&t, teamId).Error
 		if err != nil {
@@ -192,21 +194,16 @@ func RemoveUserFromTeam(creator models.User, teamId uint, userId uint) error {
 			return appError.ErrUnauthorized
 		}
 
-		err = tx.First(&u, userId).Error
-		if err != nil {
-			return err
-		}
-
-		err = tx.Model(&t).
-			Association("Users").
-			Delete(&u)
+		// Delete the TeamMember record
+		err = tx.Where("team_id = ? AND user_id = ?", teamId, userId).
+			Delete(&models.TeamMember{}).Error
 
 		if err != nil {
 			return err
 		}
 
 		// Notification
-		CreateRemovedUserFromTeamNotification(tx, u.ID, t)
+		CreateRemovedUserFromTeamNotification(tx, userId, t)
 
 		return nil
 	})
@@ -221,9 +218,9 @@ func LeaveTeam(user models.User, teamId uint) error {
 			return err
 		}
 
-		err = tx.Model(&t).
-			Association("Users").
-			Delete(&user)
+		// Delete the TeamMember record
+		err = tx.Where("team_id = ? AND user_id = ?", teamId, user.ID).
+			Delete(&models.TeamMember{}).Error
 
 		if err != nil {
 			return err
@@ -238,23 +235,28 @@ func LeaveTeam(user models.User, teamId uint) error {
 
 // Package private methods
 func addUserToTeam(teamId uint, userId uint, db *gorm.DB) error {
+	// Verify team exists
 	var t models.Team
-	var u models.User
-
 	err := db.First(&t, teamId).Error
 	if err != nil {
 		return err
 	}
 
+	// Verify user exists
+	var u models.User
 	err = db.First(&u, userId).Error
 	if err != nil {
 		return err
 	}
 
-	err = db.Model(&t).
-		Association("Users").
-		Append(&u)
+	// Create TeamMember record with default member role
+	teamMember := models.TeamMember{
+		TeamID: teamId,
+		UserID: userId,
+		Role:   models.RoleMember,
+	}
 
+	err = db.Create(&teamMember).Error
 	if err != nil {
 		return err
 	}

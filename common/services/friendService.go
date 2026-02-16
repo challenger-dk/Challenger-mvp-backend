@@ -114,7 +114,7 @@ func GetSuggestedFriends(userID uint) ([]models.User, error) {
 
 	userTeamMap := make(map[uint]bool)
 	for _, team := range user.Teams {
-		userTeamMap[team.ID] = true
+		userTeamMap[team.TeamID] = true
 	}
 
 	userChallengeMap := make(map[uint]bool)
@@ -140,7 +140,7 @@ func GetSuggestedFriends(userID uint) ([]models.User, error) {
 
 		// Count common teams
 		for _, candidateTeam := range candidate.Teams {
-			if userTeamMap[candidateTeam.ID] {
+			if userTeamMap[candidateTeam.TeamID] {
 				scored.commonTeamsCount++
 			}
 		}

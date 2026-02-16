@@ -271,7 +271,7 @@ func AcceptInvitation(invitationId uint, currentUserId uint) error {
 		if err := config.DB.Preload("Users").First(&team, teamID).Error; err == nil {
 			memberIDs := make([]uint, len(team.Users))
 			for i, u := range team.Users {
-				memberIDs[i] = u.ID
+				memberIDs[i] = u.UserID
 			}
 			// Sync conversation (don't fail if this errors)
 			if err := SyncTeamConversationMembers(teamID, memberIDs); err != nil {

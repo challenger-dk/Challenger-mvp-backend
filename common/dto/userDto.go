@@ -234,7 +234,7 @@ func ToUserResponseDto(user models.User) UserResponseDto {
 
 	teams := make([]TeamResponseDto, len(user.Teams))
 	for i, team := range user.Teams {
-		teams[i] = ToTeamResponseDto(team)
+		teams[i] = ToTeamResponseDto(team.Team)
 	}
 
 	return UserResponseDto{

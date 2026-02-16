@@ -110,14 +110,14 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	}
 
 	var user models.User
-	if err := config.DB.Preload("Teams").Preload("BlockedUsers").First(&user, claims.UserID).Error; err != nil {
+	if err := config.DB.Preload("Teams.Team").Preload("BlockedUsers").First(&user, claims.UserID).Error; err != nil {
 		http.Error(w, "User not found", http.StatusUnauthorized)
 		return
 	}
 
 	allowedTeams := make(map[uint]bool)
 	for _, team := range user.Teams {
-		allowedTeams[team.ID] = true
+		allowedTeams[team.TeamID] = true
 	}
 
 	blockedUsers := make(map[uint]bool)

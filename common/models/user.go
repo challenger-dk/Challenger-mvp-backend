@@ -26,12 +26,12 @@ type User struct {
 	ExpoToken string `gorm:"default::null"`
 
 	// Relationships
-	FavoriteSports    []Sport     `gorm:"many2many:user_favorite_sports;"`
-	Teams             []Team      `gorm:"many2many:user_teams;"`
-	CreatedChallenges []Challenge `gorm:"foreignKey:CreatorID"`
-	JoinedChallenges  []Challenge `gorm:"many2many:user_challenges;"`
-	Friends           []User      `gorm:"many2many:user_friends;joinForeignKey:UserID;JoinReferences:FriendID"`
-	BlockedUsers      []User      `gorm:"many2many:user_blocked_users;joinForeignKey:UserID;JoinReferences:BlockedUserID"`
+	FavoriteSports    []Sport      `gorm:"many2many:user_favorite_sports;"`
+	Teams             []TeamMember `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	CreatedChallenges []Challenge  `gorm:"foreignKey:CreatorID"`
+	JoinedChallenges  []Challenge  `gorm:"many2many:user_challenges;"`
+	Friends           []User       `gorm:"many2many:user_friends;joinForeignKey:UserID;JoinReferences:FriendID"`
+	BlockedUsers      []User       `gorm:"many2many:user_blocked_users;joinForeignKey:UserID;JoinReferences:BlockedUserID"`
 
 	Settings          *UserSettings   `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	EmergencyContacts []EmergencyInfo `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`

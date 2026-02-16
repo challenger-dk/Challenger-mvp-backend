@@ -80,15 +80,16 @@ func GetTeamsByUserId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	teamsModel, err := services.GetTeamsByUserId(id, user.ID)
+	teamMembers, err := services.GetTeamsByUserId(id, user.ID)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
 	}
 
-	response := make([]dto.TeamResponseDto, len(teamsModel))
-	for i, t := range teamsModel {
-		response[i] = dto.ToTeamResponseDto(t)
+	// Extract teams from team members
+	response := make([]dto.TeamResponseDto, len(teamMembers))
+	for i, tm := range teamMembers {
+		response[i] = dto.ToTeamResponseDto(tm.Team)
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -106,15 +107,16 @@ func GetCurrentUserTeams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	teamsModel, err := services.GetTeamsByUserId(user.ID, user.ID)
+	teamMembers, err := services.GetTeamsByUserId(user.ID, user.ID)
 	if err != nil {
 		appError.HandleError(w, err)
 		return
 	}
 
-	response := make([]dto.TeamResponseDto, len(teamsModel))
-	for i, t := range teamsModel {
-		response[i] = dto.ToTeamResponseDto(t)
+	// Extract teams from team members
+	response := make([]dto.TeamResponseDto, len(teamMembers))
+	for i, tm := range teamMembers {
+		response[i] = dto.ToTeamResponseDto(tm.Team)
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -162,7 +164,7 @@ func CreateTeam(w http.ResponseWriter, r *http.Request) {
 	// Create team conversation with initial members
 	memberIDs := make([]uint, len(createdModel.Users))
 	for i, u := range createdModel.Users {
-		memberIDs[i] = u.ID
+		memberIDs[i] = u.UserID
 	}
 	if err := services.SyncTeamConversationMembers(createdModel.ID, memberIDs); err != nil {
 		// Log error but don't fail the request

@@ -1110,13 +1110,13 @@ func seedConversations(users []models.User, teams []models.Team) error {
 	// Create team conversations using SyncTeamConversationMembers
 	for i := range teams {
 		// Get all team members
-		var teamMembers []models.User
-		config.DB.Model(&teams[i]).Association("Users").Find(&teamMembers)
+		var teamMembers []models.TeamMember
+		config.DB.Where("team_id = ?", teams[i].ID).Find(&teamMembers)
 
 		// Extract member IDs
 		memberIDs := make([]uint, len(teamMembers))
 		for j := range teamMembers {
-			memberIDs[j] = teamMembers[j].ID
+			memberIDs[j] = teamMembers[j].UserID
 		}
 
 		// Sync team conversation (creates conversation and participants)
