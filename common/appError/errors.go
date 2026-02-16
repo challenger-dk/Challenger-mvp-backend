@@ -60,6 +60,11 @@ var (
 	ErrChallengeAlreadyConfirmed  = errors.New("challenge is already confirmed")
 )
 
+// Facility Errors
+var (
+	ErrFacilityNotFound = errors.New("facility not found")
+)
+
 // EULA Errors
 var (
 	ErrEulaNotAccepted = errors.New("EULA not accepted")
@@ -82,6 +87,7 @@ var errorMap = map[int][]error{
 	http.StatusNotFound: {
 		gorm.ErrRecordNotFound,
 		ErrSportNotFound,
+		ErrFacilityNotFound,
 		ErrConversationNotFound,
 	},
 	http.StatusUnauthorized: {

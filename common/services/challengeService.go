@@ -21,6 +21,7 @@ func GetChallengeByID(id uint, currentUserID uint) (models.Challenge, error) {
 		Preload("Teams").
 		Preload("Creator").
 		Preload("Location").
+		Preload("Facility").
 		First(&c, id).
 		Error
 
@@ -44,6 +45,7 @@ func GetChallenges(currentUserID uint) ([]models.Challenge, error) {
 		Preload("Teams").
 		Preload("Creator").
 		Preload("Location").
+		Preload("Facility").
 		Find(&challenges).
 		Error
 
@@ -81,6 +83,14 @@ func CreateChallenge(c models.Challenge, invitedUserIds []uint) (models.Challeng
 		// Set the LocationID and clear the Location object to avoid GORM trying to create it
 		c.LocationID = location.ID
 		c.Location = models.Location{}
+
+		// Validate facility exists if FacilityID is provided
+		if c.FacilityID != nil {
+			var facility models.Facility
+			if err := tx.First(&facility, *c.FacilityID).Error; err != nil {
+				return appError.ErrFacilityNotFound
+			}
+		}
 
 		err = tx.Create(&c).Error
 		if err != nil {
@@ -160,6 +170,7 @@ func CreateChallenge(c models.Challenge, invitedUserIds []uint) (models.Challeng
 			Preload("Teams").
 			Preload("Creator").
 			Preload("Location").
+			Preload("Facility").
 			First(&c, c.ID).
 			Error
 
@@ -227,6 +238,15 @@ func UpdateChallenge(id uint, ch models.Challenge) error {
 				return err
 			}
 			c.LocationID = location.ID
+		}
+
+		// Update facility when provided (validate exists if non-nil)
+		if ch.FacilityID != nil {
+			var facility models.Facility
+			if err := tx.First(&facility, *ch.FacilityID).Error; err != nil {
+				return appError.ErrFacilityNotFound
+			}
+			c.FacilityID = ch.FacilityID
 		}
 
 		// Update boolean fields (always update since they can be true/false)

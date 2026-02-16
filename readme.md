@@ -465,6 +465,16 @@ gcloud run jobs execute challenger-migrate-production --region=us-central1
 
 See **[GOOGLE_CLOUD_MIGRATIONS.md](GOOGLE_CLOUD_MIGRATIONS.md)** for setup instructions.
 
+### Import Facilities (Cloud Run Job)
+
+When `facilities.json` is updated and pushed to production, the workflow builds a new image. Run the job to import new facilities (existing ones are skipped):
+
+```bash
+gcloud run jobs execute challenger-import-facilities-production --region=europe-west1 --wait
+```
+
+Create the job manually the first time using the same database env vars as the migration job.
+
 ### Migration Strategy
 
 **Never use auto-migration in production.** Instead:

@@ -25,6 +25,12 @@ func RegisterRoutes(r chi.Router) {
 
 	r.Get("/sports", controllers.GetSports)
 
+	r.Route("/facilities", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware)
+		r.Get("/", controllers.GetFacilities)
+		r.Get("/{id}", controllers.GetFacility)
+	})
+
 	r.Route("/users", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware)
 		r.Use(middleware.EulaMiddleware)
