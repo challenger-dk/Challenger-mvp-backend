@@ -140,6 +140,12 @@ func RegisterRoutes(r chi.Router) {
 			r.Post("/accept", controllers.AcceptEula)
 		})
 	})
+
+	r.Route("/weather", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware)
+		r.Use(middleware.EulaMiddleware)
+		r.Get("/", controllers.GetWeather)
+	})
 }
 
 func registerGenericMiddleware(r chi.Router) {
