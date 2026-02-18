@@ -1,0 +1,84 @@
+name: Build Production Import Facilities Image
+
+on:
+  push:
+    branches:
+      - production
+    paths:
+      - facilities.json
+      - Dockerfile.import-facilities
+      - cmd/import-facilities/**
+      - common/config/**
+      - common/models/facility.go
+      - common/models/types/**
+      - Database/migrations/**
+
+env:
+  PROJECT_ID: challenger-app-479210
+  REGION: europe-west1
+  ARTIFACT_REGISTRY_REGION: europe-west4
+  REPOSITORY: challenger-app
+  IMPORT_FACILITIES_IMAGE: europe-west4-docker.pkg.dev/challenger-app-479210/challenger-app/challenger-import-facilities:production
+
+jobs:
+  build-import-facilities-image:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.4'
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev
+
+      - name: Build import facilities Docker image
+        run: |
+          echo "🔨 Building import facilities Docker image..."
+          docker build -f Dockerfile.import-facilities -t ${{ env.IMPORT_FACILITIES_IMAGE }} .
+
+      - name: Push import facilities image to Artifact Registry
+        run: |
+          echo "📤 Pushing import facilities image to Artifact Registry..."
+          docker push ${{ env.IMPORT_FACILITIES_IMAGE }}
+
+      - name: Update Cloud Run Job (if exists)
+        run: |
+          echo "🔄 Updating Cloud Run Job with new image..."
+
+          if gcloud run jobs describe challenger-import-facilities-production --region=${{ env.REGION }} &>/dev/null; then
+            echo "✅ Import facilities job exists, updating image..."
+            gcloud run jobs update challenger-import-facilities-production \
+              --image=${{ env.IMPORT_FACILITIES_IMAGE }} \
+              --region=${{ env.REGION }}
+            echo "✅ Import facilities job updated successfully!"
+          else
+            echo "⚠️  Import facilities job doesn't exist yet."
+            echo "   Create it manually with the same database env vars as challenger-migrate-production,"
+            echo "   then run: gcloud run jobs execute challenger-import-facilities-production --region=${{ env.REGION }}"
+          fi
+
+      - name: Summary
+        run: |
+          echo "✅ Import facilities image built and pushed successfully!"
+          echo "📦 Image: ${{ env.IMPORT_FACILITIES_IMAGE }}"
+          echo ""
+          echo "To run the import (adds new facilities, skips existing ones):"
+          echo "  gcloud run jobs execute challenger-import-facilities-production --region=${{ env.REGION }} --wait"
+          echo ""
+          echo "Or use the Google Cloud Console:"
+          echo "  https://console.cloud.google.com/run/jobs/details/${{ env.REGION }}/challenger-import-facilities-production"

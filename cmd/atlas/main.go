@@ -20,6 +20,7 @@ func main() {
 	stmts, err := gormschema.New("postgres").Load(
 		&models.User{},
 		&models.Team{},
+		&models.Facility{},
 		&models.Challenge{},
 		&models.Sport{},
 		&models.Invitation{},

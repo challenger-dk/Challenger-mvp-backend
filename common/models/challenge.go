@@ -35,6 +35,8 @@ type Challenge struct {
 	Sport        string
 	Location     Location        `gorm:"foreignKey:LocationID"`
 	LocationID   uint            `gorm:"not null"`
+	FacilityID   *uint           `gorm:"default:null"`
+	Facility     *Facility       `gorm:"foreignKey:FacilityID"`
 	CreatorID    uint            `gorm:"not null"`
 	Creator      User            `gorm:"foreignKey:CreatorID"`
 	Teams        []Team          `gorm:"many2many:challenge_teams;"`
