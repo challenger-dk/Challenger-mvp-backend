@@ -99,7 +99,7 @@ func clearDatabase() error {
 	if err := config.DB.Exec("DELETE FROM user_friends").Error; err != nil {
 		return err
 	}
-	if err := config.DB.Exec("DELETE FROM user_teams").Error; err != nil {
+	if err := config.DB.Exec("DELETE FROM team_members").Error; err != nil {
 		return err
 	}
 	if err := config.DB.Exec("DELETE FROM user_favorite_sports").Error; err != nil {
@@ -458,9 +458,15 @@ func seedTeams(users []models.User, sports []models.Sport, locations []models.Lo
 			return nil, fmt.Errorf("failed to create team %s: %w", teams[i].Name, err)
 		}
 
-		// Add creator to team using ID lookup (avoids slice index out of range)
+		// Add creator as owner using TeamMember
 		if creator, ok := userByID[teams[i].CreatorID]; ok {
-			config.DB.Model(&teams[i]).Association("Users").Append(creator)
+			if err := config.DB.Create(&models.TeamMember{
+				TeamID: teams[i].ID,
+				UserID: creator.ID,
+				Role:   models.RoleOwner,
+			}).Error; err != nil {
+				return nil, fmt.Errorf("failed to add creator to team %s: %w", teams[i].Name, err)
+			}
 		}
 
 		// Add sports
@@ -472,38 +478,45 @@ func seedTeams(users []models.User, sports []models.Sport, locations []models.Lo
 			config.DB.Model(&teams[i]).Association("Sports").Append(footballSport)
 		}
 
-		// Add additional members
+		// Add additional members (as role "member")
+		addTeamMember := func(teamID uint, user *models.User) error {
+			return config.DB.Create(&models.TeamMember{
+				TeamID: teamID,
+				UserID: user.ID,
+				Role:   models.RoleMember,
+			}).Error
+		}
 		if i == 0 && len(users) > 3 {
 			// Tennis Klubben: Ditte (3), Frederik (5), Karen (10), Oline (14)
-			config.DB.Model(&teams[i]).Association("Users").Append(&users[3])
+			_ = addTeamMember(teams[i].ID, &users[3])
 			if len(users) > 5 {
-				config.DB.Model(&teams[i]).Association("Users").Append(&users[5])
+				_ = addTeamMember(teams[i].ID, &users[5])
 			}
 			if len(users) > 10 {
-				config.DB.Model(&teams[i]).Association("Users").Append(&users[10])
+				_ = addTeamMember(teams[i].ID, &users[10])
 			}
 			if len(users) > 14 {
-				config.DB.Model(&teams[i]).Association("Users").Append(&users[14])
+				_ = addTeamMember(teams[i].ID, &users[14])
 			}
 		}
 		if i == 1 && len(users) > 2 {
 			// Nørrebro Ballers: Bjørn (1), Henrik (7), Maria (12)
-			config.DB.Model(&teams[i]).Association("Users").Append(&users[1])
+			_ = addTeamMember(teams[i].ID, &users[1])
 			if len(users) > 7 {
-				config.DB.Model(&teams[i]).Association("Users").Append(&users[7])
+				_ = addTeamMember(teams[i].ID, &users[7])
 			}
 			if len(users) > 12 {
-				config.DB.Model(&teams[i]).Association("Users").Append(&users[12])
+				_ = addTeamMember(teams[i].ID, &users[12])
 			}
 		}
 		if i == 2 && len(users) > 4 {
 			// Weekend Krigere FC: Eva (4), Henrik (7), Lars (11)
-			config.DB.Model(&teams[i]).Association("Users").Append(&users[4])
+			_ = addTeamMember(teams[i].ID, &users[4])
 			if len(users) > 7 {
-				config.DB.Model(&teams[i]).Association("Users").Append(&users[7])
+				_ = addTeamMember(teams[i].ID, &users[7])
 			}
 			if len(users) > 11 {
-				config.DB.Model(&teams[i]).Association("Users").Append(&users[11])
+				_ = addTeamMember(teams[i].ID, &users[11])
 			}
 		}
 	}
