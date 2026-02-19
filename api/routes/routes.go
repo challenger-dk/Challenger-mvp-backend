@@ -141,7 +141,7 @@ func RegisterRoutes(r chi.Router) {
 		})
 	})
 
-	r.Route("/weather", func(r chi.Router) {
+	r.Route("/weather/{lat}/{lon}", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware)
 		r.Use(middleware.EulaMiddleware)
 		r.Get("/", controllers.GetWeather)
