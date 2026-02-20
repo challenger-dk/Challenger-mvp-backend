@@ -169,7 +169,7 @@ jobs:
           script: |
             cd ~/challenger-app
             docker run --rm \
-              --network challenger-app_default \
+              --network challenger-app_challenger-network \
               -v $(pwd)/Database/migrations:/migrations \
               arigaio/atlas migrate apply \
                 --dir "file:///migrations" \
