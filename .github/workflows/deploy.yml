@@ -47,20 +47,20 @@ jobs:
             mkdir -p /home/${{ secrets.PI_USER }}/challenger-app
             
             # Ensure the directory is owned by the deployment user
-            chown -R ${{ secrets.PI_USER }}:${{ secrets.PI_USER }} /home/${{ secrets.PI_USER }}/challenger-app
+            sudo chown -R ${{ secrets.PI_USER }}:${{ secrets.PI_USER }} /home/${{ secrets.PI_USER }}/challenger-app
             
             # Set proper permissions (755 for directories, 644 for files)
-            chmod -R 755 /home/${{ secrets.PI_USER }}/challenger-app
+            sudo chmod -R 755 /home/${{ secrets.PI_USER }}/challenger-app
             
             # Remove Database/migrations if it exists with wrong permissions
             if [ -d /home/${{ secrets.PI_USER }}/challenger-app/Database/migrations ]; then
-              rm -rf /home/${{ secrets.PI_USER }}/challenger-app/Database/migrations
+              sudo rm -rf /home/${{ secrets.PI_USER }}/challenger-app/Database/migrations
             fi
             
             # Create Database/migrations directory with proper permissions
             mkdir -p /home/${{ secrets.PI_USER }}/challenger-app/Database/migrations
-            chown -R ${{ secrets.PI_USER }}:${{ secrets.PI_USER }} /home/${{ secrets.PI_USER }}/challenger-app/Database
-            chmod -R 755 /home/${{ secrets.PI_USER }}/challenger-app/Database
+            sudo chown -R ${{ secrets.PI_USER }}:${{ secrets.PI_USER }} /home/${{ secrets.PI_USER }}/challenger-app/Database
+            sudo chmod -R 755 /home/${{ secrets.PI_USER }}/challenger-app/Database
             
             echo "✅ Deployment directory prepared with proper permissions"
 
