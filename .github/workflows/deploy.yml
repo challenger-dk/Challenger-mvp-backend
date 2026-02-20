@@ -168,5 +168,10 @@ jobs:
           port: ${{ secrets.PI_SSH_PORT || 22 }}
           script: |
             cd ~/challenger-app
-            docker compose -f docker-compose.prod.yml run --rm api make migrate-up
+            docker run --rm \
+              --network challenger-app_default \
+              -v $(pwd)/Database/migrations:/migrations \
+              arigaio/atlas migrate apply \
+                --dir "file:///migrations" \
+                --url "postgres://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@postgres:5432/${{ secrets.DB_NAME }}?sslmode=disable"
             echo "✅ Migrations complete"
