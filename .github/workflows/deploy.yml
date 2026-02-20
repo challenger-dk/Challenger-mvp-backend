@@ -158,3 +158,15 @@ jobs:
             sudo tailscale funnel --bg --set-path /api 8000
 
             echo "✅ Deployment complete."
+
+      - name: Run database migrations
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PI_HOST }}
+          username: ${{ secrets.PI_USER }}
+          key: ${{ secrets.PI_SSH_KEY }}
+          port: ${{ secrets.PI_SSH_PORT || 22 }}
+          script: |
+            cd ~/challenger-app
+            docker compose -f docker-compose.prod.yml run --rm api make migrate-up
+            echo "✅ Migrations complete"
