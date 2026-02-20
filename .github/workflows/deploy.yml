@@ -174,5 +174,6 @@ jobs:
               -v $(pwd)/Database/migrations:/migrations \
               arigaio/atlas migrate apply \
                 --dir "file:///migrations" \
+                --allow-dirty \
                 --url "$DB_URL"
             echo "✅ Migrations complete"
