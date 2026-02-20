@@ -111,6 +111,9 @@ jobs:
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
             echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+            echo "POSTMARK_API_KEY=${{ secrets.POSTMARK_API_KEY }}" >> .env
+            echo "POSTMARK_FROM_EMAIL=${{ secrets.POSTMARK_FROM_EMAIL }}" >> .env
+            echo "FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> .env
             chmod 600 .env
             echo "✅ .env file created"
             # Verify file exists and has content (without showing values)
