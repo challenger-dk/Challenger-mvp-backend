@@ -128,7 +128,10 @@ func GetUserByIDWithSettings(userID uint) (*models.User, error) {
 	err := config.DB.
 		Preload("FavoriteSports").
 		Preload("Friends").
-		Preload("Teams").
+		Preload("Teams.Team").
+		Preload("Teams.Team.Users.User").
+		Preload("Teams.Team.Creator").
+		Preload("Teams.Team.Location").
 		Preload("Settings").
 		Preload("JoinedChallenges", func(db *gorm.DB) *gorm.DB {
 			return db.Order("date ASC").Order("start_time ASC")
@@ -171,8 +174,8 @@ func GetInCommonStats(currentUserID, targetUserID uint) (dto.CommonStatsDto, err
 
 	// 1. Common Teams Count
 	var count int64
-	err := db.Table("user_teams as t1").
-		Joins("JOIN user_teams as t2 ON t1.team_id = t2.team_id").
+	err := db.Table("team_members as t1").
+		Joins("JOIN team_members as t2 ON t1.team_id = t2.team_id").
 		Where("t1.user_id = ? AND t2.user_id = ?", currentUserID, targetUserID).
 		Count(&count).Error
 
@@ -445,8 +448,8 @@ func DeleteUser(user models.User, email string) error {
 			}
 		}
 
-		// 10. Remove user from many-to-many: user_teams (team memberships)
-		if err := tx.Exec("DELETE FROM user_teams WHERE user_id = ?", userID).Error; err != nil {
+		// 10. Remove user from many-to-many: team_members (team memberships)
+		if err := tx.Exec("DELETE FROM team_members WHERE user_id = ?", userID).Error; err != nil {
 			return err
 		}
 
@@ -498,8 +501,8 @@ func DeleteUser(user models.User, email string) error {
 				}
 			}
 
-			// Delete user_teams relationships (already done above for the user, but clean up for other users)
-			if err := tx.Exec("DELETE FROM user_teams WHERE team_id = ?", team.ID).Error; err != nil {
+			// Delete team_members relationships (already done above for the user, but clean up for other users)
+			if err := tx.Exec("DELETE FROM team_members WHERE team_id = ?", team.ID).Error; err != nil {
 				return err
 			}
 

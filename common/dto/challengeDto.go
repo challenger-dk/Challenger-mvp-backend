@@ -30,6 +30,7 @@ type ChallengeCreateDto struct {
 	Distance         *float64          `json:"distance"`
 	Participants     *int              `json:"participants"`
 	ParticipantCount *int              `json:"participant_count"` // Alternative field name from frontend
+	FacilityID       *uint             `json:"facility_id"`       // Optional: link challenge to a facility
 	Users            []uint            `json:"users"`
 	Teams            []uint            `json:"teams"`
 	Date             time.Time         `json:"date"`
@@ -43,6 +44,7 @@ type ChallengeResponseDto struct {
 	Description  string                  `json:"description"`
 	Sport        string                  `json:"sport"`
 	Location     LocationResponseDto     `json:"location"`
+	Facility     *FacilityResponseDto    `json:"facility,omitempty"` // Present when challenge is at a facility
 	Creator      PublicUserDtoResponse   `json:"creator"`
 	Users        []PublicUserDtoResponse `json:"users"`
 	Teams        []TeamResponseDto       `json:"teams"`
@@ -93,11 +95,12 @@ func ChallengeCreateDtoToModel(t ChallengeCreateDto) models.Challenge {
 		}
 	}
 
-	return models.Challenge{
+	challenge := models.Challenge{
 		Name:         t.Name,
 		Description:  t.Description,
 		Sport:        t.Sport,
 		Location:     LocationCreateDtoToModel(t.Location),
+		FacilityID:   t.FacilityID,
 		IsIndoor:     t.IsIndoor,
 		IsPublic:     t.IsPublic,
 		IsCompleted:  false,
@@ -113,6 +116,7 @@ func ChallengeCreateDtoToModel(t ChallengeCreateDto) models.Challenge {
 		StartTime:    t.StartTime,
 		EndTime:      endTime,
 	}
+	return challenge
 }
 
 func ToChallengeResponseDto(t models.Challenge) ChallengeResponseDto {
@@ -137,12 +141,18 @@ func ToChallengeResponseDto(t models.Challenge) ChallengeResponseDto {
 	if t.Comment != nil {
 		comment = *t.Comment
 	}
+	var facility *FacilityResponseDto
+	if t.Facility != nil {
+		f := ToFacilityResponseDto(*t.Facility)
+		facility = &f
+	}
 	return ChallengeResponseDto{
 		ID:           t.ID,
 		Name:         t.Name,
 		Description:  t.Description,
 		Sport:        t.Sport,
 		Location:     ToLocationResponseDto(t.Location),
+		Facility:     facility,
 		Creator:      creator,
 		Users:        users,
 		Teams:        teams,

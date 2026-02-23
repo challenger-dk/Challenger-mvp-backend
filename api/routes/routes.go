@@ -11,6 +11,9 @@ import (
 func RegisterRoutes(r chi.Router) {
 	registerGenericMiddleware(r)
 
+	// App version check (public - mobile apps call this on launch to enforce minimum version)
+	r.Get("/version-check", controllers.CheckAppVersion)
+
 	// Public auth routes
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/register", controllers.Register)
@@ -24,6 +27,12 @@ func RegisterRoutes(r chi.Router) {
 	})
 
 	r.Get("/sports", controllers.GetSports)
+
+	r.Route("/facilities", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware)
+		r.Get("/", controllers.GetFacilities)
+		r.Get("/{id}", controllers.GetFacility)
+	})
 
 	r.Route("/users", func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware)
@@ -133,6 +142,12 @@ func RegisterRoutes(r chi.Router) {
 			r.Get("/status", controllers.GetEulaStatus)
 			r.Post("/accept", controllers.AcceptEula)
 		})
+	})
+
+	r.Route("/weather", func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware)
+		r.Use(middleware.EulaMiddleware)
+		r.Get("/", controllers.GetWeather)
 	})
 }
 

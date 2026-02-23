@@ -103,7 +103,7 @@ func clearDB() {
 		"invitations",
 		"team_sports",
 		"user_favorite_sports",
-		"user_teams",
+		"team_members",
 		"user_friends",
 		"challenge_teams",
 		"user_challenges",

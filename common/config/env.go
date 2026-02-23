@@ -36,6 +36,9 @@ type Config struct {
 
 	// Firebase Project ID (for OAuth token verification)
 	FirebaseProjectID string `env:"FIREBASE_PROJECT_ID,required"`
+
+	// Weather API Key
+	WeatherAPIKey string `env:"WEATHER_API_KEY"`
 }
 
 var AppConfig Config

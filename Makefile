@@ -14,6 +14,10 @@ seed: ## Seed the local database with test data
 	@echo "🌱 Seeding database..."
 	DB_HOST=localhost DB_PORT=5432 DB_USER=user DB_PASSWORD=password DB_NAME=challenger go run cmd/seed/main.go
 
+import-facilities: ## Import facilities from facilities.json into the database
+	@echo "🏟️  Importing facilities..."
+	DB_HOST=localhost DB_PORT=5432 DB_USER=user DB_PASSWORD=password DB_NAME=challenger go run cmd/import-facilities/main.go
+
 # ============================================================================
 # Atlas Migration Commands
 # ============================================================================

@@ -77,8 +77,8 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 		// Authorization Check
 		var isMember bool
 		config.DB.Model(&models.Team{}).
-			Joins("JOIN user_teams ON user_teams.team_id = teams.id").
-			Where("teams.id = ? AND user_teams.user_id = ?", teamID, userID).
+			Joins("JOIN team_members ON team_members.team_id = teams.id").
+			Where("teams.id = ? AND team_members.user_id = ?", teamID, userID).
 			Select("count(*) > 0").
 			Find(&isMember)
 

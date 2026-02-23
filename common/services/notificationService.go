@@ -50,11 +50,17 @@ func CreateNotification(db *gorm.DB, params NotificationParams) {
 	// Create the actual notification
 	persistNotification(db, params)
 
-	// Send push notifications for invitations
+	// Send push notifications for invitations and selected notification types
 	switch params.Type {
 	case models.NotifTypeChallengeReq:
 		sendInvitationPushNotification(db, params)
 	case models.NotifTypeFriendReq:
+		sendInvitationPushNotification(db, params)
+	case models.NotifTypeFriendAccept:
+		sendInvitationPushNotification(db, params)
+	case models.NotifTypeChallengeAccept:
+		sendInvitationPushNotification(db, params)
+	case models.NotifTypeChallengeUpcomming24H, models.NotifTypeChallengeUpcomming1H:
 		sendInvitationPushNotification(db, params)
 	}
 }

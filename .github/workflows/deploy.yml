@@ -47,20 +47,20 @@ jobs:
             mkdir -p /home/${{ secrets.PI_USER }}/challenger-app
             
             # Ensure the directory is owned by the deployment user
-            chown -R ${{ secrets.PI_USER }}:${{ secrets.PI_USER }} /home/${{ secrets.PI_USER }}/challenger-app
+            sudo chown -R ${{ secrets.PI_USER }}:${{ secrets.PI_USER }} /home/${{ secrets.PI_USER }}/challenger-app
             
             # Set proper permissions (755 for directories, 644 for files)
-            chmod -R 755 /home/${{ secrets.PI_USER }}/challenger-app
+            sudo chmod -R 755 /home/${{ secrets.PI_USER }}/challenger-app
             
             # Remove Database/migrations if it exists with wrong permissions
             if [ -d /home/${{ secrets.PI_USER }}/challenger-app/Database/migrations ]; then
-              rm -rf /home/${{ secrets.PI_USER }}/challenger-app/Database/migrations
+              sudo rm -rf /home/${{ secrets.PI_USER }}/challenger-app/Database/migrations
             fi
             
             # Create Database/migrations directory with proper permissions
             mkdir -p /home/${{ secrets.PI_USER }}/challenger-app/Database/migrations
-            chown -R ${{ secrets.PI_USER }}:${{ secrets.PI_USER }} /home/${{ secrets.PI_USER }}/challenger-app/Database
-            chmod -R 755 /home/${{ secrets.PI_USER }}/challenger-app/Database
+            sudo chown -R ${{ secrets.PI_USER }}:${{ secrets.PI_USER }} /home/${{ secrets.PI_USER }}/challenger-app/Database
+            sudo chmod -R 755 /home/${{ secrets.PI_USER }}/challenger-app/Database
             
             echo "✅ Deployment directory prepared with proper permissions"
 
@@ -111,6 +111,9 @@ jobs:
             echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
             echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
             echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+            echo "POSTMARK_API_KEY=${{ secrets.POSTMARK_API_KEY }}" >> .env
+            echo "POSTMARK_FROM_EMAIL=${{ secrets.POSTMARK_FROM_EMAIL }}" >> .env
+            echo "FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> .env
             chmod 600 .env
             echo "✅ .env file created"
             # Verify file exists and has content (without showing values)
@@ -155,3 +158,22 @@ jobs:
             sudo tailscale funnel --bg --set-path /api 8000
 
             echo "✅ Deployment complete."
+
+      - name: Run database migrations
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PI_HOST }}
+          username: ${{ secrets.PI_USER }}
+          key: ${{ secrets.PI_SSH_KEY }}
+          port: ${{ secrets.PI_SSH_PORT || 22 }}
+          script: |
+            cd ~/challenger-app
+            DB_URL="postgres://$(echo -n '${{ secrets.DB_USER }}'):$(echo -n '${{ secrets.DB_PASSWORD }}')@postgres:5432/$(echo -n '${{ secrets.DB_NAME }}')?sslmode=disable"
+            docker run --rm \
+              --network challenger-app_challenger-network \
+              -v $(pwd)/Database/migrations:/migrations \
+              arigaio/atlas migrate apply \
+                --dir "file:///migrations" \
+                --allow-dirty \
+                --url "$DB_URL"
+            echo "✅ Migrations complete"

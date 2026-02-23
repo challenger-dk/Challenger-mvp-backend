@@ -1,0 +1,43 @@
+# Build Stage
+FROM golang:1.24-alpine AS builder
+
+WORKDIR /app
+
+# Download dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY common ./common
+COPY cmd/import-facilities ./cmd/import-facilities
+
+# Build the import binary
+RUN CGO_ENABLED=0 GOOS=linux go build -o import-facilities-job ./cmd/import-facilities
+
+# Final Stage
+FROM alpine:latest
+
+WORKDIR /app
+
+# Install certificates, curl, bash, and dos2unix for Atlas installation
+RUN apk --no-cache add ca-certificates curl bash dos2unix
+
+# Install Atlas CLI
+RUN curl -sSf https://atlasgo.sh | sh
+
+# Copy the binary from the builder
+COPY --from=builder /app/import-facilities-job .
+
+# Copy migration files (import runs migrations before importing)
+COPY Database/migrations /app/Database/migrations
+
+# Copy facilities data
+COPY facilities.json /app/facilities.json
+
+# Convert line endings from Windows to Unix
+RUN find /app/Database/migrations -type f -name "*.sql" -exec dos2unix {} \;
+RUN find /app/Database/migrations -type f -name "atlas.sum" -exec dos2unix {} \;
+
+RUN atlas migrate hash --dir file:///app/Database/migrations
+
+CMD ["./import-facilities-job"]

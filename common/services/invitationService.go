@@ -88,7 +88,7 @@ func SendInvitation(invitation *models.Invitation) error {
 			switch existing.ResourceType {
 			case models.ResourceTypeTeam:
 				var count int64
-				err := tx.Table("user_teams").
+				err := tx.Table("team_members").
 					Where("user_id = ? AND team_id = ?", existing.InviteeId, existing.ResourceID).
 					Count(&count).Error
 				if err != nil {
@@ -271,7 +271,7 @@ func AcceptInvitation(invitationId uint, currentUserId uint) error {
 		if err := config.DB.Preload("Users").First(&team, teamID).Error; err == nil {
 			memberIDs := make([]uint, len(team.Users))
 			for i, u := range team.Users {
-				memberIDs[i] = u.ID
+				memberIDs[i] = u.UserID
 			}
 			// Sync conversation (don't fail if this errors)
 			if err := SyncTeamConversationMembers(teamID, memberIDs); err != nil {
