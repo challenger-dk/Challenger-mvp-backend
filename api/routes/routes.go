@@ -11,6 +11,9 @@ import (
 func RegisterRoutes(r chi.Router) {
 	registerGenericMiddleware(r)
 
+	// App version check (public - mobile apps call this on launch to enforce minimum version)
+	r.Get("/version-check", controllers.CheckAppVersion)
+
 	// Public auth routes
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/register", controllers.Register)
