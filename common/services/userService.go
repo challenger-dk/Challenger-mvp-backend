@@ -448,8 +448,8 @@ func DeleteUser(user models.User, email string) error {
 			}
 		}
 
-		// 10. Remove user from many-to-many: user_teams (team memberships)
-		if err := tx.Exec("DELETE FROM user_teams WHERE user_id = ?", userID).Error; err != nil {
+		// 10. Remove user from many-to-many: team_members (team memberships)
+		if err := tx.Exec("DELETE FROM team_members WHERE user_id = ?", userID).Error; err != nil {
 			return err
 		}
 
@@ -501,8 +501,8 @@ func DeleteUser(user models.User, email string) error {
 				}
 			}
 
-			// Delete user_teams relationships (already done above for the user, but clean up for other users)
-			if err := tx.Exec("DELETE FROM user_teams WHERE team_id = ?", team.ID).Error; err != nil {
+			// Delete team_members relationships (already done above for the user, but clean up for other users)
+			if err := tx.Exec("DELETE FROM team_members WHERE team_id = ?", team.ID).Error; err != nil {
 				return err
 			}
 

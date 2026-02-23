@@ -88,7 +88,7 @@ func SendInvitation(invitation *models.Invitation) error {
 			switch existing.ResourceType {
 			case models.ResourceTypeTeam:
 				var count int64
-				err := tx.Table("user_teams").
+				err := tx.Table("team_members").
 					Where("user_id = ? AND team_id = ?", existing.InviteeId, existing.ResourceID).
 					Count(&count).Error
 				if err != nil {
