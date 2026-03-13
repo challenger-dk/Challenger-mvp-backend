@@ -1,10 +1,31 @@
 package dto
 
 import (
+	"encoding/json"
 	"server/common/models"
 	"strings"
 	"time"
+
+	"gorm.io/datatypes"
 )
+
+// tagsToJSON marshals tags to JSONB for the database
+func tagsToJSON(tags []string) datatypes.JSON {
+	if tags == nil {
+		tags = []string{}
+	}
+	b, _ := json.Marshal(tags)
+	return b
+}
+
+// tagsFromJSON unmarshals tags from JSONB
+func tagsFromJSON(data datatypes.JSON) []string {
+	var tags []string
+	if len(data) > 0 {
+		_ = json.Unmarshal(data, &tags)
+	}
+	return tags
+}
 
 // getParticipantsValue returns the participants value from either field
 func getParticipantsValue(participants *int, participantCount *int) *int {
@@ -31,6 +52,7 @@ type ChallengeCreateDto struct {
 	Participants     *int              `json:"participants"`
 	ParticipantCount *int              `json:"participant_count"` // Alternative field name from frontend
 	FacilityID       *uint             `json:"facility_id"`       // Optional: link challenge to a facility
+	Tags             []string          `json:"tags"`
 	Users            []uint            `json:"users"`
 	Teams            []uint            `json:"teams"`
 	Date             time.Time         `json:"date"`
@@ -59,6 +81,7 @@ type ChallengeResponseDto struct {
 	TeamSize     *int                    `json:"team_size"`
 	Distance     *float64                `json:"distance"`
 	Participants *int                    `json:"participants"`
+	Tags         []string                `json:"tags"`
 	Date         time.Time               `json:"date"`
 	StartTime    time.Time               `json:"start_time"`
 	EndTime      time.Time               `json:"end_time"`
@@ -112,6 +135,7 @@ func ChallengeCreateDtoToModel(t ChallengeCreateDto) models.Challenge {
 		TeamSize:     t.TeamSize,
 		Distance:     t.Distance,
 		Participants: getParticipantsValue(t.Participants, t.ParticipantCount),
+		Tags:         tagsToJSON(t.Tags),
 		Date:         t.Date,
 		StartTime:    t.StartTime,
 		EndTime:      endTime,
@@ -167,6 +191,7 @@ func ToChallengeResponseDto(t models.Challenge) ChallengeResponseDto {
 		TeamSize:     t.TeamSize,
 		Distance:     t.Distance,
 		Participants: t.Participants,
+		Tags:         tagsFromJSON(t.Tags),
 		Date:         t.Date,
 		StartTime:    t.StartTime,
 		EndTime:      endTime,

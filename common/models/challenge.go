@@ -3,6 +3,7 @@ package models
 import (
 	"time"
 
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -46,6 +47,7 @@ type Challenge struct {
 	IsCompleted  bool            `gorm:"default:false"`
 	Status       ChallengeStatus `gorm:"type:VARCHAR(20);not null;default:'open';check:status IN ('suggested','open','pending','ready','confirmed','completed','exceeded')"`
 	Type         ChallengeType   `gorm:"type:VARCHAR(20);not null;default:'open-for-all';check:type IN ('open-for-all','team-vs-team','run-cycling')"`
+	Tags         datatypes.JSON  `gorm:"type:jsonb;default:'[]'"`
 	PlayFor      *string         `gorm:"default:null"`
 	HasCost      bool            `gorm:"default:false"`
 	Comment      *string         `gorm:"default:null"`
