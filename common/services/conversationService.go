@@ -347,6 +347,7 @@ func ListConversations(userID uint) ([]models.Conversation, []int64, []*models.M
 	err := config.DB.Where("user_id = ? AND left_at IS NULL", userID).
 		// Only include conversations that have messages
 		Joins("JOIN messages ON messages.conversation_id = conversation_participants.conversation_id").
+		Scopes(ExcludeBlockedUsersOn(userID, "user_id")). // Exclude conversations from blocked users
 		Preload("Conversation.Team").
 		Preload("Conversation.Participants.User", ExcludeBlockedUsers(userID)).
 		Preload("Conversation.Messages", func(db *gorm.DB) *gorm.DB {
