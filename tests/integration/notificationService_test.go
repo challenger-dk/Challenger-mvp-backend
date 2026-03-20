@@ -389,7 +389,7 @@ func TestNotificationService_CreateTeamDeletedNotification(t *testing.T) {
 	team, _ := services.CreateTeam(models.Team{
 		Name:      "Team To Delete",
 		CreatorID: creator.ID,
-	})
+	}, nil, nil)
 
 	// Add members to team
 	var teamModel models.Team
@@ -429,7 +429,7 @@ func TestNotificationService_CreateTeamDeletedNotification(t *testing.T) {
 	team2, _ := services.CreateTeam(models.Team{
 		Name:      "Another Team",
 		CreatorID: creator.ID,
-	})
+	}, nil, nil)
 
 	var teamModel2 models.Team
 	config.DB.First(&teamModel2, team2.ID)
@@ -453,7 +453,7 @@ func TestNotificationService_CreateTeamDeletedNotification(t *testing.T) {
 	team3, _ := services.CreateTeam(models.Team{
 		Name:      "Special Team Name",
 		CreatorID: creator.ID,
-	})
+	}, nil, nil)
 	var teamModel3 models.Team
 	config.DB.First(&teamModel3, team3.ID)
 	config.DB.Model(&teamModel3).Association("Users").Append(member1)

@@ -15,7 +15,7 @@ func TestInvitationService_TeamFlow(t *testing.T) {
 
 	inviter, _ := services.CreateUser(models.User{Email: "inv@t.com", FirstName: "I", LastName: "I"}, "pw")
 	invitee, _ := services.CreateUser(models.User{Email: "rec@t.com", FirstName: "R", LastName: "R"}, "pw")
-	team, _ := services.CreateTeam(models.Team{Name: "T", CreatorID: inviter.ID})
+	team, _ := services.CreateTeam(models.Team{Name: "T", CreatorID: inviter.ID}, nil, nil)
 
 	// 1. Send Invite
 	inv := &models.Invitation{

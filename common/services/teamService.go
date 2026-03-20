@@ -1,6 +1,9 @@
 package services
 
 import (
+	"errors"
+	"strings"
+
 	"server/common/appError"
 	"server/common/config"
 	"server/common/models"
@@ -17,6 +20,7 @@ func GetTeamByID(id uint, currentUserID uint) (models.Team, error) {
 		Preload("Users.User", ExcludeBlockedUsers(currentUserID)).
 		Preload("Creator").
 		Preload("Location").
+		Preload("Sports").
 		First(&t, id).
 		Error
 
@@ -35,6 +39,7 @@ func GetTeams(currentUserID uint) ([]models.Team, error) {
 		Preload("Users.User", ExcludeBlockedUsers(currentUserID)).
 		Preload("Creator").
 		Preload("Location").
+		Preload("Sports").
 		Find(&teams).
 		Error
 
@@ -52,6 +57,7 @@ func GetTeamsByUserId(id uint, currentUserID uint) ([]models.TeamMember, error) 
 		Preload("Teams.Team.Users.User", ExcludeBlockedUsers(currentUserID)).
 		Preload("Teams.Team.Creator").
 		Preload("Teams.Team.Location").
+		Preload("Teams.Team.Sports").
 		First(&user, id).
 		Error
 
@@ -63,7 +69,7 @@ func GetTeamsByUserId(id uint, currentUserID uint) ([]models.TeamMember, error) 
 }
 
 // --- POST ---
-func CreateTeam(t models.Team) (models.Team, error) {
+func CreateTeam(t models.Team, sportNames []string, inviteeIDs []uint) (models.Team, error) {
 	err := config.DB.Transaction(func(tx *gorm.DB) error {
 		if t.Location != nil {
 			location, err := FindOrCreateLocation(tx, *t.Location)
@@ -95,13 +101,57 @@ func CreateTeam(t models.Team) (models.Team, error) {
 			return err
 		}
 
+		if len(sportNames) > 0 {
+			if err := attachTeamSportsTx(tx, t.ID, sportNames); err != nil {
+				return err
+			}
+		}
+
 		err = tx.Preload("Users.User").
 			Preload("Creator").
 			Preload("Location").
+			Preload("Sports").
 			First(&t, t.ID).
 			Error
+		if err != nil {
+			return err
+		}
 
-		return err
+		seenInvitees := make(map[uint]struct{})
+		for _, inviteeID := range inviteeIDs {
+			if inviteeID == 0 || inviteeID == t.CreatorID {
+				continue
+			}
+			if _, duplicate := seenInvitees[inviteeID]; duplicate {
+				continue
+			}
+			seenInvitees[inviteeID] = struct{}{}
+
+			if IsBlocked(inviteeID, t.CreatorID) {
+				return appError.ErrUserBlocked
+			}
+
+			var invitee models.User
+			if err := tx.First(&invitee, inviteeID).Error; err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return appError.ErrUserNotFound
+				}
+				return err
+			}
+
+			invitation := models.Invitation{
+				InviterId:    t.CreatorID,
+				InviteeId:    inviteeID,
+				ResourceType: models.ResourceTypeTeam,
+				ResourceID:   t.ID,
+				Status:       models.StatusPending,
+			}
+			if err := sendInvitationTx(tx, &invitation); err != nil {
+				return err
+			}
+		}
+
+		return nil
 	})
 
 	if err != nil {
@@ -109,6 +159,51 @@ func CreateTeam(t models.Team) (models.Team, error) {
 	}
 
 	return t, nil
+}
+
+func canonicalSportNameForTeam(name string) (string, bool) {
+	if _, ok := config.SportsCache[name]; ok {
+		return name, true
+	}
+	for n := range config.SportsCache {
+		if strings.EqualFold(name, n) {
+			return n, true
+		}
+	}
+	return "", false
+}
+
+func attachTeamSportsTx(tx *gorm.DB, teamID uint, sportNames []string) error {
+	seen := make(map[string]struct{})
+	var sports []models.Sport
+
+	for _, raw := range sportNames {
+		canon, ok := canonicalSportNameForTeam(raw)
+		if !ok {
+			return appError.ErrInvalidSport
+		}
+		if _, dup := seen[canon]; dup {
+			continue
+		}
+		seen[canon] = struct{}{}
+
+		var sport models.Sport
+		if err := tx.Where("name = ?", canon).FirstOrCreate(&sport, models.Sport{Name: canon}).Error; err != nil {
+			return err
+		}
+		sports = append(sports, sport)
+	}
+
+	if len(sports) == 0 {
+		return nil
+	}
+
+	var team models.Team
+	if err := tx.First(&team, teamID).Error; err != nil {
+		return err
+	}
+
+	return tx.Model(&team).Association("Sports").Append(sports)
 }
 
 // --- PUT ---

@@ -62,8 +62,8 @@ func TestFriendService_GetSuggestedFriends(t *testing.T) {
 	config.DB.Model(user4).Association("Friends").Append(user2)
 
 	// Create teams
-	team1, _ := services.CreateTeam(models.Team{Name: "Team Alpha", CreatorID: user1.ID})
-	team2, _ := services.CreateTeam(models.Team{Name: "Team Beta", CreatorID: user2.ID})
+	team1, _ := services.CreateTeam(models.Team{Name: "Team Alpha", CreatorID: user1.ID}, nil, nil)
+	team2, _ := services.CreateTeam(models.Team{Name: "Team Beta", CreatorID: user2.ID}, nil, nil)
 
 	// Add users to teams (need to reload teams first)
 	var t1, t2 models.Team

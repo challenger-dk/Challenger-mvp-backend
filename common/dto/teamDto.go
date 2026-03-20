@@ -1,6 +1,8 @@
 package dto
 
 import (
+	"strings"
+
 	"server/common/models"
 )
 
@@ -17,8 +19,11 @@ type Team struct {
 */
 
 type TeamCreateDto struct {
-	Name     string             `json:"name"               validate:"sanitize,required,min=3"`
-	Location *LocationCreateDto `json:"location,omitempty"`
+	Name        string             `json:"name"                 validate:"sanitize,required,min=3"`
+	Description string             `json:"description,omitempty" validate:"sanitize,max=2000"`
+	Location    *LocationCreateDto `json:"location,omitempty"`
+	Sports      []string           `json:"sports,omitempty"       validate:"dive,is-valid-sport"`
+	InviteeIDs  []uint             `json:"invitee_ids,omitempty"`
 }
 
 type TeamUpdateDto struct {
@@ -26,12 +31,13 @@ type TeamUpdateDto struct {
 }
 
 type TeamResponseDto struct {
-	ID       uint                    `json:"id"`
-	Name     string                  `json:"name"`
-	Creator  PublicUserDtoResponse   `json:"creator"`
-	Location LocationResponseDto     `json:"location"`
-	Users    []TeamMemberResponseDto `json:"users"`
-	Sports   []SportResponseDto      `json:"sports"`
+	ID          uint                    `json:"id"`
+	Name        string                  `json:"name"`
+	Description *string                 `json:"description,omitempty"`
+	Creator     PublicUserDtoResponse   `json:"creator"`
+	Location    LocationResponseDto     `json:"location"`
+	Users       []TeamMemberResponseDto `json:"users"`
+	Sports      []SportResponseDto      `json:"sports"`
 }
 
 type TeamMemberResponseDto struct {
@@ -42,6 +48,11 @@ type TeamMemberResponseDto struct {
 func TeamCreateDtoToModel(t TeamCreateDto) models.Team {
 	team := models.Team{
 		Name: t.Name,
+	}
+
+	if strings.TrimSpace(t.Description) != "" {
+		description := t.Description
+		team.Description = &description
 	}
 
 	if t.Location != nil {
@@ -67,6 +78,11 @@ func ToTeamResponseDto(t models.Team) TeamResponseDto {
 		})
 	}
 
+	sports := make([]SportResponseDto, 0, len(t.Sports))
+	for _, s := range t.Sports {
+		sports = append(sports, ToSportResponseDto(s))
+	}
+
 	var locationDto LocationResponseDto
 
 	if t.Location != nil {
@@ -74,10 +90,12 @@ func ToTeamResponseDto(t models.Team) TeamResponseDto {
 	}
 
 	return TeamResponseDto{
-		ID:       t.ID,
-		Name:     t.Name,
-		Creator:  ToPublicUserDtoResponse(t.Creator),
-		Users:    users,
-		Location: locationDto,
+		ID:          t.ID,
+		Name:        t.Name,
+		Description: t.Description,
+		Creator:     ToPublicUserDtoResponse(t.Creator),
+		Users:       users,
+		Location:    locationDto,
+		Sports:      sports,
 	}
 }

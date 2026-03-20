@@ -28,7 +28,7 @@ func TestTeamService_CRUD(t *testing.T) {
 		},
 	}
 
-	createdTeam, err := services.CreateTeam(teamModel)
+	createdTeam, err := services.CreateTeam(teamModel, nil, nil)
 	assert.NoError(t, err)
 	assert.NotZero(t, createdTeam.ID)
 	assert.Equal(t, creator.ID, createdTeam.CreatorID)
@@ -59,8 +59,8 @@ func TestTeamService_List(t *testing.T) {
 	defer teardown()
 
 	u, _ := services.CreateUser(models.User{Email: "u@team.com", FirstName: "U", LastName: "U"}, "pw")
-	services.CreateTeam(models.Team{Name: "T1", CreatorID: u.ID})
-	services.CreateTeam(models.Team{Name: "T2", CreatorID: u.ID})
+	services.CreateTeam(models.Team{Name: "T1", CreatorID: u.ID}, nil, nil)
+	services.CreateTeam(models.Team{Name: "T2", CreatorID: u.ID}, nil, nil)
 
 	// Get All
 	teams, err := services.GetTeams(u.ID)
@@ -81,7 +81,7 @@ func TestTeamService_Membership(t *testing.T) {
 	member, _ := services.CreateUser(models.User{Email: "m@t.com", FirstName: "M", LastName: "M"}, "pw")
 	outsider, _ := services.CreateUser(models.User{Email: "o@t.com", FirstName: "O", LastName: "O"}, "pw")
 
-	team, _ := services.CreateTeam(models.Team{Name: "T", CreatorID: creator.ID})
+	team, _ := services.CreateTeam(models.Team{Name: "T", CreatorID: creator.ID}, nil, nil)
 
 	// Manually add member for test setup
 	invitation := &models.Invitation{

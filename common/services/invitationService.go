@@ -47,122 +47,128 @@ func SendInvitation(invitation *models.Invitation) error {
 	}
 
 	return config.DB.Transaction(func(tx *gorm.DB) error {
-		var existing models.Invitation
+		return sendInvitationTx(tx, invitation)
+	})
+}
 
-		err := tx.Where(models.Invitation{
-			InviterId:    invitation.InviterId,
-			InviteeId:    invitation.InviteeId,
-			ResourceType: invitation.ResourceType,
-			ResourceID:   invitation.ResourceID,
-		}).First(&existing).Error
+// sendInvitationTx persists invitation state and notifications using the given transaction.
+// Callers must enforce same-user and block rules (see SendInvitation) unless embedding in a larger flow that already did so.
+func sendInvitationTx(tx *gorm.DB, invitation *models.Invitation) error {
+	var existing models.Invitation
 
-		// Create new invitation if none exists
-		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-			createErr := tx.Create(invitation).Error
-			if createErr != nil {
-				return createErr
-			}
+	err := tx.Where(models.Invitation{
+		InviterId:    invitation.InviterId,
+		InviteeId:    invitation.InviteeId,
+		ResourceType: invitation.ResourceType,
+		ResourceID:   invitation.ResourceID,
+	}).First(&existing).Error
 
-			// Successfully send invitation.
-			// Create notification
-			CreateInvitationNotification(tx, *invitation)
-
-			return nil
+	// Create new invitation if none exists
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		createErr := tx.Create(invitation).Error
+		if createErr != nil {
+			return createErr
 		}
 
+		// Successfully send invitation.
+		// Create notification
+		CreateInvitationNotification(tx, *invitation)
+
+		return nil
+	}
+
+	if err != nil {
+		return err
+	}
+
+	// Invitation already exists, handle based on status
+	switch existing.Status {
+	case models.StatusPending:
+		return appError.ErrInvitationPending
+
+	case models.StatusAccepted:
+		// Check if they are currently part of the resource (Team, Friend, Challenge)
+		// If they ARE part of it, return error.
+		// If they are NOT part of it (they left), reset invitation to pending.
+
+		isActive := false
+		switch existing.ResourceType {
+		case models.ResourceTypeTeam:
+			var count int64
+			err := tx.Table("team_members").
+				Where("user_id = ? AND team_id = ?", existing.InviteeId, existing.ResourceID).
+				Count(&count).Error
+			if err != nil {
+				return err
+			}
+			isActive = count > 0
+
+		case models.ResourceTypeFriend:
+			var count int64
+			// Check friendship (friends are usually stored bidirectionally or checked via association)
+			err := tx.Table("user_friends").
+				Where("user_id = ? AND friend_id = ?", existing.InviteeId, existing.InviterId).
+				Count(&count).Error
+			if err != nil {
+				return err
+			}
+			isActive = count > 0
+
+		case models.ResourceTypeChallenge:
+			var count int64
+			err := tx.Table("user_challenges").
+				Where("user_id = ? AND challenge_id = ?", existing.InviteeId, existing.ResourceID).
+				Count(&count).Error
+			if err != nil {
+				return err
+			}
+			isActive = count > 0
+		}
+
+		// If they are still active members/friends, we cannot invite them again
+		if isActive {
+			return appError.ErrInvitationAccepted
+		}
+
+		// If not active, they left/unfriended. Reset invitation to pending.
+		err := tx.Model(&existing).
+			Update("status", models.StatusPending).
+			Error
 		if err != nil {
 			return err
 		}
 
-		// Invitation already exists, handle based on status
-		switch existing.Status {
-		case models.StatusPending:
-			return appError.ErrInvitationPending
-
-		case models.StatusAccepted:
-			// Check if they are currently part of the resource (Team, Friend, Challenge)
-			// If they ARE part of it, return error.
-			// If they are NOT part of it (they left), reset invitation to pending.
-
-			isActive := false
-			switch existing.ResourceType {
-			case models.ResourceTypeTeam:
-				var count int64
-				err := tx.Table("team_members").
-					Where("user_id = ? AND team_id = ?", existing.InviteeId, existing.ResourceID).
-					Count(&count).Error
-				if err != nil {
-					return err
-				}
-				isActive = count > 0
-
-			case models.ResourceTypeFriend:
-				var count int64
-				// Check friendship (friends are usually stored bidirectionally or checked via association)
-				err := tx.Table("user_friends").
-					Where("user_id = ? AND friend_id = ?", existing.InviteeId, existing.InviterId).
-					Count(&count).Error
-				if err != nil {
-					return err
-				}
-				isActive = count > 0
-
-			case models.ResourceTypeChallenge:
-				var count int64
-				err := tx.Table("user_challenges").
-					Where("user_id = ? AND challenge_id = ?", existing.InviteeId, existing.ResourceID).
-					Count(&count).Error
-				if err != nil {
-					return err
-				}
-				isActive = count > 0
-			}
-
-			// If they are still active members/friends, we cannot invite them again
-			if isActive {
-				return appError.ErrInvitationAccepted
-			}
-
-			// If not active, they left/unfriended. Reset invitation to pending.
-			err := tx.Model(&existing).
-				Update("status", models.StatusPending).
-				Error
-			if err != nil {
-				return err
-			}
-
-			// Heal older friend invitations that may have ResourceID=0 from earlier code
-			if existing.ResourceType == models.ResourceTypeFriend && existing.ResourceID == 0 {
-				existing.ResourceID = existing.InviterId
-				_ = tx.Save(&existing).Error // best-effort; don't fail resend
-			}
-
-			// Re-notify
-			CreateInvitationNotification(tx, existing)
-			return nil
-
-		case models.StatusDeclined:
-			// Resend by setting status back to pending
-			err := tx.Model(&existing).
-				Update("status", models.StatusPending).
-				Error
-			if err != nil {
-				return err
-			}
-
-			// Heal older friend invitations that may have ResourceID=0 from earlier code
-			if existing.ResourceType == models.ResourceTypeFriend && existing.ResourceID == 0 {
-				existing.ResourceID = existing.InviterId
-				_ = tx.Save(&existing).Error // best-effort; don't fail resend
-			}
-
-			// Re-notify
-			CreateInvitationNotification(tx, existing)
-			return nil
+		// Heal older friend invitations that may have ResourceID=0 from earlier code
+		if existing.ResourceType == models.ResourceTypeFriend && existing.ResourceID == 0 {
+			existing.ResourceID = existing.InviterId
+			_ = tx.Save(&existing).Error // best-effort; don't fail resend
 		}
 
-		return appError.ErrUnhandledInvitationStatus
-	})
+		// Re-notify
+		CreateInvitationNotification(tx, existing)
+		return nil
+
+	case models.StatusDeclined:
+		// Resend by setting status back to pending
+		err := tx.Model(&existing).
+			Update("status", models.StatusPending).
+			Error
+		if err != nil {
+			return err
+		}
+
+		// Heal older friend invitations that may have ResourceID=0 from earlier code
+		if existing.ResourceType == models.ResourceTypeFriend && existing.ResourceID == 0 {
+			existing.ResourceID = existing.InviterId
+			_ = tx.Save(&existing).Error // best-effort; don't fail resend
+		}
+
+		// Re-notify
+		CreateInvitationNotification(tx, existing)
+		return nil
+	}
+
+	return appError.ErrUnhandledInvitationStatus
 }
 
 func AcceptInvitation(invitationId uint, currentUserId uint) error {
